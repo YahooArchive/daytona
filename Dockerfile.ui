@@ -1,0 +1,26 @@
+FROM php:5.6.27-apache
+
+RUN apt-get update && apt-get install libmcrypt-dev php5-mysqlnd python python-mysql.connector -y
+RUN docker-php-ext-install mysql mysqli pdo pdo_mysql mcrypt
+
+RUN a2enmod rewrite
+RUN php5enmod mysqlnd
+
+COPY UI/ /var/www/html/
+
+RUN sed -i.bak -e 's/localhost/db/' /var/www/html/daytona_config.ini
+RUN cat /var/www/html/daytona_config.ini
+
+RUN mkdir -p /tmp/Scheduler+Agent
+COPY Scheduler+Agent/ /tmp/Scheduler+Agent/
+RUN sed -i.bak -e 's/mysql-host:localhost/mysql-host:db/' /tmp/Scheduler+Agent/config.ini
+
+RUN mkdir -p /tmp/daytona_sarmonitor
+COPY Scheduler+Agent/daytona_sarmonitor/ /tmp/daytona_sarmonitor/
+
+RUN mkdir -p /tmp/daytona_root/test_data_DH
+RUN ln -s /tmp/daytona_root/test_data_DH /var/www/html/test_data
+COPY TestData/ /tmp/daytona_root/test_data_DH
+
+WORKDIR /tmp/Scheduler+Agent
+CMD ./start_scheduler.sh && apache2-foreground

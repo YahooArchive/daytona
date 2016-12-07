@@ -1,0 +1,226 @@
+.btn {
+    min-width: none;
+}
+
+.collapse-link {
+  font-size: 14px;
+  display: block;
+  padding: 5px 0px;
+}
+
+.float-left {
+  float: left;
+}
+
+.select-sm {
+  padding: 0;
+}
+
+.popover-title {
+  background-color: #6D00F6;
+  text-align: center;
+  color: #FFF;
+}
+
+.popover-content {
+  max-height: 400px;
+  overflow-y: auto;
+  text-align: left;
+  padding: 5px;
+}
+
+.shift-popover > .popover {
+  left: 4px !important;
+}
+
+.shift-popover > .popover > .arrow {
+  left: 67.9px !important;
+}
+
+.breadcrumb {
+  border-radius: 0px !important;
+}
+
+.breadcrumb>li+li:before {
+  content: "/" !important;
+}
+
+.side-nav-collapse {
+  display: none;
+}
+
+@media only screen and (min-width: 768px) {
+  .side-nav-collapse {
+    display: initial;
+    position: fixed;
+    left: 6px;
+    bottom: 6px;
+    z-index: 1;
+    font-size: 24px;
+    color: #fff;
+    border-radius: 50%;
+    background-color: #777;
+    padding: 6px;
+    cursor: pointer;
+    opacity: 0.6;
+  }
+
+  .btn {
+    min-width: 100px;
+  }
+
+  .container.login-container {
+    width: 40%;
+  }
+
+  .btn-action{
+    margin-bottom:0px;
+  }
+
+  #page-content {
+    position: fixed;
+    top: 120px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+    overflow-y: auto;
+  }
+
+  #top-nav-bar {
+    padding: 70px 0px 0px 0px;
+    position: fixed;
+    left: 0;
+    right: 0;
+  }
+}
+
+@media only screen and (min-width: 992px) {
+  .container.login-container {
+    width: 30%;
+  }
+}
+
+@media only screen and (min-width: 1200px) {
+  .container.login-container {
+    width: 30%;
+  }
+}
+
+.panel-body {
+  padding: 5px;
+}
+
+.float-right {
+  float: right;
+}
+
+.zero-margin {
+  margin: 0 !important;
+}
+
+.zero-padding {
+  padding: 0px;~
+}
+
+.tiny-padding {
+  padding: 3px !important;
+}
+
+.small-padding {
+  padding: 5px; 
+}
+
+.float-left {
+  float: left;
+}
+
+label.main-filter-label{
+  text-align: right;
+  margin-bottom:0px;
+  padding-right:10px;
+}
+
+table.output-table>tbody>tr>td,
+table.output-table>thead>tr>th {
+    padding:4px;
+    width:100%;
+    word-wrap: break-word;
+    vertical-align: middle;
+}
+
+
+table.output-table>tbody>tr>th { 
+    padding:4px;
+    width:100%;
+    word-wrap: break-word;
+    vertical-align: middle;
+}
+
+table.output-table {
+   margin-bottom:0px;
+   table-layout:fixed;
+}
+
+@media only screen and (max-width:767px) {
+  table {
+    font-size:70%;
+  }
+
+  /*.compare-text-div > .panel-body{
+    overflow-y: auto;
+    height: 230px;
+  }*/
+}
+
+.compare-text-div > .panel-body{
+    overflow-y: auto;
+    max-height: 230px;
+}
+
+#csv_table_view{
+    padding: 0px;
+}
+
+div.output-text-panel{
+    padding: 0px;
+    margin:0px;
+    white-space: pre-line;
+    word-wrap: break-word;
+}
+
+.output-text-panel > .panel-body{
+    overflow-y: auto;
+    max-height: 100%;
+}
+
+.fa-user,
+.fa-search {
+  padding-right:10px;
+}
+
+table#csv-table{
+  margin-bottom: 0px;
+  table-layout: fixed;
+  border-collapse:collapse;
+  border:1px solid #ddd;
+}
+
+table#csv-table>thead>tr>th{
+  border:1px solid #ddd;
+  background-color: #cccccc;
+  text-align:center;
+  padding:0px;
+}
+
+table#csv-table td{
+  border:1px solid #ddd;
+  text-align:center;
+  padding:0px;
+}
+
+.fa-bullseye{
+  font-size: 60px;
+  background: -webkit-linear-gradient(330deg, #ffaa80 25%, #bbbb77 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

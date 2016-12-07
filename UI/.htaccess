@@ -1,0 +1,27 @@
+Options +FollowSymLinks
+RewriteEngine On
+DirectoryIndex main.php
+
+RewriteRule                ^/test_info(.php)                            /test_info.php                            [L]
+RewriteRule                ^/test_report(.php)                          /test_report.php                          [L]
+RewriteRule                ^/search(.php)                               /search.php                               [L]
+RewriteRule                ^/admin(.php)                                /admin.php                                [L]
+RewriteRule                ^/create_edit_framework(.php)                /create_edit_framework.php                [L]
+RewriteRule                ^/create_edit_test(.php)                     /create_edit_test.php                     [L]
+RewriteRule                ^/daytona_actions(.php)                      /daytona_actions.php                      [L]
+RewriteRule                ^/database_access(.php)                      /database_access.php                      [L]
+RewriteRule                ^/output(.php)                               /output.php                               [L]
+RewriteCond                %{DOCUMENT_ROOT} !-                          
+
+
+
+
+
+AddType image/svg+xml svg svgz
+AddEncoding gzip svgz
+
+<Files ~ "\.ini$">
+  Order allow,deny
+  Deny from all
+</Files>
+

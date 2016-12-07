@@ -1,0 +1,17 @@
+FROM ubuntu:14.04
+
+RUN apt-get -y  update && apt-get -y upgrade && apt-get -y dist-upgrade
+
+RUN apt-get install sysstat -y
+RUN apt-get install python -y
+
+RUN mkdir -p /tmp/ExecScripts
+RUN mkdir -p /tmp/Scheduler+Agent
+RUN mkdir -p /tmp/daytona_sarmonitor
+
+COPY ExecScripts/ /tmp/ExecScripts/
+COPY Scheduler+Agent/ /tmp/Scheduler+Agent
+COPY Scheduler+Agent/daytona_sarmonitor /tmp/daytona_sarmonitor
+
+WORKDIR /tmp/Scheduler+Agent
+CMD ./start_agent.sh
