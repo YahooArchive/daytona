@@ -10,7 +10,7 @@ Daytona is a framework for automated performance testing and analysis. Any perfo
 * Email notification with test status and summary 
 * Customizable harness for any application or load/performance test
 * Comparison of multiple tests in tabular or graphical format
-* Suitable for being deployed as a hosted service
+* Suitable to be deployed as a hosted service
 * Installation scripts for docker-compose and bare metal  
 * Sample harness and test data loaded at installation
 * Mobile-friendly design 
