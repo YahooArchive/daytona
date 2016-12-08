@@ -1,11 +1,11 @@
 #!/bin/bash
 
-daytona_install_dir=~ubuntu/Daytona_prod/Daytona-V2
+daytona_install_dir=~ubuntu/daytona_prod/daytona
 daytona_data_dir=/tmp/daytona_root/test_data_DH
 distro=Ubuntu
 
 mkdir -p $daytona_install_dir
-cp -r ../../../Daytona-V2/*  $daytona_install_dir
+cp -r ../../../daytona/*  $daytona_install_dir
 
 cd $daytona_install_dir/InstallScripts/$distro
 echo "****** Installing Daytona DB *********"

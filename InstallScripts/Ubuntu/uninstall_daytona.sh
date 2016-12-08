@@ -1,6 +1,6 @@
 #!/bin/bash
 
-daytona_install_dir=~ubuntu/Daytona_prod/Daytona-V2
+daytona_install_dir=~ubuntu/daytona_prod/daytona
 daytona_data_dir=/tmp/daytona_root/test_data_DH
 
 sudo apt-get remove --purge apache2 ssl-cert -y
