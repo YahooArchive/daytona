@@ -2,7 +2,7 @@
 
 daytona_install_dir=$HOME/Daytona_prod/Daytona
 daytona_data_dir=/var/www/html/daytona/daytona_root/test_data_DH
-distro=RHEL
+distro=Centos
 
 mkdir -p $daytona_install_dir
 cp -r ../../*  $daytona_install_dir
