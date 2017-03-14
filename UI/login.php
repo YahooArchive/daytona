@@ -87,7 +87,7 @@ if(isset($_REQUEST['username']) and isset($_REQUEST['password'])) {
 
 unset($username);
 if (isset($_COOKIE['login'])) {
-    list($c_username,$cookie_hash) = split(',',$_COOKIE['login']);
+    list($c_username,$cookie_hash) = explode(',',$_COOKIE['login']);
     if (password_verify($c_username.$secret_word, $cookie_hash)) {
         $username = $c_username;
         if(getUserAccount($db, $c_username)->user_state == "Active") {

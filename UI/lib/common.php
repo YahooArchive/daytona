@@ -200,16 +200,18 @@ function addTestResults($path, $hosts, $testid, $compids) {
   }
 }
 
-function addSystemMetrics($path, $hosts, $testid, $compids) {
-  if (count($hosts) > 0 ){
-    echo "createLabel('System Metrics')\n";
-  }
+function addSystemMetrics($path, $hosts, $testid, $compids, $label) {
   foreach ($hosts as $key=>$host) {
-    echo "  fillSystemMetricsHost('$host','$key');\n"; 
+    if(strpos($label,"exec") !== false){
+      $hostid = "-" . $label . $key;
+      echo "  fillSystemMetricsHost('Execution Host','$hostid');\n";
+    }else{
+      echo "  fillSystemMetricsHost('$host','$key');\n";
+    }
     $files = glob("$path/$host/sar/*[.plt|.csv|.txt]");
     foreach ($files as $file) {
       $ex_file = explode("/", $file);
-      echo "  fillSystemMetrics('$testid', '$compids', '" . end($ex_file) . "', '$file', '$key');\n";
+      echo "  fillSystemMetrics('$testid', '$compids', '" . end($ex_file) . "', '$file', '$key', '$label');\n";
     }
   }
 }

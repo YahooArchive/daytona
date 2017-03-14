@@ -1141,7 +1141,7 @@ path {
 }
 
 .metric-footer {
-  padding: 0 10px 0 50px;
+  padding: 0 10px 0 18px;
 }
 
 .c3-graph-panel {
@@ -1211,17 +1211,30 @@ path {
   border-radius: 100px;
   padding: 10px 9px 10px 11px;
   margin-left: 7px;
-  font-size: 20px;
+  font-size: 25px;
+}
+
+.toggle-button {
+  position: absolute;
+  border-radius: 100px;
+  padding: 10px 9px 10px 45px;
+  margin-left: 7px;
+  font-size: 25px;
+}
+
+.subgraph-button {
+  position: absolute;
+  border-radius: 100px;
+  padding: 10px 9px 10px 90px;
+  margin-left: 7px;
+  font-size: 25px;
+  color: #777777;
 }
 
 .search-plus > .fa-search-plus {
   height: 21px;
   width: 21px;
   font-size: 20px;
-}
-
-.search-plus:hover {
-  background-color: #BDBDF4;
 }
 
 .modal-full {
@@ -1242,7 +1255,7 @@ path {
 
 #zoom-footer th {
   cursor: pointer;
-  position: relative;
+  /*position: relative;*/
   top: 0;
   left: 0;
 }
@@ -1455,3 +1468,4 @@ div.compare-text-div{
   border: none;
   background: transparent;
 }
+

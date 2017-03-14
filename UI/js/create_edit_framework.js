@@ -18,7 +18,7 @@ function addTestReportItem(target, reportConfig) {
   var divFilename = $('<div></div>')
     .addClass('form-group zero-line-height zero-margin');
   var inputFilename = $('<input></input>')
-    .addClass('form-control form-input')
+    .addClass('form-control form-input testreport_filename')
     .prop('required', true)
     .attr('type', 'text')
     .attr('name', 'f_testreport[filename][]');
@@ -367,7 +367,29 @@ $(document).ready(function() {
   $('#framework-form').on('submit', function(evt) {
     evt.preventDefault();
 
+    var files = "";
+    $('.testreport_filename').each(function(d){
+      var filename = $(this).val();
+      if (~filename.toLowerCase().indexOf("cpu_usage") || ~filename.toLowerCase().indexOf("memory_usage")){
+        var file_arr = filename.split(':');
+        if((file_arr.length < 2) || (file_arr[1].length < 1)){
+          var last = file_arr[0].substring(file_arr[0].lastIndexOf("/") + 1, file_arr[0].length);
+          files += last + ", ";
+        }
+      }
+    });
+
+    if (files.length > 0){
+        files = files.replace(/, $/g,'');
+        $('#status-message .modal-header').removeClass('bg-success');
+        $('#status-message .modal-header').addClass('bg-danger');
+        $('#status-message .modal-title').text('Error!');
+        $('#status-message .modal-body').text('Process name is mandatory for files : ' + files);
+        $('#status-message').modal('show');
+        return;
+    }
     $('body').addClass('loading');
+
     $.post('/daytona_actions.php', $(this).serialize(), function (response) {
       $('body').removeClass('loading');
       if (response.status === 'OK') {

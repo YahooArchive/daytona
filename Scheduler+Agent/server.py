@@ -42,31 +42,35 @@ class ActionCaller():
     #send actionID for currently being executed action based on this we can stream resp
     #keep exec details over time in a buffer with actionID mapped
     #send actionID NULL and hold return till exec is complete
-    module = self.conf.actionMap[command.strip()].split(".")[0]
-    function = self.conf.actionMap[command.strip()].split(".")[1]
-    sync = self.conf.actionMap[command.strip()].split(".")[2]
     self.lctx.debug(command)
     self.lctx.debug(paramcsv)
     self.lctx.debug(actionID)
+    module = self.conf.actionMap[command.strip()].split(".")[0]
+    function = self.conf.actionMap[command.strip()].split(".")[1]
+    sync = self.conf.actionMap[command.strip()].split(".")[2]
+    
+    if command != "DAYTONA_CLI":
+      t2 = testobj.testDefn()
+      tst = ""
+      if paramcsv != "":
+        p = paramcsv.split(",")
+        tst = p[0]
+        if command == "DAYTONA_FILE_DOWNLOAD":
+          tst = p[3]
 
-    t2 = testobj.testDefn()
-    tst = ""
-    if paramcsv != "":
-      p = paramcsv.split(",")
-      tst = p[0]
-      if command == "DAYTONA_FILE_DOWNLOAD":
-        tst = p[3]
-
-    if tst != "":
-      t2.deserialize(tst)
-
+      if tst != "":
+        t2.deserialize(tst)
+    
     m = __import__ (module)
     f = getattr(m,function)
     if sync == "T" : #wait for func to complete and return the ret
       self.lctx.debug("Executing SYNC ACTION for " + command.strip() + " : " + self.conf.actionMap[command.strip()] + ":" + str(actionID))
       ret = f(self, self, command, paramcsv, actionID, sync)
       self.lctx.debug("ACTION completed for " + command.strip() + " : " + self.conf.actionMap[command.strip()] + ":" + str(actionID))
-      return "actionID=" +  str(actionID) + "," + ret +  "," + "SYNC EXEC"
+      if command == "DAYTONA_CLI":
+	return "actionID=" +  str(actionID) + "%" + ret +  "%" + "SYNC EXEC"
+      else:
+	return "actionID=" +  str(actionID) + "," + ret +  "," + "SYNC EXEC"
     else :
       #callback will be called after completion
       #actionID = uuid.uuid4()
@@ -137,7 +141,7 @@ class serv():
             self.request.sendall(response)
             return
 
-          if host in serv.registered_hosts.keys() or cmd == "DAYTONA_HEARTBEAT":
+          if host in serv.registered_hosts.keys() or cmd in ("DAYTONA_HEARTBEAT","DAYTONA_CLI"):
               if cmd == "DAYTONA_STREAM_END":
                 serv.lctx.debug("End stream...")
                 return

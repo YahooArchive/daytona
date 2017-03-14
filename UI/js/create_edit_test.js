@@ -14,6 +14,30 @@ $(document).ready(function() {
 
   function saveTest(runTest) {
     $('body').addClass('loading');
+
+    var stat_hosts = $('#f_statistics').val().split(",");
+    var exec_host = $('#f_execution').val().split(",");
+
+    if(exec_host.length > 1){
+        $('#status-message .modal-header').removeClass('bg-success');
+        $('#status-message .modal-header').addClass('bg-danger');
+        $('#status-message .modal-title').text('Error!');
+        $('#status-message .modal-body').text("Only one IP address is allowed in Execution Host field");
+        $('#status-message').modal('show');
+        return;
+    }
+
+    for (var i = 0;i<stat_hosts.length;i++){
+      if(stat_hosts[i].replace(" ","") == exec_host[0].replace(" ","")){
+          $('#status-message .modal-header').removeClass('bg-success');
+          $('#status-message .modal-header').addClass('bg-danger');
+          $('#status-message .modal-title').text('Error!');
+          $('#status-message .modal-body').text("Execution host and statistics host IP cannot be same");
+          $('#status-message').modal('show');
+          return;
+      }
+    } 
+
     $.post('/daytona_actions.php', $('#test-form').serialize(), function (response) {
       $('body').removeClass('loading');
       if (response.status === 'OK') {

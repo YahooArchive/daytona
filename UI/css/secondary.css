@@ -224,3 +224,23 @@ table#csv-table td{
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+.fa-toggle-on{
+  color: green;
+}
+
+.fa-rotate-180{
+  color: red;
+}
+
+.fa-area-chart{
+  color: #a08411;
+}
+
+#graph-error{
+  padding: 50px 0px;
+  font-size: 20px;
+  text-align: center;
+  color: #9c9c9c;
+}
+

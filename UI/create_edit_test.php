@@ -85,7 +85,7 @@ include_once('lib/popup.php');
             </tr>
             <tr>
               <td class='active success' style='vertical-align: middle'>
-                Execution Hosts
+                Execution Host
               </td>
               <td class='zero-line-height tiny-padding'>
                 <div class='form-group zero-line-height zero-margin'>
@@ -100,11 +100,8 @@ include_once('lib/popup.php');
               <td class='zero-line-height tiny-padding'>
                 <div class='form-group zero-line-height zero-margin'>
                   <input type='text' class='form-control form-input' name='f_statistics' id='f_statistics' value="<?php
-                    if($testData) {
+		    if(array_key_exists("statistics",$testData)){
                       echo implode(",", $testData['statistics']);
-                    }
-                    else {
-                      echo $frameworkData['statistics_host']['default_value'];
                     }
                   ?>">
                 </div>

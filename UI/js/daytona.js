@@ -341,7 +341,7 @@ function fillSystemMetricsHost(host,hostid) {
   $(navigationUl).append(sysMetricsHostPanel);
 }
 
-function fillSystemMetrics(testid, compids, filename, path, hostid) {
+function fillSystemMetrics(testid, compids, filename, path, hostid, label) {
     var extension = filename.replace(/^.*\./, '');
   var format;
   if (extension === "plt"){
@@ -351,13 +351,17 @@ function fillSystemMetrics(testid, compids, filename, path, hostid) {
   }else{
     format = "plain";
   }
-  
-  var filepath = "%STATHOST," + hostid + "%/sar/" + filename;
-  var sysHostPanel = $("#sys-metrics-menu" + hostid);
+  if (~label.indexOf("exec")){
+    var filepath = "%EXECHOST," + hostid + "%/sar/" + filename;
+    var sysHostPanel = $("#sys-metrics-menu-exec" + hostid);
+  }else{
+    var filepath = "%STATHOST," + hostid + "%/sar/" + filename;
+    var sysHostPanel = $("#sys-metrics-menu" + hostid);
+  } 
   var fileLinkLi = $("<li></li>");
   var fileLink = $("<a></a>").text(filename)
     .attr("href", "output.php?testid=" + testid + "&compids=" + compids +
-      "&filename=" + filepath + "&format=graph");
+      "&filename=" + filepath + "&format=" + format);
   $(fileLinkLi).append(fileLink);
   $(sysHostPanel).append(fileLinkLi);
 }

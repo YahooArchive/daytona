@@ -16,19 +16,24 @@ my $help = 0;
 my $sar_gather_bin = "sar";
 my $interval = 5;
 my $root_dir = "/tmp/";
-my $pid_file = "/tmp/sar_gather_agent.pid";
-my $iostat_pid_file = "/tmp/iostat_agent.pid";
+my $pid_group_file = "/tmp/perl_pid_group.pid";
 my $output_file = "/tmp/output.dat";
 my $output_dir = "/tmp/";
 my $debug_file = "/tmp/sar_gather_agent_debug.out";
 my $sar_data_file = "/tmp/sar.dat";
 my $iostat_data_file = "/tmp/iostat.dat";
+my $top_data_file = "/tmp/top.dat";
+my $top_output_file = "/tmp/top_output.csv";
 
 my $daemonize = 0;
 my $shutdown = 0;
 
 my $iostat_bin = "iostat";
+my $top_bin = "top";
+
 my $debug_fh;
+my $top_output_fh;
+
 my %stats = (
   cpu_utilization => {
     headings    => [ "CPU", "%user", "%nice", "%system", "%iowait", "%steal", "%idle" ],
@@ -175,14 +180,11 @@ my @stats_keys = (
   "IP", "EIP", "ICMP", "EICMP", "TCP", "ETCP", "UDP", "SOCK6", "IP6", "EIP6",
   "ICMP6", "EICMP6", "UDP6", "power"
 );
-our  $child_pid;
-our $parent_pid;
+our $pid_group;
 GetOptions(
   'sar-gather=s' => \$sar_gather_bin,
   'interval=s'   => \$interval,
-  'pid-file=s'   => \$pid_file,
   'root-dir=s'   => \$root_dir,
-  'iostat_pid-file=s'   => \$iostat_pid_file,
   'output=s'     => \$output_file,
   'output-dir=s' => \$output_dir,
   'debug-file=s' => \$debug_file,
@@ -192,21 +194,21 @@ GetOptions(
 
 $SIG{'TERM'} = sub {
   print STDERR "Caught SIGTERM; shutting down\n";
-  my $cnt = kill 'HUP', $child_pid, $parent_pid;
+  my $cnt = kill 'HUP', -$pid_group;
   cleanup();
   exit(1);
 };
 
 $SIG{'INT'} = sub {
   print STDERR "Caught SIGINT; shutting down\n";
-  my $cnt = kill 'HUP', $child_pid, $parent_pid;
+  my $cnt = kill 'HUP', -$pid_group;
   cleanup();
   exit(0);
 };
 
 $SIG{'HUP'} = sub {
   print STDERR "Caught SIGHUP; shutting down\n";
-  my $cnt = kill 'HUP', $child_pid, $parent_pid;
+  my $cnt = kill 'HUP', -$pid_group;
   cleanup();
   exit(0);
 };
@@ -215,45 +217,34 @@ $SIG{'HUP'} = sub {
 our %file_handles;
 
 MAIN: {
-  $pid_file = $root_dir . "/sar_gather_agent.pid";
-  $iostat_pid_file = $root_dir . "/iostat_agent.pid";
+  $pid_group_file = $root_dir . "/perl_pid_group.pid";
   $output_file = $root_dir . "/output.dat";
   $output_dir = $root_dir . "/";
   $debug_file = $root_dir . "/sar_gather_agent_debug.out";
+  $top_output_file = $root_dir . "/top_output.csv";
   $sar_data_file = $root_dir . "/sar.dat";
   $iostat_data_file = $root_dir . "/iostat.dat";
+  $top_data_file = $root_dir . "/top.dat";
 
   if($shutdown) {
-    my $cpid = 0;
-    my $ppid = 0;
-    if ( -e $pid_file ) {
-      open( my $in_fh, '<', $pid_file )
-        or die "Couldn't open '$pid_file' for reading: $!; stopped";
-      my $pid = <$in_fh>;
-      close $in_fh;
-      chomp $pid;
-      print "1. killing $pid \n";
-      $pid =~ m/^\d+$/
-        or die "Pid '$pid' doesn't look like a number; stopped";
-      $ppid = $pid;
-    }
-    if ( -e $iostat_pid_file ) {
-      open( my $in_fh, '<', $iostat_pid_file )
-        or die "Couldn't open '$iostat_pid_file' for reading: $!; stopped";
+    my $pgid = 0;
+    
+    if ( -e $pid_group_file ) {
+      open( my $in_fh, '<', $pid_group_file )
+        or die "Couldn't open '$pid_group_file' for reading: $!; stopped";
       my $pid = <$in_fh>;
       close $in_fh;
       chomp $pid;
       print "2. killing $pid \n";
       $pid =~ m/^\d+$/
         or die "Pid '$pid' doesn't look like a number; stopped";
-      $cpid = $pid;
-      #if ( kill -9, -$pid ) {
-      #  die "killed pid '$pid'.\n";
-      #}
+      $pgid = $pid;
     }
-    my $cnt = kill 'TERM', $cpid, $ppid;
-    cleanup();
 
+    if ($pgid != 0){
+      my $cnt = kill 'TERM', -$pgid;
+      cleanup();
+    }   
     #cleanup();
     exit(0);
   }
@@ -261,18 +252,29 @@ MAIN: {
   if ($daemonize) {
     init_daemon();
   }
+
   prepare_exec();
-  $child_pid = fork();
-  die "fork() failed: $!" unless defined $child_pid;
-  if ($child_pid) {
-    write_pid_file();
-    run_sar_daemon();
-  }
-  else {
-    #write_pid_file();
-    write_iostat_pid_file();
-    run_iostat_daemon();
-    $parent_pid=$$;
+  $pid_group = getpgrp();
+  write_pid_group_file();
+  for(my $i=0;$i<2;$i=$i+1){
+    my $temp_pid;
+    $temp_pid = fork();
+    die "fork() failed: $!" unless defined $temp_pid;
+    if ($temp_pid) {
+      if ($i == 0){
+        run_sar_daemon();
+      }else{
+  run_top_daemon();
+      }
+      last;
+    }
+    else {
+      if ($i == 0){
+        next;
+      }else{
+        run_iostat_daemon();
+      }
+    }
   }
   finish_exec();
 }
@@ -331,6 +333,13 @@ sub run_iostat_daemon {
   print $debug_fh "iostat collection starting.....\n";
   exec_iostat();
 }
+
+sub run_top_daemon {
+  print $debug_fh "In run_top_daemon()\n";
+  print $debug_fh "top collection starting.....\n";
+  exec_top();
+}
+
 sub run_sar_daemon {
   #-x $sar_gather_bin or die "Binary '$sar_gather_bin' not found!\n";
   print $debug_fh "In run_sar_daemon()\n";
@@ -341,10 +350,11 @@ sub run_sar_daemon {
 
 # Delete all /tmp files created
 sub cleanup {
-  unlink($pid_file) or warn "Unable to unlink '$pid_file': $!";
-  unlink($iostat_pid_file) or warn "Unable to unlink '$iostat_pid_file': $!";
+  unlink($pid_group_file) or warn "Unable to unlink '$pid_group_file': $!";
   unlink($sar_data_file) or warn "Unable to unlink '$sar_data_file': $!";
   unlink($iostat_data_file) or warn "Unable to unlink '$iostat_data_file': $!";
+  unlink($top_data_file) or warn "Unable to unlink '$top_data_file': $!";
+  unlink($debug_file) or warn "Unable to unlink '$debug_file': $!"; 
 }
 
 
@@ -434,10 +444,22 @@ sub exec_iostat {
   flatten_iostat($sar_pipe2);
 }
 
+sub exec_top {
+  print $debug_fh "exec_top() Executing top binary: $top_bin -b -i -o +%CPU -d $interval\n";
+    
+  open( my $sar_pipe3, '-|', $top_bin, '-b', '-i' , '-o', '+%CPU', '-d', $interval )
+    or die "Couldn't execute '$top_bin': $!.\nStopped";
+
+  print $debug_fh "exec_top() calling flatten_top() \n";
+  
+  flatten_top($sar_pipe3);
+}
+
 sub finish_exec {
+  #print $debug_fh "$child_pid , $child_top_pid , $parent_pid";
   print $debug_fh "exec_r() calling flock\n";
   for my $stat (keys %file_handles) {
-    print $debug_fh "--------$stat";
+    print $debug_fh "--------$stat\n";
     my $fh = $file_handles{$stat};
     flock( $fh, LOCK_UN );
     close $fh;
@@ -448,10 +470,10 @@ sub finish_exec {
   #close $sar_pipe2;
 }
 
-sub write_iostat_pid_file {
-  if ( -e $iostat_pid_file ) {
-    open( my $in_fh, '<', $iostat_pid_file )
-      or die "Couldn't open '$iostat_pid_file' for reading: $!; stopped";
+sub write_pid_group_file {
+  if ( -e $pid_group_file ) {
+    open( my $in_fh, '<', $pid_group_file )
+      or die "Couldn't open '$pid_group_file' for reading: $!; stopped";
 
     my $pid = <$in_fh>;
     close $in_fh;
@@ -459,36 +481,14 @@ sub write_iostat_pid_file {
     $pid =~ m/^\d+$/
       or die "Pid '$pid' doesn't look like a number; stopped";
     if ( kill 0, $pid ) {
-      die "Looks like sar_gather_agent.pl is already running with pid '$pid'. Delete '$iostat_pid_file' if this is not true.\n";
-    }
-  }
-  open( my $out_fh, '>', $iostat_pid_file )
-    or die "Couldn't open '$iostat_pid_file' for writing: $!; stopped";
-
-  print {$out_fh} $$, "\n";
-
-  close $out_fh;
-}
-
-sub write_pid_file {
-  if ( -e $pid_file ) {
-    open( my $in_fh, '<', $pid_file )
-      or die "Couldn't open '$pid_file' for reading: $!; stopped";
-
-    my $pid = <$in_fh>;
-    close $in_fh;
-    chomp $pid;
-    $pid =~ m/^\d+$/
-      or die "Pid '$pid' doesn't look like a number; stopped";
-    if ( kill 0, $pid ) {
-      die "Looks like sar_gather_agent.pl is already running with pid '$pid'. Delete '$pid_file' if this is not true.\n";
+      die "Looks like sar_gather_agent.pl is already running with pid '$pid'. Delete '$pid_group_file' if this is not true.\n";
     }
   }
 
-  open( my $out_fh, '>', $pid_file )
-    or die "Couldn't open '$pid_file' for writing: $!; stopped";
+  open( my $out_fh, '>', $pid_group_file )
+    or die "Couldn't open '$pid_group_file' for writing: $!; stopped";
 
-  print {$out_fh} $$, "\n";
+  print {$out_fh} $pid_group, "\n";
 
   close $out_fh;
 }
@@ -772,7 +772,7 @@ sub flatten_iostat {
   }
 
   print $debug_fh "Started iostat flatten.\n";
-  print $debug_fh join(",", @_);
+  #print $debug_fh join(",", @_);
 
   my $timestamp = "";
   while (<$ifh>) {
@@ -823,6 +823,59 @@ sub flatten_iostat {
   print $debug_fh "End flatten.\n";
 }
 
+sub flatten_top {
+  my ($ifh) = @_;
+
+  select ($debug_fh);
+  # Set autoflush after each print
+  $| = 1;
+
+  if (-e $top_output_file) {
+    unlink($top_output_file) or warn "Could not delete $top_output_file: $1";
+  }
+
+  open( $top_output_fh, '>>', $top_output_file ) or warn "Couldn't open top file";
+  $top_output_fh->autoflush(1);
+
+  print $debug_fh "Started top flatten.\n";
+  #print $debug_fh join(",", @_);
+
+  my $print_header = 1;
+  my $timestamp = 0;
+  my $printdata = 0;
+  #print $top_output_fh "\n";
+  while (<$ifh>) {
+    my $line = $_;
+    $line =~ s/^\s+|\s+$//g;
+    $line =~ s/\s+/ /ig;
+    $line=~s/ /,/g;
+    if ($line =~ /^top.*/) {
+        $printdata = 0;
+    }
+    if ($line =~ /^PID.*/){
+        if ($print_header){
+            print $top_output_fh "$line\n";
+            my $timestring = strftime "%T", localtime;
+            $timestamp = to_ISO8601($timestring);
+            print $top_output_fh "$timestamp \n";
+            $print_header = 0;
+        }else{
+            my $timestring = strftime "%T", localtime;
+            $timestamp = to_ISO8601($timestring);
+            print $top_output_fh "$timestamp \n";
+        }
+        $printdata = 1;
+        next;
+    }
+    if ($printdata){
+       print $top_output_fh "$line\n";
+    }
+  } # while (<$ifh>)
+  close $top_output_fh;
+  print $debug_fh "End top flatten.\n";
+}
+
+
 sub flatten {
   my ($ifh) = @_;
 
@@ -862,7 +915,7 @@ sub flatten {
   }
 
   print $debug_fh "Started sar flatten.\n";
-  print $debug_fh join(",", @_);
+  #print $debug_fh join(",", @_);
 
   while (<$ifh>) {
     my $line = $_;

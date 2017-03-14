@@ -1,8 +1,8 @@
 #!/bin/bash
 
-daytona_install_dir=$HOME/daytona_prod/daytona
-daytona_data_dir=/tmp/daytona_root/test_data_DH
-distro=Ubuntu
+daytona_install_dir=$HOME/Daytona_prod/Daytona
+daytona_data_dir=/var/www/html/daytona/daytona_root/test_data_DH
+distro=RHEL
 
 mkdir -p $daytona_install_dir
 cp -r ../../*  $daytona_install_dir

@@ -2,7 +2,7 @@
 $secret_word = 'c9nwFUDili';
 unset($userId);
 if (isset($_COOKIE['login'])) {
-      list($c_userId,$cookie_hash) = split(',',$_COOKIE['login']);
+      list($c_userId,$cookie_hash) = explode(',',$_COOKIE['login']);
       if (password_verify($c_userId.$secret_word, $cookie_hash)) {
           $userId = $c_userId;
       } else {
@@ -25,3 +25,4 @@ if(isset($userId)) {
     }
 }
 ?>
+

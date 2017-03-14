@@ -27,11 +27,11 @@ sudo apt-get -y dist-upgrade >> /tmp/daytona_install.log
 echo -e "Installing MySQL...\n"
 sudo debconf-set-selections <<< 'mysql-server mysql-server/root_password password '${db_root_pass}
 sudo debconf-set-selections <<< 'mysql-server mysql-server/root_password_again password '${db_root_pass}
-sudo apt-get install mysql-server mysql-client libapache2-mod-auth-mysql -y >> /tmp/daytona_install.log
+sudo apt-get install mysql-server mysql-client -y >> /tmp/daytona_install.log
 
 echo -e "Setting Daytona Database Configuration...\n"
 
-service mysql start
+sudo service mysql start
 
 mysql -uroot -p${db_root_pass} -e "CREATE USER '${db_name}'@'${db_host}' IDENTIFIED BY '${db_password}';" >> /tmp/daytona_install.log
 mysql -uroot -p${db_root_pass} -e "CREATE DATABASE ${db_name};" >> /tmp/daytona_install.log

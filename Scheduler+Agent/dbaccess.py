@@ -7,6 +7,7 @@ import time
 import os
 import threading
 import common
+import shutil
 from collections import defaultdict
 
 import common
@@ -143,6 +144,7 @@ class DaytonaDBmon():
 
             #create required dirs and setup server side env
             prefix=self.cfg.daytona_dh_root +"/"+ to.testobj.TestInputData.frameworkname + "/" + str(to.testobj.TestInputData.testid) + "/" + "results" + "/"
+            shutil.rmtree(prefix, ignore_errors=True)
 
             to.testobj.TestInputData.exec_results_path = prefix+to.testobj.TestInputData.exechostname + "/"
             to.testobj.TestInputData.exec_path = prefix+to.testobj.TestInputData.exechostname

@@ -1,176 +1,124 @@
-function collapseAll() {
-    $(".graph-panel").css("display", "none");
+function collapseAllGraph() {
+    $(".graph-panel").each(function(d){
+        $(this).removeClass('in');
+    });
 }
 
-function expandAll() {
-    $(".graph-panel").css("display", "block");
+function expandAllGraph() {
+    $(".graph-panel").each(function(d){
+        $(this).addClass('in');
+        $(this).removeAttr("style");
+    });
 }
 
 function formatDec(val) {
     return Math.round(val * 10000) / 10000;
 }
 
-function buildGraph(graphid, paths, id_map, title, err_threshold, start, end) {
-    if(!err_threshold) {
-        var chart = c3.generate({
-            bindto: '#c3item' + graphid,
-            data: {
-                columns: []
-            },
-            axis: {
-                x: {
-                    label: {
-                        text: 'Graph not found',
-                        position: 'inner-center'
-                    }
-                }
-            },
-            padding: {
-                right: 10
-            },
-            legend: {
-                show: false
-            },
-            size: {
-                height: 270
-            }
-        });
-        $('#c3item' + graphid).data("c3-chart",chart);
-        $('#c3footer' + graphid).css("display", "none");
-        return;
+function buildGraph(json_data, col_name, metric_json, x_value ,xs_json ,title, graphid){
+    var graph_data = JSON.parse(json_data);
+    var col_array = JSON.parse(col_name);
+    var metrics_array = JSON.parse(metric_json);
+    var xs = JSON.parse(xs_json);
+    title = title.replace(/"/g, "");
+
+    var chart = drawNormalGrpah(graphid,x_value,xs,graph_data);
+
+    function toggle(id) {
+        chart.toggle(id);
     }
 
-    var path_index;
-    var columns = [];
-    var xs = {};
-    var metrics_arr = {};
-    var paths_arr = paths.split(",");
-    var id_arr = id_map.split(",");
-    for(path_index in paths_arr) {
-        var path_val = paths_arr[path_index];
-        var path_col_arr = path_val.split(":");
-        var date_arr = ["date_" + id_arr[path_index]];
-        var value_arr = [id_arr[path_index]];
-        xs[value_arr[0]] = date_arr[0];
-        jQuery.ajax({
-            url: "/fetchdata.php",
-            type: "POST",
-            data: {
-              'filename': path_col_arr[0]
-            },
-            success: function(retdata) {
-                var lines = retdata.split("\n");
-                if(lines.length < 1) {
-                    return;
-                }
-                var columnIdx = 1;
-                var headers = lines[0].split(",");
-                for(var i = 1; i < headers.length; ++i) {
-                    if((path_col_arr[1]) && (path_col_arr[1].replace(/['"]+/g,'') == headers[i].replace(/['"]+/g,''))) {
-                        columnIdx = i;
-                        break;
-                    }
-                }
-		var time_offset = new Date (lines[1].split(",")[0]);
-		var start_arr;
-		var end_arr;
-		if(start != '' && end != ''){
-		    start_arr = start.split(":");
-		    end_arr = end.split(":");
-		    var start_time = new Date();
-		    start_time.setDate(start_arr[0]);
-		    start_time.setHours(start_arr[1]);
-                    start_time.setMinutes(start_arr[2]);
-                    start_time.setSeconds(start_arr[3]);
-		    var end_time = new Date();
-                    end_time.setDate(end_arr[0]);
-                    end_time.setHours(end_arr[1]);
-                    end_time.setMinutes(end_arr[2]);
-                    end_time.setSeconds(end_arr[3]);
-		}
-		if (typeof start_time == 'undefined' && typeof end_time == 'undefined'){
-                    for(var i = 1, len = lines.length - 1; i < len; ++i) {
-                	var line_split = lines[i].split(",");
-                        var act_time = new Date(line_split[0]);
-                        var time_diff = (act_time - time_offset)/1000;
-                        var norm_time = new Date();
-                        norm_time.setDate(1);
-                        norm_time.setHours(0,0,0,0);
-                        norm_time.setMinutes(0 - norm_time.getTimezoneOffset());
-                        norm_time.setSeconds(time_diff);
-                        var time_str = norm_time.toISOString().split('.')[0];
-                        date_arr.push(time_str.replace(/-/g, ":"));
-                        value_arr.push(line_split[columnIdx]);
-		    }
-                }else{
-		    for(var i = 1, len = lines.length - 1; i < len; ++i) {
-                        var line_split = lines[i].split(",");
-                        var act_time = new Date(line_split[0]);
-                        var time_diff = (act_time - time_offset)/1000;
-                        var norm_time = new Date();
-                        norm_time.setDate(1);
-                        norm_time.setHours(0,0,0,0);
-                        norm_time.setMinutes(0);
-                        norm_time.setSeconds(time_diff);
-			if ((start_time <= norm_time) && (end_time >= norm_time)){
-			    norm_time.setMinutes(0 - norm_time.getTimezoneOffset());
-			    norm_time.setMinutes(0);
-                            norm_time.setSeconds(time_diff);
-                            var time_str = norm_time.toISOString().split('.')[0];
-                            date_arr.push(time_str.replace(/-/g, ":"));
-                            value_arr.push(line_split[columnIdx]);    
-			}
-                    }
-		}
-                columns.push(date_arr);
-                columns.push(value_arr);
-                var value_data_arr = value_arr.slice(1);
-                metrics_arr[id_arr[path_index]] = {};
-                metrics_arr[id_arr[path_index]].max =
-                    value_data_arr.reduce(function (m, v) {
-                        if(!isNaN(v) && isNaN(m)) {
-                            return v;
-                        } else if(!isNaN(m) && isNaN(v)) {
-                            return m;
-                        }
-                        return Math.max(m, v);
-                    });
-                metrics_arr[id_arr[path_index]].min =
-                    value_data_arr.reduce(function (m, v) {
-                        if(!isNaN(v) && isNaN(m)) {
-                            return v;
-                        } else if(!isNaN(m) && isNaN(v)) {
-                            return m;
-                        }
-                        return Math.min(m, v);
-                    });
-                metrics_arr[id_arr[path_index]].avg =
-                    value_data_arr.reduce(function (m, v) {
-                        var mVal = parseFloat(m);
-                        var vVal = parseFloat(v);
-                        if(!isNaN(vVal) && isNaN(mVal)) {
-                            return vVal;
-                        } else if(!isNaN(mVal) && isNaN(vVal)) {
-                            return mVal;
-                        }
-                        return mVal + vVal;
-                    }) / value_data_arr.length;
-            },
-            async: false
+    d3.select("#c3footer" + graphid).insert('tbody', '.chart')
+        .attr('class', 'graph-legend')
+        .selectAll('tr')
+        .data(col_array)
+        .enter()
+        .append('tr').attr("class","no-opacity")
+        .html(function (id) {
+            var ret = "<td class='emphasize'>" + id + "</td>";
+            if(metrics_array[id]) {
+                ret += "<td>" + formatDec(metrics_array[id].min) + "</td>";
+                ret += "<td>" + formatDec(metrics_array[id].max) + "</td>";
+                ret += "<td>" + formatDec(metrics_array[id].avg) + "</td>";
+            }
+            else {
+                ret += "<td></td><td></td><td></td>";
+            }
+            return ret;
+        })
+        .each(function (id) {
+            d3.select(this).style('color', chart.color(id));
+        })
+        .on('mouseover', function (id) {
+            if(!$(this).hasClass("cut-opacity")) {
+                chart.focus(id);
+            }
+        })
+        .on('mouseout', function (id) {
+            chart.revert();
+        })
+        .on('click', function (id) {
+            chart.toggle(id);
+            toggleRow(this);
         });
-    }
+
+    $('#c3item' + graphid).data("c3-chart",chart);
+
+    var zoomLink = $("<a></a>").addClass("search-plus")
+        .attr("href", "#")
+        .click(function() {
+            $("#zoomModal").find(".modal-title").text(title);
+            reset_metric_sort();
+            buildGraphZoomJson(xs, x_value, graph_data, metrics_array, col_array);
+            $("#zoomModal").modal("show");
+            $("#zoom-body").data("c3-chart").flush();
+        });
+    var zoomImg = $("<i></i>").addClass("fa fa-search-plus").attr('title','Graph Zoom Mode');
+    $(zoomLink).append(zoomImg);
+
+    var toggleLink = $("<a></a>").addClass("toggle-button")
+        .attr("href", "#")
+        .click(function() {
+            toggleAll(chart,graphid);
+            //chart.toggle();
+        });
+    var toggleImg = $("<i></i>").addClass("fa fa-toggle-on").attr('id','toggle-active' + graphid).attr('title','Toggle Graph');
+    $(toggleLink).append(toggleImg);
+
+    var subGraphLink = $("<a></a>").addClass("subgraph-button")
+        .attr("href", "#")
+        .click(function() {
+            chart = CreateSubGraph(graphid,x_value,xs,graph_data);
+            //chart.toggle();
+        });
+    var subGraphImg = $("<i></i>").addClass("fa fa-area-chart cut-opacity").attr('id','subgraph-active' + graphid).attr('title','Sub-Graph Enable/Disable');
+    $(subGraphLink).append(subGraphImg);
+
+    $('#c3item' + graphid).after('<br /><br />');
+    $('#c3item' + graphid).after(zoomLink);
+    $('#c3item' + graphid).after(toggleLink);
+    $('#c3item' + graphid).after(subGraphLink);
+
+
+}
+
+function drawNormalGrpah(graphid,x_value,xs,graph_data){
+
     var width = $( window ).width();
     var tick_count;
     if (width < 768){
-	tick_count = 3;
+        tick_count = 3;
     }
+
+
     var chart = c3.generate({
         bindto: '#c3item' + graphid,
         data: {
+            x : x_value,
             xs: xs,
-            columns: columns,
-            xFormat: '%Y:%m:%dT%H:%M:%S',
-            type: 'step',
+            columns: graph_data,
+            xFormat: '%d:%H:%M:%S',
+            type: 'line',
         },
         padding: {
             right: 10
@@ -180,7 +128,7 @@ function buildGraph(graphid, paths, id_map, title, err_threshold, start, end) {
                 type: 'timeseries',
                 tick: {
                     format: '%d:%H:%M:%S',
-		    count: tick_count
+                    count: tick_count
                 },
                 label: {
                     text: 'Time'
@@ -213,61 +161,161 @@ function buildGraph(graphid, paths, id_map, title, err_threshold, start, end) {
         }
     });
 
-    function toggle(id) {
-        chart.toggle(id);
-    }
+    return chart;
 
-    d3.select("#c3footer" + graphid).insert('tbody', '.chart')
-        .attr('class', 'graph-legend')
-        .selectAll('tr')
-        .data(id_arr)
-        .enter()
-        .append('tr')
-        .html(function (id) {
-            var ret = "<td class='emphasize'>" + id + "</td>";
-            if(metrics_arr[id]) {
-                ret += "<td>" + formatDec(metrics_arr[id].min) + "</td>";
-                ret += "<td>" + formatDec(metrics_arr[id].max) + "</td>";
-                ret += "<td>" + formatDec(metrics_arr[id].avg) + "</td>";
-            }
-            else {
-                ret += "<td></td><td></td><td></td>";
-            }
-            return ret;
-        })
-        .each(function (id) {
-            d3.select(this).style('color', chart.color(id));
-        })
-        .on('mouseover', function (id) {
-            if(!$(this).hasClass("cut-opacity")) {
-                chart.focus(id);
-            }
-        })
-        .on('mouseout', function (id) {
-            chart.revert();
-        })
-        .on('click', function (id) {
-            chart.toggle(id);
-            toggleRow(this);
-        });
-
-    $('#c3item' + graphid).data("c3-chart",chart);
-
-    var zoomLink = $("<a></a>").addClass("search-plus")
-        .attr("href", "#")
-        .click(function() {
-            $("#zoomModal").find(".modal-title").text(title);
-            reset_metric_sort();
-            buildGraphZoom(xs, columns, metrics_arr, id_arr);
-            $("#zoomModal").modal("show");
-            $("#zoom-body").data("c3-chart").flush();
-        });
-    var zoomImg = $("<i></i>").addClass("fa fa-search-plus");
-    $(zoomLink).append(zoomImg);
-    $('#c3item' + graphid).after(zoomLink);
 }
 
-function buildGraphZoom(xs, columns, metrics_arr, id_arr) {
+function drawNormalSubGrpah(graphid,x_value,xs,graph_data){
+
+    var width = $( window ).width();
+    var tick_count;
+    if (width < 768){
+        tick_count = 3;
+    }
+
+
+    var chart = c3.generate({
+        bindto: '#c3item' + graphid,
+        data: {
+            x : x_value,
+            xs: xs,
+            columns: graph_data,
+            xFormat: '%d:%H:%M:%S',
+            type: 'line',
+        },
+        padding: {
+            right: 10
+        },
+        axis: {
+            x: {
+                type: 'timeseries',
+                tick: {
+                    format: '%d:%H:%M:%S',
+                    count: tick_count
+                },
+                label: {
+                    text: 'Time'
+                }
+            },
+            y: {
+                tick: {
+                    format: function (d) {
+                        return Math.round(d * 10000) / 10000;
+                    }
+                }
+            }
+        },
+        point: {
+            show: false
+        },
+        size: {
+            height: 270
+        },
+        subchart: {
+            show: true
+        },
+        legend: {
+            show: false
+        },
+        grid: {
+            x: {
+                show: true
+            },
+            y: {
+                show: true
+            }
+        }
+    });
+
+    return chart;
+
+}
+
+function toggleAll(chart, graphid){
+    var toggle_element = '#toggle-active' + graphid;
+    var toggle = $(toggle_element).attr("class");
+
+    var toggle_opacity = '#c3footer' + graphid + ' > tbody > tr.cut-opacity';
+    var toggle_no_opacity = '#c3footer' + graphid + ' > tbody > tr.no-opacity';
+
+    if (~toggle.indexOf("fa-rotate-180")){
+        $(toggle_element).removeClass("fa-rotate-180");
+        $(toggle_opacity).each(function () {
+            var id = $(this).find('td:first').text();
+            toggleRow(this);
+            chart.toggle(id);
+        });
+    }else{
+        $(toggle_element).addClass("fa-rotate-180");
+        $(toggle_no_opacity).each(function () {
+            var id = $(this).find('td:first').text();
+            toggleRow(this);
+            chart.toggle(id);
+        });
+    }
+}
+
+function CreateSubGraph(graphid, x_value, xs, graph_data){
+
+    var graph_element = '#subgraph-active' + graphid;
+    var graph = $(graph_element).attr("class");
+
+    var toggle_element = '#toggle-active' + graphid;
+    var toggle = $(toggle_element).attr("class");
+    var toggle_opacity = '#c3footer' + graphid + ' > tbody > tr.cut-opacity';
+
+    if (~graph.indexOf("cut-opacity")){
+        $(graph_element).removeClass("cut-opacity");
+        var chart = drawNormalSubGrpah(graphid,x_value,xs,graph_data);
+    }else{
+        $(graph_element).addClass("cut-opacity");
+        var chart = drawNormalGrpah(graphid,x_value,xs,graph_data);
+    }
+
+    if (~toggle.indexOf("fa-rotate-180")){
+        $(toggle_element).removeClass("fa-rotate-180");
+    }
+    $(toggle_opacity).each(function () {
+        var id = $(this).find('td:first').text();
+        toggleRow(this);
+    });
+
+
+    return chart;
+}
+
+
+function buildGraphErrorView(text, graphid,title,error_type){
+    if(error_type == '1'){
+        var pGraph = $("<div></div>").addClass("c3-graph-panel")
+            .attr("id", "c3item" + graphid);
+        var pText = $('<p></p>').text(text).attr("id","graph-error");
+        $(pGraph).append(pText);
+        var pGraphDiv = '#collapse' + graphid;
+        $(pGraphDiv).append(pGraph);
+        return;
+    }else{
+        var panel = $("<div></div>").addClass("panel panel-info partition-1");
+        var pHeading = $("<div></div>").addClass("panel-heading collapse-heading");
+        var pTitle = $("<h4></h4>").addClass("panel-title text-center");
+        var pLink = $("<a></a>").attr('data-toggle','collapse').attr('href','#graph-div-'+graphid)
+            .text(title);
+        $(pTitle).append(pLink);
+        $(pHeading).append(pTitle);
+        var pGraphDiv = $("<div></div>").addClass("graph-panel panel-collapse collapse in").attr("id",'graph-div-'+graphid);
+        var pGraph = $("<div></div>").addClass("c3-graph-panel")
+            .attr("id", "c3item" + graphid);
+        var pText = $('<p></p>').text(text).attr("id","graph-error");
+        $(pGraph).append(pText);
+        $(pGraphDiv).append(pGraph);
+        $(panel).append(pHeading).append(pGraphDiv);
+        $("#output-panel").append(panel);
+        return;
+    }
+}
+
+
+function buildGraphZoomJson(xs, x_value, columns, metrics_arr, id_arr) {
     var width = $( window ).width();
     var tick_count;
     if (width < 768){
@@ -276,10 +324,11 @@ function buildGraphZoom(xs, columns, metrics_arr, id_arr) {
     var chart = c3.generate({
         bindto: '#zoom-body',
         data: {
+            x : x_value,
             xs: xs,
             columns: columns,
-            xFormat: '%Y:%m:%dT%H:%M:%S',
-            type: 'step',
+            xFormat: '%d:%H:%M:%S',
+            type: 'line',
         },
         subchart: {
             show: true
@@ -294,8 +343,8 @@ function buildGraphZoom(xs, columns, metrics_arr, id_arr) {
             x: {
                 type: 'timeseries',
                 tick: {
-                    format: '%H:%M:%S',
-		    count:tick_count
+                    format: '%d:%H:%M:%S',
+                    count:tick_count
                 },
                 label: {
                     text: 'Time'
@@ -388,8 +437,10 @@ function buildGraphZoom(xs, columns, metrics_arr, id_arr) {
 function toggleRow(referer) {
     if($(referer).hasClass("cut-opacity")) {
         $(referer).removeClass("cut-opacity");
+        $(referer).addClass("no-opacity");
     }
     else {
+        $(referer).removeClass("no-opacity");
         $(referer).addClass("cut-opacity");
     }
 }
@@ -471,15 +522,5 @@ function swap_rows(table, i1, i2) {
     else {
         row_parent.insertBefore(rows_arr[i2], rows_arr[i1]);
         row_parent.insertBefore(rows_arr[i1+1], rows_arr[i2+1]);
-    }
-}
-
-function collapseGraph(referer) {
-    var graph = $(referer).parent().parent().parent().parent().find(".graph-panel");
-    if($(graph).css("display") === "block") {
-        $(graph).css("display", "none");
-    }
-    else {
-        $(graph).css("display", "block");
     }
 }

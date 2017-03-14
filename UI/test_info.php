@@ -27,7 +27,7 @@ if ($compIds && ! preg_match('/^\d+(,\d+)*$/', $compIds)) {
   diePrint("compids is not valid.");
 }
 if ($compIds) {
-  foreach (split(',', $compIds) as $compId) {
+  foreach (explode(',', $compIds) as $compId) {
     $testData = getTestById($db, $compId, true);
     if (!$testData) {
       diePrint("Could not find compare test ID: $compId");
@@ -247,12 +247,19 @@ $(document).ready(function(){
   buildLeftPanelViews('<?php echo $testId; ?>', '<?php echo $compIds; ?>');
   buildLeftPanelFramework('<?php echo $frameworkName; ?>', <?php echo $frameworkId; ?>);
   buildLeftPanelGlobal();
-  <?php addFrameworkDropdownJS($db, $userId); ?>
-  <?php addTestResults("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds); ?>
-  <?php addSystemMetrics("test_data/$frameworkName/$testId/results", $origTestData["statistics"], $testId, $compIds); ?>
-  <?php addLogs("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds); ?>
+  <?php
+    addFrameworkDropdownJS($db, $userId);
+    addTestResults("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds);
+    if(array_key_exists("execution",$origTestData)) {
+      echo "createLabel('System Metrics')\n";
+      addSystemMetrics("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds, "exec");
+    }
+    if(array_key_exists("statistics",$origTestData)){
+      addSystemMetrics("test_data/$frameworkName/$testId/results", $origTestData["statistics"], $testId, $compIds, "stat");
+    }
+    addLogs("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds);
+  ?>
   loadNavigationBar();
 });
 </script>
 <?php include_once('lib/footer.php'); ?>
-

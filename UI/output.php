@@ -8,14 +8,6 @@ require('lib/auth.php');
 $allTestData = array();
 $testId = getParam('testid');
 $filename = getParam('filename');
-$columns = getParam('columns');
-if (!$columns){
-    $columns_val = "";
-}else{
-    $columns_val = implode(",",$columns);
-}
-$starttime = getParam('start');
-$endtime = getParam('end');
 $outputFormat = getParam('format');
 if (!$testId) {
     diePrint("No test ID passed in");
@@ -43,7 +35,7 @@ if ($compIds && !preg_match('/^\d+(,\d+)*$/', $compIds)) {
     diePrint("compids is not valid.");
 }
 if ($compIds) {
-    foreach (split(',', $compIds) as $compId) {
+    foreach (explode(',', $compIds) as $compId) {
         $testData = getTestById($db, $compId, true);
         if (!$testData) {
             diePrint("Could not find compare test ID: $compId");
@@ -143,9 +135,12 @@ foreach ($s_compids as $l_id) {
     $full_paths .= $report_path;
 }
 include_once('lib/header.php');
+include 'process_data.php';
+
 ?>
+<link href="css/c3.css" rel="stylesheet" type="text/css">
 <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/c3/0.4.10/c3.js" charset="utf-8"></script>
+<script src="js/c3.min.js" charset="utf-8"></script>
 <script src="js/bootstrap-sortable.js"></script>
 <script src="js/test_report.js"></script>
 <script src="js/output.js"></script>
@@ -161,11 +156,6 @@ include_once('lib/header.php');
         echo "        <input type='hidden' name='testid' id='testid' value='$testId'>\n";
         echo "        <input type='hidden' name='filename' value='$filename'>\n";
         echo "        <input type='hidden' name='format' value='$outputFormat'>\n";
-        echo "        <input type='hidden' name='start' value='$starttime'>\n";
-        echo "        <input type='hidden' name='end' value='$endtime'>\n";
-        for($i = 0;$i<count($columns);$i++){
-            echo "<input type='hidden' name='columns[]' value=$columns[$i] $checked>\n";
-        }
         echo "        <span class='input-group-btn'>\n";
         echo "        <button type='submit' class='btn btn-primary btn-action'>\n";
         echo "          Compare\n";
@@ -181,6 +171,20 @@ include_once('lib/header.php');
             <option <?php echo $outputFormat == "table" ? "selected" : ""; ?>>Table</option>
             <option <?php echo $outputFormat == "plain" ? "selected" : ""; ?>>Plain</option>
           </select>
+        </div><br><br>
+        <div class="col-md-6 action-buttons-alt" id ="action-buttons-div">
+	    <button type="button" onclick="downloadFIle('<?php echo $filename ?>','<?php echo $s_compids_str ?>')" class="btn btn-success btn-action">
+                <i class="fa fa-download fa-lg" aria-hidden="true"></i>
+                &nbsp;Download
+            </button>
+            <button type="button" onclick="collapseAllGraph()" class="btn btn-info btn-action">
+                <i class="fa fa-minus-square fa-lg"></i>
+                &nbsp;Collapse
+            </button>
+            <button type="button" onclick="expandAllGraph()" class="btn btn-info btn-action">
+                <i class="fa fa-plus-square fa-lg"></i>
+                &nbsp;Expand
+            </button>
         </div>
     </div>
     <div class="col-xs-12" id="content-div">
@@ -190,69 +194,10 @@ include_once('lib/header.php');
 	    $file_arr_final = array_reverse($file_arr);
 	    $file_content = array_map("str_getcsv", file($file_arr_final[0],FILE_SKIP_EMPTY_LINES));
 	    $file_header = array_shift($file_content);
-            if (($outputFormat == "graph") && (strpos($extension, 'plt') !== false)) {
-                echo "<div class='panel panel-info panel-sub-main'>";
-                echo "<div class='panel-heading'>
-			<button type='button' class='btn-sm' id='filter-toggle' data-toggle='collapse' data-target='#collapse1'>
-			<span class='glyphicon glyphicon glyphicon-plus'></span>
-			</button>
-			<p style='margin:0px 0px 0px 45px;padding-top:4px;'>Filters</p>
-		      </div>";
-                echo "<div id='collapse1' class='panel-collapse collapse'>";
-                echo "<div class='panel-body' style='padding-left:20px'>";
-                echo "<form class='form-horizontal zero-margin' role='form' onSubmit='return verifyOutputFilters()'>";
-                echo "<fieldset id='form1'>";
-                echo "<div class='form-group'>";
-                echo "<label>Select column for graph display</label>";
-                echo "<br>";
-		if($columns)
-		array_unshift($columns, 'dummy');
-		for($i = 1;$i<count($file_header);$i++){
-		    $checked = '';
-		    if ($columns && array_search(strval($i),$columns)){
-			$checked = 'checked';
-		    }
-		    echo "<div class='col-sm-2 text_div'>";
-                    echo "<input type='checkbox' name='columns[]' value=$i $checked> $file_header[$i]";
-                    echo "</div>";
-		}
-		if($columns)
-		array_shift($columns);
-		echo "</div>";
-		echo "<a rel='form1' href='#selectall'>Select All</a> | ";
-                echo "<a rel='form1' href='#clearall'>Clear All</a> | ";
-                echo "<a rel='form1' href='#invertselection'>Select Inverse</a>";
-		echo "<div class='form-group' style='padding-top:20px;'>";
-                echo "<label>Select Time Range</label> <span style='font-size:0.8em;font-style: italic;'>(Note : Enter '01' as 'dd' for Day 1)</span>";
-		echo "<br>";
-		echo "<div class='col-sm-2 text_div'>";
-		echo "<input class='form-control' type='text' id='start' placeholder='dd:hh:mm:ss' value='$starttime' name='start'>";
-		echo "</div>";
-            	echo "<label class='col-sm-1 control-label' style='width:2%'>to</label>";
-		echo "<div class='col-sm-2 text_div'>";
-                echo "<input class='form-control' type='text' id='end' placeholder='dd:hh:mm:ss' value='$endtime' name='end'>";
-		echo "<input type='hidden' name='compids' value='$compIds'>\n";
-                echo "<input type='hidden' name='testid' value='$testId'>\n";
-                echo "<input type='hidden' name='filename' value='$filename'>\n";
-                echo "<input type='hidden' name='format' value='$outputFormat'>\n";
-                echo "</div>";
-                echo "</div>";
-		echo "<a rel='form1' href='#cleartime'>Clear Time</a>";
-                echo "<div class='form-group' style='padding-top:20px;'>";
-                echo "<button type='submit' class='btn btn-primary btn-search-submit'>Submit</button>";
-		echo "<br><br>";
-		echo "<a rel='form1' href='#removeall'>Remove All Filters</a>";
-                echo "</div>";
-                echo "</fieldset>";
-                echo "</form>";
-                echo "</div>";
-                echo "</div>";
-                echo "</div>";
-            }
             $act_file = pathinfo($filename, PATHINFO_BASENAME);
             if ($outputFormat == "graph") {
                 echo "<div id='output-panel'></div>";
-                echo "  <script> buildGraphView('$full_paths', '$s_compids_str','$starttime','$endtime','$columns_val','$act_file'); </script>\n";
+                buildOutputGraphView($full_paths, $s_compids_str,$act_file);
             } else if ($outputFormat == "table") {
                 echo "<div id='output-panel'>";
                 echo "<div class='panel panel-info'>\n";
@@ -264,8 +209,11 @@ include_once('lib/header.php');
                 echo "</div>";
                 $file_arr = explode(',', $full_paths);
                 $file_arr = array_reverse($file_arr);
+                $testid_arr = explode(',',$s_compids_str);
                 if (strpos($extension, 'plt') !== false) {
-                    echo "    <script>buildFileToTableView('$file_arr[0]', '$s_compids_str','output-table-display');</script>\n";
+                    $file_data_array = buildTestCompareData($file_arr[0],$testid_arr[0]);
+                    $file_data_json = json_encode($file_data_array);
+                    echo "    <script>buildFileToTableView('$file_data_json', '$testid_arr[0]','output-table-display');</script>\n";
                 } else if((strpos($extension, 'csv') !== false)) {
                       $csv_col_count = getCsvColumnCount($full_paths);
                       if ($csv_col_count == 2){
@@ -273,10 +221,14 @@ include_once('lib/header.php');
                          $csv_compare_json = json_encode($csv_compare);
                          echo "    <script>buildJsonToTableView('$csv_compare_json', 'output-table-display');</script>\n";
                       }else{
-                         echo "    <script>buildFileToTableView('$full_paths', '$s_compids_str', 'output-table-display');</script>\n";
+                          $file_data_array = buildTestCompareData($full_paths,$s_compids_str);
+                          $file_data_json = json_encode($file_data_array);
+                          echo "    <script>buildFileToTableView('$file_data_json', '$s_compids_str','output-table-display');</script>\n";
                       }
                 }else {
-                    echo "    <script>buildTextCompareView('$full_paths', '$s_compids_str','output-table-display');</script>\n";
+                    $file_data_array = buildTestCompareData($full_paths,$s_compids_str);
+                    $file_data_json = json_encode($file_data_array);
+                    echo "    <script>buildTextCompareView('$file_data_json', '$s_compids_str','output-table-display');</script>\n";
                 }
             } else {
                 echo "<div id='output-panel'>";
@@ -287,8 +239,9 @@ include_once('lib/header.php');
                 echo "<div class='panel-body zero-padding' id='output-table-display'></div>\n";
                 echo "</div>\n";
                 echo "</div>";
-
-                echo "    <script>buildTextCompareView('$full_paths', '$s_compids_str','output-table-display');</script>\n";
+                $file_data_array = buildTestCompareData($full_paths,$s_compids_str);
+                $file_data_json = json_encode($file_data_array);
+                echo "    <script>buildTextCompareView('$file_data_json', '$s_compids_str','output-table-display');</script>\n";
             }
             ?>
         </div>
@@ -316,38 +269,6 @@ include_once('lib/header.php');
 
 <script>
     $(document).ready(function () {
-	 $("a[href='#selectall']").click( function() {
-            $('input[type="checkbox"]').filter(function() {
-    	    return !this.disabled;
-  	    }).prop('checked', true);
-        });
-        $("a[href='#clearall']").click( function() {
-	    $('input[type="checkbox"]').filter(function() {
-            return !this.disabled;
-  	    }).prop('checked', false);
-        });
-        $("a[href='#invertselection']").click( function() {
-            $('input[type="checkbox"]').each( function() {
-		$(this).prop('checked', !$(this).is(':checked'));
-            });
-        });
-	$("a[href='#cleartime']").click( function() {
-            $('#start').val("");
-	    $('#end').val("");
-        });
-	$("a[href='#removeall']").click( function() {
-	    $('input[type="checkbox"]').filter(function() {
-            return !this.disabled;
-            }).prop('checked', false);
-            $('#start').val("");
-            $('#end').val("");
-        });
-	$("#collapse1").on("hide.bs.collapse", function(){
-    	    $("#filter-toggle").html('<span class="glyphicon glyphicon glyphicon-plus"></span>');
-        });
-  	$("#collapse1").on("show.bs.collapse", function(){
-	    $("#filter-toggle").html('<span class="glyphicon glyphicon glyphicon-minus"></span>');
- 	});
         $("#zoomModal").on('shown.bs.modal', function () {
             $("#zoom-body").data("c3-chart").flush();
         });
@@ -359,11 +280,19 @@ include_once('lib/header.php');
         buildLeftPanelViews('<?php echo $testId; ?>', '<?php echo $compIds; ?>');
         buildLeftPanelFramework('<?php echo $frameworkName; ?>', <?php echo $frameworkId; ?>);
         buildLeftPanelGlobal();
-        <?php addFrameworkDropdownJS($db, $userId); ?>
-        <?php addTestResults("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds); ?>
-        <?php addSystemMetrics("test_data/$frameworkName/$testId/results", $origTestData["statistics"], $testId, $compIds); ?>
-        <?php addLogs("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds); ?>
-        loadNavigationBar();
+        <?php
+          addFrameworkDropdownJS($db, $userId);
+          addTestResults("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds);
+          if(array_key_exists("execution",$origTestData)) {
+            echo "createLabel('System Metrics')\n";
+            addSystemMetrics("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds, "exec");
+          }
+          if(array_key_exists("statistics",$origTestData)){
+            addSystemMetrics("test_data/$frameworkName/$testId/results", $origTestData["statistics"], $testId, $compIds, "stat");
+          }
+          addLogs("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds);
+        ?>
+	loadNavigationBar();
         flushAllCharts();
     });
 </script>
