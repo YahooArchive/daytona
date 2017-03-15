@@ -11,6 +11,7 @@ echo -e "Installing python and sendmail... \n"
 sudo apt-get install python -y
 sudo apt-get install python-mysql.connector -y
 sudo apt-get install sendmail -y
+sudo apt-get install python-requests
 
 # Start Scheduler
 nohup python ./scheduler.py &

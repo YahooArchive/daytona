@@ -8,6 +8,7 @@ cp -r ../../Scheduler+Agent/daytona_sarmonitor /tmp
 
 # Install sysstat for sar and iostat
 sudo apt-get install sysstat -y
+sudo apt-get install python-requests
 
 cd ../../Scheduler+Agent
 

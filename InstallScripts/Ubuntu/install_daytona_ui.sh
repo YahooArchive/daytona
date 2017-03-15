@@ -10,7 +10,7 @@ echo -e "Installing Apache2...\n"
 sudo apt-get install apache2 ssl-cert -y >> /tmp/daytona_install.log
 
 echo -e "Installing PHP... \n"
-sudo apt-get install libapache2-mod-php php php-common php-mcrypt php-mysqlnd -y >> /tmp/daytona_install.log
+sudo apt-get install libapache2-mod-php php php-common php-mcrypt php-zip php-mysqlnd -y >> /tmp/daytona_install.log
 
 echo -e "Verifying installs...\n"
 sudo apt-get install apache2 libapache2-mod-php php mysql-server php-mysqlnd mysql-client -y >> /tmp/daytona_install.log

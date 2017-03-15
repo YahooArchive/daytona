@@ -1,6 +1,6 @@
 #!/bin/bash
 
-daytona_install_dir=~dmittal/Daytona_prod/Daytona
+daytona_install_dir=$HOME/Daytona_prod/Daytona
 daytona_data_dir=/var/www/html/daytona/daytona_root/test_data_DH
 
 echo -e "Stopping and removing  Apache2"

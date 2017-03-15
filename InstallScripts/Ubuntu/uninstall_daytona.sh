@@ -1,16 +1,15 @@
 #!/bin/bash
 
-daytona_install_dir=~ubuntu/daytona_prod/daytona
+daytona_install_dir=$HOME/daytona_prod/daytona
 daytona_data_dir=/tmp/daytona_root/test_data_DH
 
 sudo apt-get remove --purge apache2 ssl-cert -y
 sudo apt-get remove apache2-common -y
 sudo rm -rf /var/www/html/daytona
 
-sudo apt-get purge libapache2-mod-php5 php5 php5-common php5-mcrypt php5-mysqlnd -y
+sudo apt-get purge libapache2-mod-php php php-common php-zip php-mcrypt php-mysqlnd -y
 
-sudo apt-get remove --purge mysql-server mysql-client mysql-common mysql-server-5.5 mysql-client-5.5 mysql-server-core-5.5 mysql-client-core-5.5 libapache2-mod-auth-mysql -y
-
+sudo apt-get remove --purge mysql-server mysql-client mysql-common -y
 
 sudo apt-get autoremove -y
 sudo apt-get autoclean -y
