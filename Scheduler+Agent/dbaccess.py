@@ -37,14 +37,28 @@ class DBAccess():
           self._db_cur.close()
           self._db_connection.close()
 
-    def query(self, query, params, n, commit):
-      self._db_cur.execute(query, params)
-      if commit==True:
+    def query(self, query, params, n, commit, lastid=False, rowcount=False):
+        try:
+            self._db_cur.execute(query, params)
+            if commit:
+                self._db_connection.commit()
+            if lastid:
+                return self._db_cur.lastrowid
+            if rowcount:
+                return self._db_cur.rowcount
+            if not n:
+                return self._db_cur.fetchone()
+            else:
+                return self._db_cur.fetchall()
+        except DBERROR as err:
+            self.lctx.debug(err)
+
+
+    def commit(self):
         self._db_connection.commit()
-      if n==False:
-        return self._db_cur.fetchone()
-      else:
-        return self._db_cur.fetchall()
+
+    def rollback(self):
+        self._db_connection.rollback()
 
     def __del__(self):
         self._db_connection.close()
