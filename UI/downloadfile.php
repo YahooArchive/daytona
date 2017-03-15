@@ -78,6 +78,8 @@ if ($userId){
     header('Content-Type: application/zip');
     header('Content-disposition: attachment; filename='.$zipname);
     header('Content-Length: ' . filesize($zippath));
+    ob_clean();
+    flush();
     readfile($zippath);
     unlink($zippath);
 }
