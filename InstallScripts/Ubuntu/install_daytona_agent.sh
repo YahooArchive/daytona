@@ -10,7 +10,10 @@ cp -r ../../Scheduler+Agent/daytona_sarmonitor /tmp
 sudo apt-get install sysstat -y
 sudo apt-get install python-requests
 
+sudo apt-get install python-mysql.connector -y
+sudo apt-get install strace
+
 cd ../../Scheduler+Agent
 
 # Start Agent
-nohup python ./agent.py &
+sudo nohup python ./agent.py > agent_nohup.out 2>&1 &

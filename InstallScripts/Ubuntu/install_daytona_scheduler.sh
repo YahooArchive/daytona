@@ -14,4 +14,4 @@ sudo apt-get install sendmail -y
 sudo apt-get install python-requests
 
 # Start Scheduler
-nohup python ./scheduler.py &
+nohup python ./scheduler.py > scheduler_nohup.out 2>&1 &

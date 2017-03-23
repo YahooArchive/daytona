@@ -15,4 +15,4 @@ sed "s|dh_root_value|$dh_root_value|g" config.ini > config.ini.tmp
 mv config.ini.tmp config.ini 
 
 # Start Scheduler
-nohup python ./scheduler.py &
+nohup python ./scheduler.py > scheduler_nohup.out 2>&1 &

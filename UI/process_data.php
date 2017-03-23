@@ -648,4 +648,3 @@ function buildTestCompareData($filepaths,$test_ids){
     }
     return $ret_data;
 }
-

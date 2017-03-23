@@ -476,3 +476,19 @@ UNLOCK TABLES;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- Dump completed on 2016-11-17 22:03:43
+ALTER TABLE `daytona`.`ProfilerFramework` 
+DROP FOREIGN KEY `ProfilerFramework_ProfilerFramework_fk_frameworkid`;
+ALTER TABLE `daytona`.`ProfilerFramework` 
+CHANGE COLUMN `frameworkid` `profiler` VARCHAR(45) NOT NULL ,
+CHANGE COLUMN `profiler_ident` `testid` INT NOT NULL ,
+CHANGE COLUMN `enabled` `processname` VARCHAR(45) NOT NULL ,
+ADD COLUMN `delay` INT NOT NULL DEFAULT 0 AFTER `processname`,
+ADD COLUMN `duration` INT NOT NULL DEFAULT 1 AFTER `delay`,
+ADD INDEX `testID_idx` (`testid` ASC),
+DROP INDEX `frameworkid` ;
+ALTER TABLE `daytona`.`ProfilerFramework` 
+ADD CONSTRAINT `testID`
+  FOREIGN KEY (`testid`)
+  REFERENCES `daytona`.`TestInputData` (`testid`)
+  ON DELETE NO ACTION
+  ON UPDATE NO ACTION;

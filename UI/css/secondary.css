@@ -225,6 +225,7 @@ table#csv-table td{
   -webkit-text-fill-color: transparent;
 }
 
+
 .fa-toggle-on{
   color: green;
 }
@@ -244,3 +245,44 @@ table#csv-table td{
   color: #9c9c9c;
 }
 
+.pre_text{
+  border: none;
+  padding: 0px;
+  margin: 0px;
+  font-size: 1em;
+  background-color: transparent;
+}
+
+.padding-left{
+  padding-left: 15px;
+}
+
+table.table.table-hover.form-table td {
+  padding:4px;
+  width:100%;
+  word-wrap: break-word;
+  vertical-align: middle;
+  border-collapse:collapse;
+  border:1px solid #ddd;
+}
+
+
+table.table.table-hover.form-table th {
+  padding:4px;
+  width:100%;
+  word-wrap: break-word;
+  vertical-align: middle;
+  border-collapse:collapse;
+  border:1px solid #ddd;
+}
+
+table.table.table-hover.form-table {
+  margin-bottom:0px;
+  table-layout:fixed;
+}
+
+@media(max-width:767px) {
+  table.table.table-hover.form-table {
+    font-size:70%;
+  }
+}

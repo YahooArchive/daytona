@@ -16,7 +16,9 @@ function buildTextCompareView(json_data,test_list,div_id){
         var text_div_heading = $('<div></div>').addClass('panel-heading')
             .attr("style","text-align:center;")
             .text(test_arr[i]);
-        var text_div_body = $('<div></div>').addClass('panel-body').text(file_data_arr[test_arr[i]]);
+        var text_div_body = $('<div></div>').addClass('panel-body')
+        var pre_text = $('<pre></pre>').addClass('pre_text').text(file_data_arr[test_arr[i]]);
+        $(text_div_body).append(pre_text);
         $(text_div).append(text_div_heading);
         $(text_div).append(text_div_body);
         $(main_div).append(text_div);
