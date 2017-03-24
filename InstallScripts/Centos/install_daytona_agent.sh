@@ -13,7 +13,7 @@ cp -r ../../Scheduler+Agent/daytona_sarmonitor /tmp
 sudo yum install sysstat -y
 
 # Install Strace
-sudo yum install strace
+sudo yum install strace -y
 
 cd ../../Scheduler+Agent
 

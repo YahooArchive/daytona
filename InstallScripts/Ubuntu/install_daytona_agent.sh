@@ -8,10 +8,10 @@ cp -r ../../Scheduler+Agent/daytona_sarmonitor /tmp
 
 # Install sysstat for sar and iostat
 sudo apt-get install sysstat -y
-sudo apt-get install python-requests
+sudo apt-get install python-requests -y
 
 sudo apt-get install python-mysql.connector -y
-sudo apt-get install strace
+sudo apt-get install strace -y
 
 cd ../../Scheduler+Agent
 
