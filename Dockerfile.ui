@@ -1,10 +1,12 @@
-FROM php:5.6.27-apache
+FROM php:7.0-apache
 
-RUN apt-get update && apt-get install libmcrypt-dev php5-mysqlnd python python-mysql.connector -y
-RUN docker-php-ext-install mysql mysqli pdo pdo_mysql mcrypt
+RUN apt-get update && apt-get install libmcrypt-dev python python-mysql.connector -y
+RUN apt-get install zlib1g-dev
+RUN docker-php-ext-install mysqli pdo pdo_mysql mcrypt zip
+RUN apt-get install python-requests -y
+
 
 RUN a2enmod rewrite
-RUN php5enmod mysqlnd
 
 COPY UI/ /var/www/html/
 
