@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding:cp949 -*-
-import time
 import subprocess
 import threading
 import common
@@ -14,10 +13,7 @@ import traceback
 import testobj
 import client
 import config
-import envelope
-import pickle
 from logger import LOG
-from dbcli_action import dbCliHandle
 
 lctx = None
 class activeTest():
@@ -460,75 +456,3 @@ def prepareResults(self, *args):
     lctx.debug(command + "[" + str(actionID) + "]")
     return "SUCCESS"
 
-def daytonaCli(self, *args):
-    (obj, command, params, actionID, sync) = (args[0], args[1], args[2], args[3], args[4])
-
-    cli_param_map = pickle.loads(params)
-    if len(cli_param_map) != 3:
-        return "Error|Not enough arguments"
-
-    user = cli_param_map['user']
-    password = cli_param_map['password']
-
-    cli_command = cli_param_map['param'].split("|")[0]
-    cli_param = cli_param_map['param'].split("|")[1]
-
-    lctx.debug("Host received CLI command : " + cli_command)
-
-    db = dbCliHandle()
-    auth = db.authenticate_user(user, password)
-    if auth != "SUCCESS":
-        return auth
-
-    if cli_command == "get_frameworkid_arg":
-        arglist = db.getFrameworkIdArgs(cli_param)
-        return arglist
-    elif cli_command == "get_framework_arg":
-        arglist = db.getFrameworkArgs(cli_param)
-        return arglist
-    elif cli_command == "add_test":
-        res = db.addTest(cli_param, user)
-        return res
-    elif cli_command == "add_run_test":
-        res = db.addTest(cli_param, user, 'scheduled')
-        if res:
-            if res.split("|")[0] == 'Error':
-                return res
-            else:
-                testid = res.split("|")[1]
-        else:
-            return "Error|Test add failed"
-
-        res = db.runTest(testid, user)
-        if res.split("|")[0] == 'SUCCESS':
-            return "SUCCESS|" + testid
-        else:
-            return res
-    elif cli_command == "run_test":
-        res = db.runTest(cli_param, user)
-        return res
-    elif cli_command == "get_result":
-        res = db.getResult(cli_param, user)
-        return res
-    elif cli_command == "get_test_by_id":
-        res = db.getTestByID(cli_param)
-        return res
-    elif cli_command == "update_test":
-        res = db.updateTest(cli_param, user)
-        return res
-    elif cli_command == "update_run_test":
-        res = db.updateTest(cli_param, user, 'scheduled')
-        if res:
-            if res.split("|")[0] == 'Error':
-                return res
-            else:
-                testid = res.split("|")[1]
-        else:
-            return "Error|Test update failed"
-        res = db.runTest(testid, user)
-        if res.split("|")[0] == 'SUCCESS':
-            return "SUCCESS|" + testid
-        else:
-            return res
-    else:
-        return "Error|Unknown command received on server"

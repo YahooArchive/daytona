@@ -279,8 +279,6 @@ MAIN: {
             }elsif ($i == 1){
                 if ($strace){
                     run_strace_daemon();
-                }else{
-                    while (1){}
                 }
             }else{
                 run_top_daemon();
@@ -367,7 +365,8 @@ sub run_sar_daemon {
 }
 
 sub run_strace_daemon {
-    print $debug_fh "In run_strace_daemon()\n";
+    print $debug_fh "Starting strace monitor in $strace_delay secs \n";
+    sleep($strace_delay);
     print $debug_fh "Setting up Strace for process : $strace_proc\n";
     my $cmd = "ps -eo pid,cmd,%cpu --sort=-%cpu | grep " . $strace_proc .  " | grep -v grep | awk 'FNR == 1 {print \$1}'";
     $strace_pid = `$cmd`;
@@ -483,7 +482,7 @@ sub exec_iostat {
 sub exec_top {
     print $debug_fh "exec_top() Executing top binary: $top_bin -b -i -o +%CPU -d $interval\n";
 
-    open( my $sar_pipe3, '-|', $top_bin, '-b', '-i' , '-o', '+%CPU', '-d', $interval )
+    open( my $sar_pipe3, '-|', $top_bin, '-b', '-i', '-d', $interval )
         or die "Couldn't execute '$top_bin': $!.\nStopped";
 
     print $debug_fh "exec_top() calling flatten_top() \n";
@@ -492,8 +491,6 @@ sub exec_top {
 }
 
 sub exec_strace {
-    print $debug_fh "Starting strace monitor in $strace_delay secs \n";
-    sleep($strace_delay);
     my $strace_cmd = 'timeout ' . $strace_duration . ' ' . $strace_bin . ' -p ' . $strace_pid. ' -c -S time -o ' . $root_dir . '/strace_output.txt';
     print $debug_fh "exec_strace() Executing strace binary: " . $strace_cmd . "\n";
     `$strace_cmd`;

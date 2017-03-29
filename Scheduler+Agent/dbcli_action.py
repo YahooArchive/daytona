@@ -10,9 +10,9 @@ from logger import LOG
 class dbCliHandle():
     def __init__(self):
         self.lctx = LOG.getLogger("dblog", "DH")
-        cfg = config.CFG("DaytonaHost", self.lctx)
-        cfg.readCFG("config.ini")
-        self.db = dbaccess.DBAccess(cfg, self.lctx)
+        self.cfg = config.CFG("DaytonaHost", self.lctx)
+        self.cfg.readCFG("config.ini")
+        self.db = dbaccess.DBAccess(self.cfg, self.lctx)
 
     def __del__(self):
         if self.db is not None:
