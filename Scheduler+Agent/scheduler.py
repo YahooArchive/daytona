@@ -192,22 +192,23 @@ class Scheduler:
         to = t.testobj.TestInputData.email
         reader = csv.reader(f)
         rownum = 0
-        htmlfile = '<table cellpadding="10">'
+        htmlfile = '<table>'
         for row in reader:
             if rownum == 0:
-                htmlfile = htmlfile + '<tr>'
+                htmlfile += '<tr>'
                 for column in row:
-                    htmlfile = htmlfile + '<th width="70%">' + column + '</th>'
-                htmlfile = htmlfile + '</tr>'
+                    htmlfile += '<th style="text-align: left;" width="70%">' + column + '</th>'
+                htmlfile += '</tr>'
             else:
-                htmlfile = htmlfile + '<tr>'
+                htmlfile += '<tr>'
                 for column in row:
-                    htmlfile = htmlfile + '<td width="70%">' + column + '</td>'
-                htmlfile = htmlfile + '</tr>'
+                    htmlfile += '<td style="text-align: left;" width="70%">' + column + '</td>'
+                htmlfile += '</tr>'
             rownum += 1
-            htmlfile = htmlfile + '</table>'
-
+        htmlfile += '</table>'
         f.close()
+
+        host_ip = "http://" + common.get_local_ip() + "/test_info.php?testid=" + str(t.testobj.TestInputData.testid)
 
         subject = "Test {} completed successfully".format(t.testobj.TestInputData.testid)
 
@@ -228,6 +229,9 @@ class Scheduler:
                                    <BR>Results (Contents of results.csv)<BR>"
         mail_content = mail_content + "<BR>==========================================================<BR>"
         mail_content = mail_content + "<BR>" + htmlfile + "<BR>"
+        mail_content = mail_content + "<BR>==========================================================<BR>"
+        mail_content = mail_content + "Link:"
+        mail_content = mail_content + '<BR><a href="' + host_ip + '">' + host_ip +'</a>'
 
         try:
             common.send_email(subject, to, mail_content, "", lctx, cfg.email_user, cfg.email_server, cfg.smtp_server,

@@ -26,6 +26,7 @@ function verifyPltContentForGraph($file){
                 for($i=0; $i<sizeof($line_arr); $i++){
                     $col = str_replace("\r\n",'', $line_arr[$i]);
                     $col = str_replace("\n",'', $col);
+		    $col = str_replace('"','', $col);
                     $header_validity[$col] = 1;
                     $column_name[] = $col;
                 }
@@ -34,10 +35,12 @@ function verifyPltContentForGraph($file){
             }
             $line_arr[0] = str_replace("\r\n",'', $line_arr[0]);
             $line_arr[0] = str_replace("\n",'', $line_arr[0]);
+	    $line_arr[0] = str_replace('"','', $line_arr[0]);
             if(preg_match($time_regex,$line_arr[0])){
                 for($i=1; $i<sizeof($line_arr); $i++){
                     $col = str_replace("\r\n",'', $line_arr[$i]);
                     $col = str_replace("\n",'', $col);
+		    $col = str_replace('"','', $col);
                     if(!is_numeric($col)){
                         $header_validity[$column_name[$i]] = 0;
                     }
@@ -119,10 +122,12 @@ function buildTestReportGraph($div_id, $file_paths, $s_compids_str, $title, $gra
             $line_arr = explode(',', $line);
             if($process_header){
                 if (!empty($column)){
+		    $column = str_replace('"','', $column);
                     if($graph_mode){
                         for($i = 1;$i < sizeof($line_arr);$i++){
                             $data = str_replace("\n",'', $line_arr[$i]);
                             $data = str_replace("\r\n",'', $data);
+			    $data = str_replace('"','', $data);
                             if(strpos($data,$column) !== false){
                             $column_index = $i;
                             break;
@@ -132,6 +137,7 @@ function buildTestReportGraph($div_id, $file_paths, $s_compids_str, $title, $gra
                         for($i = 1;$i < sizeof($line_arr);$i++){
                             $data = str_replace("\n",'', $line_arr[$i]);
                             $data = str_replace("\r\n",'', $data);
+			    $data = str_replace('"','', $data);
                             if(strpos($data,$column) !== false){
                                 $column_index[] = $i;
                                 $column_map[] = $data;
