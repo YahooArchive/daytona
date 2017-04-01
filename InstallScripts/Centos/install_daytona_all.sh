@@ -1,6 +1,6 @@
 #!/bin/bash
 
-daytona_install_dir=$HOME/Daytona_prod/Daytona
+daytona_install_dir=$HOME/daytona_prod/daytona
 daytona_data_dir=/var/www/html/daytona/daytona_root/test_data_DH
 distro=Centos
 
