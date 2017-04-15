@@ -1,9 +1,10 @@
 <?php
-$secret_word = 'c9nwFUDili';
+$conf = parse_ini_file('daytona_config.ini');
+$cookie_key = $conf['cookie_key'];
 unset($userId);
 if (isset($_COOKIE['login'])) {
-      list($c_userId,$cookie_hash) = split(',',$_COOKIE['login']);
-      if (password_verify($c_userId.$secret_word, $cookie_hash)) {
+      list($c_userId,$cookie_hash) = explode(',',$_COOKIE['login']);
+      if (password_verify($c_userId.$cookie_key, $cookie_hash)) {
           $userId = $c_userId;
       } else {
           header("Location: /login.php?incorrect=true");

@@ -53,20 +53,17 @@ if __name__ == "__main__":
     #print actc.async_actions
 
     while True :
-      if server.serv.actc is not None:
-        d = "ASYNC Jobs ["
-        lctx.debug(server.serv.actc.async_actions)
-        for pending in server.serv.actc.async_actions:
-          (t1, actionID, tst, ts) = pending
-          diff = time.time() - ts
-          lctx.debug(str(tst.testobj.TestInputData.timeout))
-          d = d + (str(tst.testobj.TestInputData.testid)+":"+str(diff)) + ","
-        d = d + "]"
-        lctx.info(d)
-
+        if server.serv.actc is not None:
+            d = "ASYNC Jobs ["
+            lctx.debug(server.serv.actc.async_actions)
+            for pending in server.serv.actc.async_actions:
+                (t1, actionID, tst, ts) = pending
+                diff = time.time() - ts
+                lctx.debug(str(tst.testobj.TestInputData.timeout))
+                d = d + (str(tst.testobj.TestInputData.testid)+":"+str(diff)) + ","
+            d = d + "]"
+            lctx.info(d)
         time.sleep(2)
 
     server_thread.join()
     lctx.info("Server thread ended")
-
-

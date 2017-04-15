@@ -64,15 +64,16 @@ if(isset($_REQUEST["logout"])) {
 }
 
 if(isset($_GET["email_code"]) && isset($_GET["email_user"])) {
-    $email_validated = validateEmail($db, $_GET["email_user"], $_GET["email_code"]);
+    $email_validated = validateEmail($db, getParam("email_user"), getParam("email_code"));
 }
 
-$incorrect_login = isset($_GET["incorrect"]) ? $_GET["incorrect"] : false;
-$not_active = isset($_GET["inactive"]) ? $_GET["inactive"] : false;
-$secret_word = 'c9nwFUDili';
+$incorrect_login = isset($_GET["incorrect"]) ? getParam("incorrect") : false;
+$not_active = isset($_GET["inactive"]) ? getParam("inactive") : false;
+$conf = parse_ini_file('daytona_config.ini');
+$cookie_key = $conf['cookie_key'];
 if(isset($_REQUEST['username']) and isset($_REQUEST['password'])) {
     if(validatePassword($db, $_REQUEST['username'], $_REQUEST['password'])) {
-        setcookie('login', $_REQUEST['username'].','.password_hash($_REQUEST['username'].$secret_word, PASSWORD_DEFAULT));
+        setcookie('login', $_REQUEST['username'].','.password_hash($_REQUEST['username'].$cookie_key, PASSWORD_DEFAULT));
         if(getUserAccount($db, $_REQUEST['username'])->user_state == "Active") {
             header("Location: /main.php");
         }
@@ -87,8 +88,8 @@ if(isset($_REQUEST['username']) and isset($_REQUEST['password'])) {
 
 unset($username);
 if (isset($_COOKIE['login'])) {
-    list($c_username,$cookie_hash) = split(',',$_COOKIE['login']);
-    if (password_verify($c_username.$secret_word, $cookie_hash)) {
+    list($c_username,$cookie_hash) = explode(',',$_COOKIE['login']);
+    if (password_verify($c_username.$cookie_key, $cookie_hash)) {
         $username = $c_username;
         if(getUserAccount($db, $c_username)->user_state == "Active") {
             header("Location: /main.php");
@@ -104,8 +105,13 @@ if (isset($_COOKIE['login'])) {
 
 if(isset($_REQUEST["register_user"])) {
     $email_code = rand();
-    $validNewAccount = registerUser($db, $_REQUEST["register_user"], $_REQUEST["register_password"], $_REQUEST["register_email"], "Email:$email_code:0");
-    sendEmailValidation($_REQUEST["register_email"], $email_code, $_REQUEST["register_user"]);
+    if (validatePasswordPolicy($_REQUEST["register_password"])){
+        $validNewAccount = registerUser($db, $_REQUEST["register_user"], $_REQUEST["register_password"], $_REQUEST["register_email"], "Email:$email_code:0");
+        sendEmailValidation($_REQUEST["register_email"], $email_code, $_REQUEST["register_user"]);
+    }else{
+        $validPassword = false;
+        $error_msg = "<strong>User Registration Failed:</strong> Password failed to meet password policies<br>Password should contain : 8-12 characters, atleast one lowercase character, one uppercase character, one digit, atleast one special character : @#-_$%^&+=§!?";
+    }
 }
 ?>
 
@@ -115,10 +121,10 @@ if(isset($_REQUEST["register_user"])) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
   <link rel="stylesheet" href="css/secondary.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
   <script src="js/jquery.menu-aim.js"></script>
   <script src="js/navigation-bar.js"></script>
   <script src="js/daytona.js"></script>
@@ -141,6 +147,12 @@ if(isset($_REQUEST["register_user"])) {
    <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
    <strong>Email Validated Failed:</strong> Incorrect Email Validation Code
 </div>
+<?php endif; ?>
+<?php if(isset($validPassword) and !$validPassword): ?>
+    <div class="alert alert-danger fade in login-alert">
+        <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+        <?php echo $error_msg ?>
+    </div>
 <?php endif; ?>
 <?php if($not_active): ?>
 <div class="alert alert-danger fade in login-alert">
@@ -192,7 +204,7 @@ if(isset($_REQUEST["register_user"])) {
             <form role="form" name="registerForm" method="post" action="login.php" onsubmit="return validatePasswordForm('registerForm', 'register_password', 'register_password2')">
             <div class='modal-body'>
                 <label>User ID</label>
-                <input type="text" name="register_user" placeholder="User ID" required>
+                <input type="text" name="register_user" placeholder="User ID" required pattern="^[a-zA-Z][a-zA-Z0-9_]*$" oninvalid="setError('Please enter alphanumeric characters only')" onchange="try{setError('')}catch(e){}">
                 <label>Email</label>
                 <input type="email" name="register_email" placeholder="Email" required>
                 <label>Password</label>

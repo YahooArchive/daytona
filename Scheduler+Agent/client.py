@@ -92,6 +92,7 @@ class TCPClient ():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     response = None
     try:
+      sock.settimeout(5)
       sock.connect((ip, port))
       sock.sendall(message)
       response = sock.recv(8192)

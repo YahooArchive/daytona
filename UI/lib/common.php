@@ -6,7 +6,7 @@ function getUserAccount($db, $user, $email=null) {
     $stmt = $db->prepare($query);
     $stmt->bindValue(':username', $user, PDO::PARAM_STR);
     if($email) {
-      $stmt->bindValue(':email', $email, PDO::PARAM_STR);
+        $stmt->bindValue(':email', $email, PDO::PARAM_STR);
     }
     $stmt->execute();
     $accountInfo = $stmt->fetch(PDO::FETCH_OBJ);
@@ -15,249 +15,268 @@ function getUserAccount($db, $user, $email=null) {
 
 // Prints a fatal message
 function diePrint($message, $header) {
-  if (!$header) {
-    $header = "An error occurred";
-  }
-  $html = "<html><head><title>Daytona - Error!</title>";
-  $html .= "<link rel=\"stylesheet\" href=\"css/style.css\">";
-  $html .= "<body><div class=\"error status-panel\">";
-  $html .= "<div class=\"header\">$header</div>";
-  $html .= "<p>$message<br>";
-  $html .= "Click <a href=\"#\" onclick=\"history.go(-1)\">here</a> to go back.";
-  $html .= "</p></div></body>";
-  $html .= "</html>";
-  die($html);
+    if (!$header) {
+        $header = "An error occurred";
+    }
+    $html = "<html><head><title>Daytona - Error!</title>";
+    $html .= "<link rel=\"stylesheet\" href=\"css/style.css\">";
+    $html .= "<body><div class=\"error status-panel\">";
+    $html .= "<div class=\"header\">$header</div>";
+    $html .= "<p>$message<br>";
+    $html .= "Click <a href=\"#\" onclick=\"history.go(-1)\">here</a> to go back.";
+    $html .= "</p></div></body>";
+    $html .= "</html>";
+    die($html);
 }
 
 // Retrieve a GET or POST parameter
 function getParam($paramName, $paramType='GET') {
-  if ($paramType == 'POST') {
-    return isset($_POST[$paramName]) ? $_POST[$paramName] : null;
-  }
-  return isset($_GET[$paramName]) ? $_GET[$paramName] : null;
+    if ($paramType == 'POST') {
+        return isset($_POST[$paramName]) ? sanitize_input($_POST[$paramName]) : null;
+    }
+    return isset($_GET[$paramName]) ? sanitize_input($_GET[$paramName]) : null;
 }
 
 function initDB() {
-  $conf = parse_ini_file('daytona_config.ini');
-  $servername = $conf['servername'];
-  $username = $conf['username'];
-  $password = $conf['password'];
-  $dbname = $conf['dbname'];
-  date_default_timezone_set('America/Los_Angeles');
-  try {
-    $db = new PDO("mysql:host=$servername;dbname=$dbname;charset=utf8mb4", $username, $password);
-  } catch(PDOException $e) {
-    diePrint("Could not establish connection to DB: " . $e->getMessage());
-  }
-  return $db;
+    $conf = parse_ini_file('daytona_config.ini');
+    $servername = $conf['servername'];
+    $username = $conf['username'];
+    $password = $conf['password'];
+    $dbname = $conf['dbname'];
+    date_default_timezone_set('America/Los_Angeles');
+    try {
+        $db = new PDO("mysql:host=$servername;dbname=$dbname;charset=utf8mb4", $username, $password);
+    } catch(PDOException $e) {
+        diePrint("Could not establish connection to DB: " . $e->getMessage());
+    }
+    return $db;
 }
 
 function getFrameworks($db, $userId) {
-  if ($userId) {
-    $query = "SELECT DISTINCT * FROM CommonFrameworkAuthentication JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE username = :userId ORDER BY frameworkname ASC";
-  } else {
-    $query = "SELECT DISTINCT * FROM CommonFrameworkAuthentication JOIN  ApplicationFrameworkMetadata USING(frameworkid) ORDER BY frameworkname ASC";
-  }
+    if ($userId) {
+        $query = "SELECT DISTINCT * FROM CommonFrameworkAuthentication JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE username = :userId ORDER BY frameworkname ASC";
+    } else {
+        $query = "SELECT DISTINCT * FROM CommonFrameworkAuthentication JOIN  ApplicationFrameworkMetadata USING(frameworkid) ORDER BY frameworkname ASC";
+    }
 //  $query = "SELECT DISTINCT * FROM ApplicationFrameworkMetadata ORDER BY frameworkname ASC";
-  $stmt = $db->prepare($query);
-  $stmt->bindValue(':userId', $userId);
-  $stmt->execute();
-  return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':userId', $userId);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 function getFrameworkById($db, $fid, $full=false) {
-  $query = "SELECT * FROM ApplicationFrameworkMetadata WHERE frameworkid = :frameworkid";
-  $stmt = $db->prepare($query);
-  $stmt->bindValue(':frameworkid', $fid, PDO::PARAM_INT);
-  $stmt->execute();
-  $frameworkData = $stmt->fetch(PDO::FETCH_ASSOC);
+    $query = "SELECT * FROM ApplicationFrameworkMetadata WHERE frameworkid = :frameworkid";
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':frameworkid', $fid, PDO::PARAM_INT);
+    $stmt->execute();
+    $frameworkData = $stmt->fetch(PDO::FETCH_ASSOC);
 
-  // Send back if framework not found or we don't want full data
-  if (!$full || !$frameworkData) {
-    return $frameworkData;
-  }
+    // Send back if framework not found or we don't want full data
+    if (!$full || !$frameworkData) {
+        return $frameworkData;
+    }
 
-  return getFrameworkAuxData($db, $frameworkData);
+    return getFrameworkAuxData($db, $frameworkData);
 }
 
 function getFrameworkByName($db, $fname, $full=false) {
-  $query = "SELECT * FROM ApplicationFrameworkMetadata WHERE frameworkname = :frameworkname";
-  $stmt = $db->prepare($query);
-  $stmt->bindValue(':frameworkname', $fname, PDO::PARAM_STR);
-  $stmt->execute();
-  $frameworkData = $stmt->fetch(PDO::FETCH_ASSOC);
+    $query = "SELECT * FROM ApplicationFrameworkMetadata WHERE frameworkname = :frameworkname";
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':frameworkname', $fname, PDO::PARAM_STR);
+    $stmt->execute();
+    $frameworkData = $stmt->fetch(PDO::FETCH_ASSOC);
 
-  // Send back if framework not found or we don't want full data
-  if (!$full || !$frameworkData) {
-    return $frameworkData;
-  }
+    // Send back if framework not found or we don't want full data
+    if (!$full || !$frameworkData) {
+        return $frameworkData;
+    }
 
-  return getFrameworkAuxData($db, $frameworkData);
+    return getFrameworkAuxData($db, $frameworkData);
 }
 
 function getFrameworkAuxData($db, $frameworkData) {
-  // TODO: Is there a way to create a query where everything is returned, 
-  // including arguments & test report items as arrays?
+    // TODO: Is there a way to create a query where everything is returned,
+    // including arguments & test report items as arrays?
 
-  // Get arguments
-  $query = "SELECT * FROM ApplicationFrameworkArgs WHERE frameworkid = :frameworkid";
-  $stmt = $db->prepare($query);
-  $stmt->bindValue(':frameworkid', $frameworkData['frameworkid']);
-  $stmt->execute();
-  foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-    $frameworkData['arguments'][] = $row;
-  }
-  // Get hosts
-  $query = "SELECT * FROM HostAssociationType WHERE frameworkid = :frameworkid";
-  $stmt = $db->prepare($query);
-  $stmt->bindValue(':frameworkid', $frameworkData['frameworkid']);
-  $stmt->execute();
-  foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-    $frameworkData[$row['name'] . '_host'] = $row;
-  }
-  // Get test report
-  $query = "SELECT * FROM TestResultFile WHERE frameworkid = :frameworkid ORDER BY filename_order ASC";
-  $stmt = $db->prepare($query);
-  $stmt->bindValue(':frameworkid', $frameworkData['frameworkid']);
-  $stmt->execute();
-  foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-    $frameworkData['test_report'][] = $row;
-  }
+    // Get arguments
+    $query = "SELECT * FROM ApplicationFrameworkArgs WHERE frameworkid = :frameworkid";
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':frameworkid', $frameworkData['frameworkid']);
+    $stmt->execute();
+    foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $frameworkData['arguments'][] = $row;
+    }
+    // Get hosts
+    $query = "SELECT * FROM HostAssociationType WHERE frameworkid = :frameworkid";
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':frameworkid', $frameworkData['frameworkid']);
+    $stmt->execute();
+    foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $frameworkData[$row['name'] . '_host'] = $row;
+    }
+    // Get test report
+    $query = "SELECT * FROM TestResultFile WHERE frameworkid = :frameworkid ORDER BY filename_order ASC";
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':frameworkid', $frameworkData['frameworkid']);
+    $stmt->execute();
+    foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $frameworkData['test_report'][] = $row;
+    }
 
-  return $frameworkData;
+    return $frameworkData;
 }
 
 function getTestById($db, $testId, $full=false) {
-  $query = "SELECT testid, frameworkname, TestInputData.title, TestInputData.purpose, priority, timeout, cc_list, testid, frameworkid, TestInputData.modified, TestInputData.creation_time, start_time, end_time, end_status, end_detail, username FROM TestInputData JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE testid = :testid";
-  $stmt = $db->prepare($query);
-  $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
-  $stmt->execute();
-  $testData = $stmt->fetch(PDO::FETCH_ASSOC);
+    $query = "SELECT testid, frameworkname, TestInputData.title, TestInputData.purpose, priority, timeout, cc_list, testid, frameworkid, TestInputData.modified, TestInputData.creation_time, start_time, end_time, end_status, end_detail, username FROM TestInputData JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE testid = :testid";
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
+    $stmt->execute();
+    $testData = $stmt->fetch(PDO::FETCH_ASSOC);
 
-  // Send back if framework not found or we don't want full data
-  if (!$full || !$testData) {
-    return $testData;
-  }
-
-  $query = "SELECT name, hostname FROM HostAssociation JOIN HostAssociationType USING(hostassociationtypeid) WHERE testid = :testid";
-  $stmt = $db->prepare($query);
-  $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
-  $stmt->execute();
-
-  foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-    if(!isset($testData[$row['name']])) {
-      $testData[$row['name']] = array();
+    // Send back if framework not found or we don't want full data
+    if (!$full || !$testData) {
+        return $testData;
     }
-    array_push($testData[$row['name']], $row['hostname']);
-  }
 
-  $query = "SELECT argument_value, framework_arg_id, widget_type FROM TestArgs JOIN ApplicationFrameworkArgs USING(framework_arg_id) WHERE testid = :testid ORDER BY testargid";
-  $stmt = $db->prepare($query);
-  $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
-  $stmt->execute();
-  $testArgs = array();
-  foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-    $testArgs[$row['framework_arg_id']] = array();
-    $testArgs[$row['framework_arg_id']]['value'] = $row['argument_value'];
-    $testArgs[$row['framework_arg_id']]['widget_type'] = $row['widget_type'];
-  }
-  $testData['arguments'] = $testArgs;
+    $query = "SELECT name, hostname FROM HostAssociation JOIN HostAssociationType USING(hostassociationtypeid) WHERE testid = :testid";
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
+    $stmt->execute();
 
-  return $testData;
+    foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        if(!isset($testData[$row['name']])) {
+            $testData[$row['name']] = array();
+        }
+        array_push($testData[$row['name']], $row['hostname']);
+    }
+
+    $query = "SELECT argument_value, framework_arg_id, widget_type FROM TestArgs JOIN ApplicationFrameworkArgs USING(framework_arg_id) WHERE testid = :testid ORDER BY testargid";
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
+    $stmt->execute();
+    $testArgs = array();
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $testArgs[$row['framework_arg_id']] = array();
+        $testArgs[$row['framework_arg_id']]['value'] = $row['argument_value'];
+        $testArgs[$row['framework_arg_id']]['widget_type'] = $row['widget_type'];
+    }
+    $testData['arguments'] = $testArgs;
+
+    //Fetch Strace Configuration
+    $query = "SELECT * FROM ProfilerFramework WHERE testid = :testid AND profiler = :profiler";
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
+    $stmt->bindValue(':profiler', 'STRACE', PDO::PARAM_STR);
+    $stmt->execute();
+
+    $strace_config = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($strace_config){
+        $testData['strace'] = True;
+        $testData['strace_process'] = $strace_config['processname'];
+        $testData['strace_duration'] = $strace_config['duration'];
+        $testData['strace_delay'] = $strace_config['delay'];
+    }else{
+        $testData['strace'] = False;
+    }
+
+    return $testData;
 }
 
 
 function getTestResults($db, $testId) {
-  $query = "SELECT columnnumber, rownumber, result_name, result_value FROM TestResults JOIN TestResultsColumn USING(resultsid) JOIN TestResultsPair USING(columnid) WHERE testid = :testid";
-  $stmt = $db->prepare($query);
-  $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
-  $stmt->execute();
-  $testData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $query = "SELECT columnnumber, rownumber, result_name, result_value FROM TestResults JOIN TestResultsColumn USING(resultsid) JOIN TestResultsPair USING(columnid) WHERE testid = :testid";
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
+    $stmt->execute();
+    $testData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-  return $testData;
+    return $testData;
 }
 
 function addFrameworkDropdownJS($db, $userId) {
-  $frameworks = getFrameworks($db, $userId);
-  foreach ($frameworks as $framework) {
-    $fname = $framework['frameworkname'];
-    $fid = $framework['frameworkid'];
-    echo "  fillFrameworkDropDown('$fname', $fid);\n";
-  }
+    $frameworks = getFrameworks($db, $userId);
+    foreach ($frameworks as $framework) {
+        $fname = $framework['frameworkname'];
+        $fid = $framework['frameworkid'];
+        echo "  fillFrameworkDropDown('$fname', $fid);\n";
+    }
 }
 
 function addTestResults($path, $hosts, $testid, $compids) {
-  if (count($hosts) > 0 ){
-    echo "createLabel('Test Results')\n";
-    echo "createTestResultsRoot()\n";
-  }
-  foreach ($hosts as $key=>$host) {
-    $files = glob("$path/$host/*[.plt|.csv|.txt]");
-    foreach ($files as $file) {
-      $ex_file = explode("/", $file);
-      echo "  fillTestResults('$testid', '$compids', '" . end($ex_file) . "', '$file', '$key');\n";
+    if (count($hosts) > 0 ){
+        echo "createLabel('Test Results')\n";
+        echo "createTestResultsRoot()\n";
     }
-  }
+    foreach ($hosts as $key=>$host) {
+        $files = glob("$path/$host/*[.plt|.csv|.txt]");
+        foreach ($files as $file) {
+            $ex_file = explode("/", $file);
+            echo "  fillTestResults('$testid', '$compids', '" . end($ex_file) . "', '$file', '$key');\n";
+        }
+    }
 }
 
-function addSystemMetrics($path, $hosts, $testid, $compids) {
-  if (count($hosts) > 0 ){
-    echo "createLabel('System Metrics')\n";
-  }
-  foreach ($hosts as $key=>$host) {
-    echo "  fillSystemMetricsHost('$host','$key');\n"; 
-    $files = glob("$path/$host/sar/*[.plt|.csv|.txt]");
-    foreach ($files as $file) {
-      $ex_file = explode("/", $file);
-      echo "  fillSystemMetrics('$testid', '$compids', '" . end($ex_file) . "', '$file', '$key');\n";
+function addSystemMetrics($path, $hosts, $testid, $compids, $label) {
+    foreach ($hosts as $key=>$host) {
+        if(strpos($label,"exec") !== false){
+            $hostid = "-" . $label . $key;
+            echo "  fillSystemMetricsHost('Execution Host','$hostid');\n";
+        }else{
+            echo "  fillSystemMetricsHost('$host','$key');\n";
+        }
+        $files = glob("$path/$host/sar/*[.plt|.csv|.txt]");
+        foreach ($files as $file) {
+            $ex_file = explode("/", $file);
+            echo "  fillSystemMetrics('$testid', '$compids', '" . end($ex_file) . "', '$file', '$key', '$label');\n";
+        }
     }
-  }
 }
-  
+
 function addLogs($path, $hosts, $testid, $compids) {
-  if (count($hosts) > 0 ){
-    echo "createLabel('Logs')\n";
-  }
-  foreach ($hosts as $key=>$host) {
-    $filepath = '%EXECHOST,' . $key . '%/';
-    echo "  fillLogsHost('$host');\n";
-    $files = glob("$path/$host/*[.log|.txt]");
-    foreach ($files as $file) {
-      $ex_file = explode("/", $file);
-      echo "  fillLogs('$testid', '$compids', '" . end($ex_file) . "', '$file', '$filepath');\n";
+    if (count($hosts) > 0 ){
+        echo "createLabel('Logs')\n";
     }
-    $filepath = '%EXECHOST,' . $key . '%/application/';
-    $files = glob("$path/$host/application/*[.log|.txt]"); 
-    foreach ($files as $file) {
-      $ex_file = explode("/", $file);
-      echo "  fillLogs('$testid', '$compids', '" . end($ex_file) . "', '$file', '$filepath');\n";
+    foreach ($hosts as $key=>$host) {
+        $filepath = '%EXECHOST,' . $key . '%/';
+        echo "  fillLogsHost('$host');\n";
+        $files = glob("$path/$host/*[.log|.txt]");
+        foreach ($files as $file) {
+            $ex_file = explode("/", $file);
+            echo "  fillLogs('$testid', '$compids', '" . end($ex_file) . "', '$file', '$filepath');\n";
+        }
+        $filepath = '%EXECHOST,' . $key . '%/application/';
+        $files = glob("$path/$host/application/*[.log|.txt]");
+        foreach ($files as $file) {
+            $ex_file = explode("/", $file);
+            echo "  fillLogs('$testid', '$compids', '" . end($ex_file) . "', '$file', '$filepath');\n";
+        }
     }
-  }
-} 
+}
 
 function initFramework($db, $full=false) {
-  $frameworkName = getParam('framework');
-  // TODO: This is kinda hackish. Figure out a better way to handle this
-  if ($frameworkName == 'Global') {
+    $frameworkName = getParam('framework');
+    // TODO: This is kinda hackish. Figure out a better way to handle this
+    if ($frameworkName == 'Global') {
+        return array(null, null, null);
+    }
+    $frameworkId = getParam('frameworkid');
+    $fData = null;
+    if ($frameworkName) {
+        $fData = getFrameworkByName($db, $frameworkName, $full);
+        if (! $fData) {
+            diePrint("Could not find framework by name: $frameworkName");
+        }
+    } else if ($frameworkId) {
+        $fData = getFrameworkById($db, $frameworkId, $full);
+        if (! $fData) {
+            diePrint("Could not find framework by ID: $frameworkId");
+        }
+    }
+    if ($fData) {
+        return array($fData['frameworkid'], $fData['frameworkname'], $fData);
+    }
     return array(null, null, null);
-  }
-  $frameworkId = getParam('frameworkid');
-  $fData = null;
-  if ($frameworkName) {
-    $fData = getFrameworkByName($db, $frameworkName, $full);
-    if (! $fData) {
-      diePrint("Could not find framework by name: $frameworkName");
-    }
-  } else if ($frameworkId) {
-    $fData = getFrameworkById($db, $frameworkId, $full);
-    if (! $fData) {
-      diePrint("Could not find framework by ID: $frameworkId");
-    }
-  }
-  if ($fData) {
-    return array($fData['frameworkid'], $fData['frameworkname'], $fData);
-  }
-  return array(null, null, null);
 }
 
 function generateCompareCsv($csvfiles, $testid)
@@ -265,11 +284,15 @@ function generateCompareCsv($csvfiles, $testid)
     $csv_files = explode(",", $csvfiles);
     $test_id = explode(",", $testid);
     $final_csv = array();
-    
+
     for ($i = 0; $i < count($csv_files); ++$i) {
+        $valid_path = validate_file_path($csv_files[$i]);
+        if ($valid_path === false){
+            return;
+        }
         if ($i == 0) {
             $fp = fopen($csv_files[$i], 'r');
-	    if ($fp){
+            if ($fp){
                 while (($data = fgetcsv($fp, 0, ",")) !== FALSE) {
                     $csv_content[] = $data;
                 }
@@ -278,13 +301,13 @@ function generateCompareCsv($csvfiles, $testid)
                 for ($j = 0; $j < count($csv_content); ++$j) {
                     $final_csv[trim($csv_content[$j][0])] = array(trim($csv_content[$j][1]));
                 }
-       	    }
+            }
         } else {
             unset($fp);
             unset($data);
             unset($csv_content);
             $fp = fopen($csv_files[$i], 'r');
-	    if ($fp){
+            if ($fp){
                 while (($data = fgetcsv($fp, 0, ",")) !== FALSE) {
                     $csv_content[] = $data;
                 }
@@ -312,13 +335,13 @@ function generateCompareCsv($csvfiles, $testid)
                         $final_csv[$field] = $value;
                     }
                 }
-	    }
+            }
         }
     }
 
     /*$fp = fopen('temp_compare.csv', 'w');//output file set here
     foreach ($final_csv as $field => $value) {
-	array_unshift($value,$field);
+    array_unshift($value,$field);
         fputcsv($fp, $value);
     }*/
     fclose($fp);
@@ -326,28 +349,32 @@ function generateCompareCsv($csvfiles, $testid)
 }
 
 function getCsvColumnCount($csvfiles){
-  $csv_files = explode(",", $csvfiles);
-  $count = 0;
-  if (count($csv_files) > 0){
-    $fp = fopen($csv_files[0], 'r');
-    if ($fp){
-      $data = fgetcsv($fp, 0, ",");
-      if (!is_null($data))
-      $count = count($data);
+    $csv_files = explode(",", $csvfiles);
+    $count = 0;
+    if (count($csv_files) > 0){
+        $valid_path = validate_file_path($csv_files[0]);
+        if ($valid_path === false){
+            return;
+        }
+        $fp = fopen($csv_files[0], 'r');
+        if ($fp){
+            $data = fgetcsv($fp, 0, ",");
+            if (!is_null($data))
+                $count = count($data);
+        }
     }
-  }
-  fclose($fp);
-  return $count;
+    fclose($fp);
+    return $count;
 
 }
 
 function sort2DArray($arr){
-  $arr_sort = array_slice($arr,1);
-  usort($arr_sort, function($a,$b) {
-    return strcasecmp($a[0],$b[0]);
-  });
-  array_unshift($arr_sort, $arr[0]);
-  return $arr_sort;
+    $arr_sort = array_slice($arr,1);
+    usort($arr_sort, function($a,$b) {
+        return strcasecmp($a[0],$b[0]);
+    });
+    array_unshift($arr_sort, $arr[0]);
+    return $arr_sort;
 }
 
 function validatePassword($db, $user, $password) {
@@ -360,6 +387,52 @@ function validatePassword($db, $user, $password) {
         return password_verify($password, $storedPassword->password);
     }
     return false;
+}
+
+function returnError($message=null) {
+    $returnObj = array(
+        'status'  => 'ERROR',
+        'message' => $message
+    );
+    header('Content-Type: application/json');
+    echo json_encode($returnObj);
+    exit;
+}
+
+function returnOk($returnData=array()) {
+    $returnObj = array(
+        'status'  => 'OK',
+        'message' => 'OK'
+    );
+    $returnObj = array_merge($returnObj, $returnData);
+    header('Content-Type: application/json');
+    echo json_encode($returnObj);
+    exit;
+}
+
+function validate_file_path($filepath){
+    $base = '/var/www/html/daytona/daytona_root/test_data_DH/';
+    $real = realpath($filepath);
+    if ($real === false || strncmp($real, $base, strlen($base)+1) <= 0){
+        return false;
+    }else{
+        return true;
+    }
+}
+
+function validatePasswordPolicy($password){
+    if (!preg_match('/^(?=.*\d)(?=.*[@#\-_$%^&+=§!\?])(?=.*[a-z])(?=.*[A-Z])[1-9A-Za-z@#\-_$%^&+=§!\?]{8,12}$/',$password)){
+        return false;
+    }else{
+        return true;
+    }
+}
+
+function sanitize_input($data) {
+    $data = trim($data);
+    $data = stripslashes($data);
+    $data = htmlspecialchars($data);
+    return $data;
 }
 
 ?>

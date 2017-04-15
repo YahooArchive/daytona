@@ -5,7 +5,7 @@ services:
             context: .
             dockerfile: Dockerfile.ui
         ports:
-            - "8080:80"
+            - "8084:80"
         depends_on:
             - db
     db:
@@ -24,6 +24,10 @@ services:
         ports:
             - "3306:3306"
     agent:
-           build: 
+            build: 
                context: .
                dockerfile: Dockerfile.agent
+            security_opt:
+                - seccomp:unconfined
+            cap_add:
+                - SYS_PTRACE
