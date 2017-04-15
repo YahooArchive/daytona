@@ -18,6 +18,11 @@ function verifyPltContentForGraph($file){
     $process_header = 1;
     $header_validity = array();
     $column_name = array();
+    $valid_path = validate_file_path($file);
+    if ($valid_path === false){
+        $ret_code = 3;
+        return $ret_code;
+    }
     $handle = fopen($file, "r");
     if ($handle){
         while (($line = fgets($handle)) !== false) {
@@ -112,6 +117,11 @@ function buildTestReportGraph($div_id, $file_paths, $s_compids_str, $title, $gra
         return;
     }else if ($error == 2) {
         $error_msg = "Not able to read file";
+        $error_type = 1;
+        echo "  <script> buildGraphErrorView('$error_msg','$div_id','$title','$error_type'); </script>\n";
+        return;
+    }else if ($error == 3) {
+        $error_msg = "Cannot access file or invalid URL";
         $error_type = 1;
         echo "  <script> buildGraphErrorView('$error_msg','$div_id','$title','$error_type'); </script>\n";
         return;
@@ -240,7 +250,9 @@ function buildTestReportGraph($div_id, $file_paths, $s_compids_str, $title, $gra
             $error = verifyPltContentForGraph($filename);
             if ($error == 1){
                 continue;
-            }else if ($error == 2){
+            }else if ($error == 2) {
+                continue;
+            }else if ($error == 3) {
                 continue;
             }else{
                 $handle = fopen($filename, "r");
@@ -398,6 +410,12 @@ function buildSingleGraphView($file_paths, $s_compids_str, $act_file){
             echo "  <script> buildGraphErrorView('$error_msg','$div_id','$title','$error_type'); </script>\n";
             $div_id++;
             continue;
+        }else if ($error == 3){
+            $error_msg = "Cannot access file or invalid URL";
+            $error_type = 2;
+            echo "  <script> buildGraphErrorView('$error_msg','$div_id','$title','$error_type'); </script>\n";
+            $div_id++;
+            continue;
         }
         $process_header = 1;
         $time_offset = 1;
@@ -496,6 +514,11 @@ function buildColumnGraphView($file_paths, $s_compids_str, $act_file){
         $error_msg = "Not able to read file";
         echo "  <script> buildGraphErrorView('$error_msg','$div_id','$act_file','$error_type'); </script>\n";
         return;
+    }else if ($error == 3){
+        $error_type = 2;
+        $error_msg = "Cannot access file or invalid URL";
+        echo "  <script> buildGraphErrorView('$error_msg','$div_id','$act_file','$error_type'); </script>\n";
+        return;
     }else{
         $handle = fopen($file, "r");
         $count = 0;
@@ -505,6 +528,7 @@ function buildColumnGraphView($file_paths, $s_compids_str, $act_file){
                 $xaxis_data[$testid_arr[$count]] = array();
                 for($i = 1;$i < sizeof($line_arr);$i++){
                     $data = str_replace("\n",'', $line_arr[$i]);
+		    $data = str_replace('"','', $data);
                     $temp_array = array();
                     $temp_array[$testid_arr[$count]] = array();
                     $column_data[$data] = $temp_array;
@@ -546,7 +570,9 @@ function buildColumnGraphView($file_paths, $s_compids_str, $act_file){
             $error = verifyPltContentForGraph($file);
             if ($error == 1){
                 continue;
-            }else if ($error == 2){
+            }else if ($error == 2) {
+                continue;
+            }else if ($error == 3) {
                 continue;
             }else{
                 $handle = fopen($file, "r");
@@ -556,6 +582,7 @@ function buildColumnGraphView($file_paths, $s_compids_str, $act_file){
                         $xaxis_data[$testid_arr[$count]] = array();
                         for($i = 1;$i < sizeof($line_arr);$i++){
                             $data = str_replace("\n",'', $line_arr[$i]);
+			    $data = str_replace('"','', $data);
                             if (array_key_exists($data,$column_data)){
                                 $column_data[$data][$testid_arr[$count]] = array();
                             }
@@ -634,6 +661,11 @@ function buildTestCompareData($filepaths,$test_ids){
     $ret_data = array();
     for($i = 0; $i < sizeof($file_arr);$i++){
         $file_data = "";
+        $valid_path = validate_file_path($file_arr[$i]);
+        if ($valid_path === false){
+            $error_msg = "Cannot access file or invalid URL";
+            return $error_msg;
+        }
         $fileptr = fopen($file_arr[$i], "r");
         if ($fileptr) {
             while (($line = fgets($fileptr)) !== false) {

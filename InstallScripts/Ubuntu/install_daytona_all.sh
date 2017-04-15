@@ -1,37 +1,33 @@
 #!/bin/bash
 
-daytona_install_dir=$HOME/daytona_prod/daytona
-daytona_data_dir=/tmp/daytona_root/test_data_DH
-distro=Ubuntu
+source config.sh
+
+if [ -z $db_name ] || [ -z $db_user ] || [ -z $db_password ] || [ -z $db_host ] || [ -z $db_root_pass ] || [ -z $daytona_install_dir ] || [ -z $daytona_data_dir ] || [ -z $ui_admin_pass ] || [ -z $email_user ] || [ -z $email_domain ] || [ -z $smtp_server ] || [ -z $smtp_port ]; then
+  echo 'one or more variables are undefined in config.sh'
+  echo 'Please configure config.sh'
+  echo 'For details that are unknown, enter some dummy values'
+  exit 1
+fi
 
 mkdir -p $daytona_install_dir
-cp -r ../../*  $daytona_install_dir
+cp -r ../../Scheduler+Agent  $daytona_install_dir
 
-cd $daytona_install_dir/InstallScripts/$distro
 echo "****** Installing Daytona DB *********"
 echo "**************************************"
 ./install_daytona_db.sh 
 
-sleep 10
-
-cd $daytona_install_dir/InstallScripts/$distro
 echo "****** Installing Daytona UI*********"
 echo "**************************************"
-./install_daytona_ui.sh $daytona_data_dir
+./install_daytona_ui.sh
 
-cd $daytona_install_dir/InstallScripts/$distro
 echo "****** Installing Daytona Scheduler*****"
 echo "****************************************"
-./install_daytona_scheduler.sh $daytona_data_dir
+./install_daytona_scheduler.sh
 
-cd $daytona_install_dir/InstallScripts/$distro
 echo "****** Installing Daytona Agent ******"
 echo "**************************************"
 ./install_daytona_agent.sh
 
-sleep 10
-
-cd $daytona_install_dir/InstallScripts/$distro
 echo "****** Updating IP of sample framework ******"
 echo "*********************************************"
 ./fix_sample_framework_ip.sh

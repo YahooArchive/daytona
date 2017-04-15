@@ -106,10 +106,12 @@ include_once('lib/popup.php');
                                     <td class='zero-line-height tiny-padding'>
                                         <div class='form-group zero-line-height zero-margin'>
                                             <input type='text' class='form-control form-input' name='f_statistics' id='f_statistics' value="<?php
-                                            if(array_key_exists('statistics',$testData)) {
-                                                echo implode(",", $testData['statistics']);
+                                            if(isset($testData)){
+                                                if(array_key_exists('statistics',$testData)) {
+                                                    echo implode(",", $testData['statistics']);
+                                                }
                                             }
-                                            ?>">
+					    ?>">
                                         </div>
                                     </td>
                                 </tr>
@@ -258,7 +260,7 @@ include_once('lib/popup.php');
                                     </td>
                                     <td class='zero-line-height tiny-padding'>
                                         <div class='form-group zero-line-height zero-margin'>
-                                            <input type='text' class='form-control form-input' <?php if (!$strace) echo "disabled=\"disabled\""?> name='f_strace_process' id='f_strace_process' value="<?php echo array_key_exists('strace_process',$testData) ? $testData['strace_process'] : null; ?>" required>
+                                            <input type='text' class='form-control form-input' <?php if (!$strace) echo "disabled=\"disabled\""?> name='f_strace_process' id='f_strace_process' value="<?php if (isset($testData)) echo array_key_exists('strace_process',$testData) ? $testData['strace_process'] : null; ?>" required>
                                         </div>
                                     </td>
                                 </tr>
@@ -268,7 +270,7 @@ include_once('lib/popup.php');
                                     </td>
                                     <td class='zero-line-height tiny-padding'>
                                         <div class='form-group zero-line-height zero-margin'>
-                                            <input type='number' class='form-control form-input' min="0" <?php if (!$strace) echo "disabled=\"disabled\""?> name='f_strace_delay' id='f_strace_delay' value="<?php echo array_key_exists('strace_delay',$testData) ? $testData['strace_delay'] : 0; ?>" required>
+                                            <input type='number' class='form-control form-input' min="0" <?php if (!$strace) echo "disabled=\"disabled\""?> name='f_strace_delay' id='f_strace_delay' value="<?php if (isset($testData)) echo array_key_exists('strace_delay',$testData) ? $testData['strace_delay'] : 0; ?>" required>
                                         </div>
                                     </td>
                                 </tr>
@@ -278,7 +280,7 @@ include_once('lib/popup.php');
                                     </td>
                                     <td class='zero-line-height tiny-padding'>
                                         <div class='form-group zero-line-height zero-margin'>
-                                            <input type='number' class='form-control form-input' min="1" max="30" <?php if (!$strace) echo "disabled=\"disabled\""?> name='f_strace_duration' id='f_strace_duration' value="<?php echo array_key_exists('strace_duration',$testData) ? $testData['strace_duration'] : 10; ?>" required>
+                                            <input type='number' class='form-control form-input' min="1" max="30" <?php if (!$strace) echo "disabled=\"disabled\""?> name='f_strace_duration' id='f_strace_duration' value="<?php if (isset($testData)) echo array_key_exists('strace_duration',$testData) ? $testData['strace_duration'] : 10; ?>" required>
                                         </div>
                                     </td>
                                 </tr>

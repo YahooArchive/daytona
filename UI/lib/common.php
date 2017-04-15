@@ -32,9 +32,9 @@ function diePrint($message, $header) {
 // Retrieve a GET or POST parameter
 function getParam($paramName, $paramType='GET') {
     if ($paramType == 'POST') {
-        return isset($_POST[$paramName]) ? $_POST[$paramName] : null;
+        return isset($_POST[$paramName]) ? sanitize_input($_POST[$paramName]) : null;
     }
-    return isset($_GET[$paramName]) ? $_GET[$paramName] : null;
+    return isset($_GET[$paramName]) ? sanitize_input($_GET[$paramName]) : null;
 }
 
 function initDB() {
@@ -286,6 +286,10 @@ function generateCompareCsv($csvfiles, $testid)
     $final_csv = array();
 
     for ($i = 0; $i < count($csv_files); ++$i) {
+        $valid_path = validate_file_path($csv_files[$i]);
+        if ($valid_path === false){
+            return;
+        }
         if ($i == 0) {
             $fp = fopen($csv_files[$i], 'r');
             if ($fp){
@@ -348,6 +352,10 @@ function getCsvColumnCount($csvfiles){
     $csv_files = explode(",", $csvfiles);
     $count = 0;
     if (count($csv_files) > 0){
+        $valid_path = validate_file_path($csv_files[0]);
+        if ($valid_path === false){
+            return;
+        }
         $fp = fopen($csv_files[0], 'r');
         if ($fp){
             $data = fgetcsv($fp, 0, ",");
@@ -379,6 +387,52 @@ function validatePassword($db, $user, $password) {
         return password_verify($password, $storedPassword->password);
     }
     return false;
+}
+
+function returnError($message=null) {
+    $returnObj = array(
+        'status'  => 'ERROR',
+        'message' => $message
+    );
+    header('Content-Type: application/json');
+    echo json_encode($returnObj);
+    exit;
+}
+
+function returnOk($returnData=array()) {
+    $returnObj = array(
+        'status'  => 'OK',
+        'message' => 'OK'
+    );
+    $returnObj = array_merge($returnObj, $returnData);
+    header('Content-Type: application/json');
+    echo json_encode($returnObj);
+    exit;
+}
+
+function validate_file_path($filepath){
+    $base = '/var/www/html/daytona/daytona_root/test_data_DH/';
+    $real = realpath($filepath);
+    if ($real === false || strncmp($real, $base, strlen($base)+1) <= 0){
+        return false;
+    }else{
+        return true;
+    }
+}
+
+function validatePasswordPolicy($password){
+    if (!preg_match('/^(?=.*\d)(?=.*[@#\-_$%^&+=§!\?])(?=.*[a-z])(?=.*[A-Z])[1-9A-Za-z@#\-_$%^&+=§!\?]{8,12}$/',$password)){
+        return false;
+    }else{
+        return true;
+    }
+}
+
+function sanitize_input($data) {
+    $data = trim($data);
+    $data = stripslashes($data);
+    $data = htmlspecialchars($data);
+    return $data;
 }
 
 ?>

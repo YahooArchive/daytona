@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 5.7.16, for Linux (x86_64)
+-- MySQL dump 10.13  Distrib 5.7.18, for Linux (x86_64)
 --
 -- Host: localhost    Database: daytona
 -- ------------------------------------------------------
--- Server version	5.7.16
+-- Server version	5.7.18
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -45,7 +45,7 @@ CREATE TABLE `ApplicationFrameworkArgs` (
   KEY `argument_name` (`argument_name`),
   KEY `frameworkid` (`frameworkid`),
   CONSTRAINT `ApplicationFrameworkArgs_fk_frameworkid` FOREIGN KEY (`frameworkid`) REFERENCES `ApplicationFrameworkMetadata` (`frameworkid`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=424 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=426 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -54,7 +54,7 @@ CREATE TABLE `ApplicationFrameworkArgs` (
 
 LOCK TABLES `ApplicationFrameworkArgs` WRITE;
 /*!40000 ALTER TABLE `ApplicationFrameworkArgs` DISABLE KEYS */;
-INSERT INTO `ApplicationFrameworkArgs` VALUES (422,50,'QPS','text','','200',0,'Queries per second'),(423,50,'Duration','text','','120',1,'Duration of test in seconds');
+INSERT INTO `ApplicationFrameworkArgs` VALUES (424,51,'QPS','text','','200',0,'Queries per second'),(425,51,'Duration','text','','120',1,'Duration of test in seconds');
 /*!40000 ALTER TABLE `ApplicationFrameworkArgs` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -94,7 +94,7 @@ CREATE TABLE `ApplicationFrameworkMetadata` (
   UNIQUE KEY `framework_frameworkname` (`frameworkname`),
   KEY `frameworkid` (`frameworkid`),
   KEY `frameworkname` (`frameworkname`)
-) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=52 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -103,7 +103,7 @@ CREATE TABLE `ApplicationFrameworkMetadata` (
 
 LOCK TABLES `ApplicationFrameworkMetadata` WRITE;
 /*!40000 ALTER TABLE `ApplicationFrameworkMetadata` DISABLE KEYS */;
-INSERT INTO `ApplicationFrameworkMetadata` VALUES (50,'Daytona','DaytonaSampleFramework','Sample framework to demonstrate basic features of Daytona','Demonstrate basic features of Daytona','testuser1','agent:/tmp/ExecScripts/sample_execscript.sh','2016-10-24 23:01:01','2016-11-17 22:02:54',0,0,0,0,0,'/tmp/daytona_root',NULL,NULL,'testuser1',1,1,NULL,0,0,'arg_order');
+INSERT INTO `ApplicationFrameworkMetadata` VALUES (51,'Daytona','DaytonaSampleFramework','Sample framework to demonstrate basic features of Daytona','Demonstrate basic features of Daytona','admin','sample_execscript.sh','2017-04-14 23:05:24','2017-04-14 23:06:07',0,0,0,0,0,'/tmp/daytona_root',NULL,NULL,'admin',1,1,NULL,0,0,'arg_order');
 /*!40000 ALTER TABLE `ApplicationFrameworkMetadata` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -131,7 +131,7 @@ CREATE TABLE `CommonFrameworkAuthentication` (
 
 LOCK TABLES `CommonFrameworkAuthentication` WRITE;
 /*!40000 ALTER TABLE `CommonFrameworkAuthentication` DISABLE KEYS */;
-INSERT INTO `CommonFrameworkAuthentication` VALUES ('testuser1',1,50);
+INSERT INTO `CommonFrameworkAuthentication` VALUES ('admin',1,51);
 /*!40000 ALTER TABLE `CommonFrameworkAuthentication` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -154,7 +154,7 @@ CREATE TABLE `CommonFrameworkSchedulerQueue` (
   KEY `queueid` (`queueid`),
   KEY `testid` (`testid`),
   CONSTRAINT `CommonFrameworkSchedulerQueue_fk_testid` FOREIGN KEY (`testid`) REFERENCES `TestInputData` (`testid`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -189,7 +189,7 @@ CREATE TABLE `CommonHardwareMetadata` (
 
 LOCK TABLES `CommonHardwareMetadata` WRITE;
 /*!40000 ALTER TABLE `CommonHardwareMetadata` DISABLE KEYS */;
-INSERT INTO `CommonHardwareMetadata` VALUES ('10.221.21.232','2016-10-24 23:15:00','2016-10-24 23:28:15','available'),('10.91.44.214','2016-10-12 18:03:52','2016-10-12 18:13:29','available'),('172.31.21.101','2016-08-26 18:40:39','2016-08-26 22:47:01','available');
+INSERT INTO `CommonHardwareMetadata` VALUES ('10.91.35.168','2017-04-14 23:07:24','2017-04-14 23:10:43','available');
 /*!40000 ALTER TABLE `CommonHardwareMetadata` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -241,7 +241,7 @@ CREATE TABLE `HostAssociation` (
   CONSTRAINT `HostAssociation_fk_hostassociationtypeid` FOREIGN KEY (`hostassociationtypeid`) REFERENCES `HostAssociationType` (`hostassociationtypeid`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `HostAssociation_fk_hostname` FOREIGN KEY (`hostname`) REFERENCES `CommonHardwareMetadata` (`hostname`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `HostAssociation_fk_testid` FOREIGN KEY (`testid`) REFERENCES `TestInputData` (`testid`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=3374 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3377 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -250,7 +250,7 @@ CREATE TABLE `HostAssociation` (
 
 LOCK TABLES `HostAssociation` WRITE;
 /*!40000 ALTER TABLE `HostAssociation` DISABLE KEYS */;
-INSERT INTO `HostAssociation` VALUES (3370,147,1131,'10.221.21.232'),(3371,148,1131,'10.221.21.232'),(3372,147,1132,'10.221.21.232'),(3373,148,1132,'10.221.21.232');
+INSERT INTO `HostAssociation` VALUES (3374,149,1000,'10.91.35.168'),(3376,149,1001,'10.91.35.168');
 /*!40000 ALTER TABLE `HostAssociation` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -274,7 +274,7 @@ CREATE TABLE `HostAssociationType` (
   KEY `hostassociationtypeid` (`hostassociationtypeid`),
   KEY `frameworkid` (`frameworkid`),
   CONSTRAINT `HostAssociationType_fk_frameworkid` FOREIGN KEY (`frameworkid`) REFERENCES `ApplicationFrameworkMetadata` (`frameworkid`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=149 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=151 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -283,7 +283,7 @@ CREATE TABLE `HostAssociationType` (
 
 LOCK TABLES `HostAssociationType` WRITE;
 /*!40000 ALTER TABLE `HostAssociationType` DISABLE KEYS */;
-INSERT INTO `HostAssociationType` VALUES (147,50,'execution',0,1,0,'agent'),(148,50,'statistics',0,0,1,'agent');
+INSERT INTO `HostAssociationType` VALUES (149,51,'execution',0,1,0,'10.91.35.168'),(150,51,'statistics',0,0,1,'');
 /*!40000 ALTER TABLE `HostAssociationType` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -310,7 +310,7 @@ CREATE TABLE `LoginAuthentication` (
 
 LOCK TABLES `LoginAuthentication` WRITE;
 /*!40000 ALTER TABLE `LoginAuthentication` DISABLE KEYS */;
-INSERT INTO `LoginAuthentication` VALUES ('admin','$2y$10$DqPJecET8bYOMg0tv0qI9eUEOGbIXxOVXXZqqkQsJm0I7jXpJLFaK','\0',NULL,'Active'),('testuser1','$2y$10$.ggA4oaZr3JvHQdcz89wUuLUDDFTrx4lRd70qJX8cZDFpWEhYA0he','','tester1@test.com','Active');
+INSERT INTO `LoginAuthentication` VALUES ('admin','','','admin@daytona.com','Active');
 /*!40000 ALTER TABLE `LoginAuthentication` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -323,14 +323,16 @@ DROP TABLE IF EXISTS `ProfilerFramework`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ProfilerFramework` (
   `profiler_framework_id` int(11) NOT NULL AUTO_INCREMENT,
-  `frameworkid` int(11) NOT NULL,
-  `profiler_ident` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `enabled` tinyint(4) NOT NULL DEFAULT '0',
+  `profiler` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
+  `testid` int(11) NOT NULL,
+  `processname` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
+  `delay` int(11) NOT NULL DEFAULT '0',
+  `duration` int(11) NOT NULL DEFAULT '1',
   PRIMARY KEY (`profiler_framework_id`),
   KEY `profiler_framework_id` (`profiler_framework_id`),
-  KEY `frameworkid` (`frameworkid`),
-  CONSTRAINT `ProfilerFramework_ProfilerFramework_fk_frameworkid` FOREIGN KEY (`frameworkid`) REFERENCES `ApplicationFrameworkMetadata` (`frameworkid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  KEY `testID_idx` (`testid`),
+  CONSTRAINT `testID` FOREIGN KEY (`testid`) REFERENCES `TestInputData` (`testid`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -339,6 +341,7 @@ CREATE TABLE `ProfilerFramework` (
 
 LOCK TABLES `ProfilerFramework` WRITE;
 /*!40000 ALTER TABLE `ProfilerFramework` DISABLE KEYS */;
+INSERT INTO `ProfilerFramework` VALUES (1,'STRACE',1001,'httpd',12,15);
 /*!40000 ALTER TABLE `ProfilerFramework` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -360,7 +363,7 @@ CREATE TABLE `TestArgs` (
   KEY `framework_arg_id` (`framework_arg_id`),
   KEY `testid` (`testid`),
   CONSTRAINT `TestArgs_fk_testid` FOREIGN KEY (`testid`) REFERENCES `TestInputData` (`testid`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=13621 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=13625 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -369,7 +372,7 @@ CREATE TABLE `TestArgs` (
 
 LOCK TABLES `TestArgs` WRITE;
 /*!40000 ALTER TABLE `TestArgs` DISABLE KEYS */;
-INSERT INTO `TestArgs` VALUES (13617,422,1131,'200'),(13618,423,1131,'120'),(13619,422,1132,'200'),(13620,423,1132,'120');
+INSERT INTO `TestArgs` VALUES (13621,424,1000,'200'),(13622,425,1000,'120'),(13623,424,1001,'200'),(13624,425,1001,'120');
 /*!40000 ALTER TABLE `TestArgs` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -418,7 +421,7 @@ CREATE TABLE `TestInputData` (
   KEY `profiler_framework_id` (`profiler_framework_id`),
   CONSTRAINT `TestInputData_fk_frameworkid` FOREIGN KEY (`frameworkid`) REFERENCES `ApplicationFrameworkMetadata` (`frameworkid`) ON DELETE CASCADE,
   CONSTRAINT `TestInputData_fk_profiler_framework_id` FOREIGN KEY (`profiler_framework_id`) REFERENCES `ProfilerFramework` (`profiler_framework_id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=1133 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1002 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -427,7 +430,7 @@ CREATE TABLE `TestInputData` (
 
 LOCK TABLES `TestInputData` WRITE;
 /*!40000 ALTER TABLE `TestInputData` DISABLE KEYS */;
-INSERT INTO `TestInputData` VALUES (1131,50,'New Test #1','New Test #1','testuser1',1,'2016-10-24 23:27:46','2016-10-24 23:26:37','2016-10-24 23:26:47','2016-10-24 23:27:46','finished clean',NULL,NULL,NULL,NULL,NULL,NULL,'','',0,NULL,NULL,'',NULL,'',NULL,NULL,NULL,NULL,NULL,300),(1132,50,'New Test #2','New Test #2','testuser1',1,'2016-10-24 23:29:26','2016-10-24 23:28:15','2016-10-24 23:28:27','2016-10-24 23:29:26','finished clean',NULL,NULL,NULL,NULL,NULL,NULL,'','',0,NULL,NULL,'',NULL,'',NULL,NULL,NULL,NULL,NULL,300);
+INSERT INTO `TestInputData` VALUES (1000,51,'Sample Test 1','','admin',1,'2017-04-14 23:08:42','2017-04-14 23:07:24','2017-04-14 23:07:35','2017-04-14 23:08:42','finished clean',NULL,NULL,NULL,NULL,NULL,NULL,'','',0,NULL,NULL,'',NULL,'',NULL,NULL,NULL,NULL,NULL,0),(1001,51,'Sample Test 2','','admin',1,'2017-04-14 23:12:17','2017-04-14 23:09:14','2017-04-14 23:11:09','2017-04-14 23:12:17','finished clean',NULL,NULL,NULL,NULL,NULL,NULL,'','',0,NULL,NULL,'',NULL,'',NULL,NULL,NULL,NULL,NULL,0);
 /*!40000 ALTER TABLE `TestInputData` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -453,7 +456,7 @@ CREATE TABLE `TestResultFile` (
   KEY `filename` (`filename`),
   KEY `frameworkid` (`frameworkid`),
   CONSTRAINT `TestResultFile_fk_frameworkid` FOREIGN KEY (`frameworkid`) REFERENCES `ApplicationFrameworkMetadata` (`frameworkid`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=2347 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2355 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -462,7 +465,7 @@ CREATE TABLE `TestResultFile` (
 
 LOCK TABLES `TestResultFile` WRITE;
 /*!40000 ALTER TABLE `TestResultFile` DISABLE KEYS */;
-INSERT INTO `TestResultFile` VALUES (2343,50,'app_kpi.csv','Application Performance Metrics',0,1,NULL,0,0),(2344,50,'%STATHOST,0%/sar/cpu.plt:_user','User Mode CPU for Stat Host #0',1,2,NULL,0,0),(2345,50,'%STATHOST,0%/sar/cpu.plt:_system','System Mode CPU for Stat Host #0',2,3,NULL,0,0),(2346,50,'multicol.csv','CSV File with multiple columns and rows',3,4,NULL,0,0);
+INSERT INTO `TestResultFile` VALUES (2351,51,'results.csv','Application Performance Metrics',0,1,NULL,0,0),(2352,51,'%EXECHOST,0%/sar/cpu.plt:_user','User Mode CPU for Stat Host #0',1,2,NULL,0,0),(2353,51,'%EXECHOST,0%/sar/cpu.plt:_system','System Mode CPU for Stat Host #0',2,3,NULL,0,0),(2354,51,'multicol.csv','CSV File with multiple columns and rows',3,4,NULL,0,0);
 /*!40000 ALTER TABLE `TestResultFile` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -475,20 +478,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2016-11-17 22:03:43
-ALTER TABLE `daytona`.`ProfilerFramework` 
-DROP FOREIGN KEY `ProfilerFramework_ProfilerFramework_fk_frameworkid`;
-ALTER TABLE `daytona`.`ProfilerFramework` 
-CHANGE COLUMN `frameworkid` `profiler` VARCHAR(45) NOT NULL ,
-CHANGE COLUMN `profiler_ident` `testid` INT NOT NULL ,
-CHANGE COLUMN `enabled` `processname` VARCHAR(45) NOT NULL ,
-ADD COLUMN `delay` INT NOT NULL DEFAULT 0 AFTER `processname`,
-ADD COLUMN `duration` INT NOT NULL DEFAULT 1 AFTER `delay`,
-ADD INDEX `testID_idx` (`testid` ASC),
-DROP INDEX `frameworkid` ;
-ALTER TABLE `daytona`.`ProfilerFramework` 
-ADD CONSTRAINT `testID`
-  FOREIGN KEY (`testid`)
-  REFERENCES `daytona`.`TestInputData` (`testid`)
-  ON DELETE NO ACTION
-  ON UPDATE NO ACTION;
+-- Dump completed on 2017-04-14 23:14:13

@@ -5,27 +5,6 @@
 
 require 'lib/auth.php';
 
-function returnError($message=null) {
-    $returnObj = array(
-        'status'  => 'ERROR',
-        'message' => $message
-    );
-    header('Content-Type: application/json');
-    echo json_encode($returnObj);
-    exit;
-}
-
-function returnOk($returnData=array()) {
-    $returnObj = array(
-        'status'  => 'OK',
-        'message' => 'OK'
-    );
-    $returnObj = array_merge($returnObj, $returnData);
-    header('Content-Type: application/json');
-    echo json_encode($returnObj);
-    exit;
-}
-
 function save_framework($db) {
     global $userId, $userIsAdmin;
 

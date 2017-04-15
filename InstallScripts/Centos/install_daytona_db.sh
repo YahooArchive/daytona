@@ -1,15 +1,6 @@
 #!/bin/bash
 
-# Daytona DB Details
-db_name="daytona"
-db_user="daytona"
-db_password="2wsxXSW@"
-db_host="localhost"
-db_root_pass="2wsxXSW@"
-
-echo -e "Starting Daytona DB  Installation ...\n"
-sudo rm -rf /tmp/daytona_install.log
-
+source config.sh
 
 echo -e "Updating Linux...\n"
 # update & upgrade #
@@ -26,10 +17,10 @@ root_pass_temp=${root_pass##* }
 echo -e "Setting Daytona Database Configuration...\n"
 
 mysql --connect-expired-password --user=root --password=${root_pass_temp} -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${db_root_pass}';"
-mysql --connect-expired-password --user=root --password=${db_root_pass} -e "CREATE USER '${db_name}'@'${db_host}' IDENTIFIED BY '${db_password}';"
+mysql --connect-expired-password --user=root --password=${db_root_pass} -e "CREATE USER '${db_user}'@'${db_host}' IDENTIFIED BY '${db_password}';"
 mysql --connect-expired-password --user=root --password=${db_root_pass} -e "CREATE DATABASE ${db_name};"
-mysql --connect-expired-password --user=root --password=${db_root_pass} -e "GRANT ALL PRIVILEGES ON ${db_name}.* TO '${db_name}'@'${db_host}';"
+mysql --connect-expired-password --user=root --password=${db_root_pass} -e "GRANT ALL PRIVILEGES ON ${db_name}.* TO '${db_user}'@'${db_host}';"
 mysql --connect-expired-password --user=root --password=${db_root_pass} -e "FLUSH PRIVILEGES;"
 
 echo -e "Creating all required daytona tables in Database...\n"
-mysql --connect-expired-password --user=root --password=${db_root_pass} ${db_name} < ../../DbSchema/DbSchema.sql 
+mysql --connect-expired-password --user=${db_user} --password=${db_password} ${db_name} < ../../DbSchema/DbSchema.sql 

@@ -180,5 +180,13 @@ function switchFileViewerFormat(referer) {
 }
 
 function downloadFIle(filename,s_compids_str){
-    window.location = "/downloadfile.php?filename=" + filename + "&testids=" + s_compids_str;
+    url = "/downloadfile.php?filename=" + filename + "&testids=" + s_compids_str;
+    var http = new XMLHttpRequest();
+    http.open('HEAD', url, false);
+    http.send();
+    if (http.status == 404){
+        alert("File not found or invalid URL");
+    }
+    else
+        window.location.href = url;
 }

@@ -6,6 +6,8 @@ import requests
 import json
 from logger import LOG
 
+HOST_IP_PREFIX = 'http://'  # change this to 'https' for SSL connections
+HOST_IP_SUFFIX = '/verifyuser.php'
 
 class dbCliHandle():
     def __init__(self):
@@ -359,7 +361,7 @@ class dbCliHandle():
             return str(err)
 
     def authenticate_user(self, luser, lpassword):
-        res = requests.post('http://localhost/verifyuser.php', data={'user': luser, 'password': lpassword})
+        res = requests.post(HOST_IP_PREFIX + 'localhost' + HOST_IP_PREFIX, data={'user': luser, 'password': lpassword})
         if res.status_code != 200:
             if res.status_code == 401:
                 return "Error|Invalid username/password"

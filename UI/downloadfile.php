@@ -29,57 +29,78 @@ if ($userId){
         }
     }
 
-    $ini_arr = parse_ini_file("daytona_config.ini");
-    $servername = $ini_arr["servername"];
-    $username = $ini_arr["username"];
-    $password = $ini_arr["password"];
-    $dbname = $ini_arr["dbname"];
-    $conn = new mysqli($servername, $username, $password, $dbname);
-    if ($conn->connect_error) {
-        echo "<script>alert('Connection failed');</script>\n";
-        die("Connection failed: " . $conn->connect_error);
+    $s_compids_arr = explode(",",$testids);
+    $bind_vale_str = "";
+    for ($x = 1; $x <=sizeof($s_compids_arr); $x++){
+        $bind_vale_str = $bind_vale_str . ":test" . $x;
+        if($x !== sizeof($s_compids_arr)){
+            $bind_vale_str = $bind_vale_str . ",";
+        }
     }
 
-    $test_info_sql = "SELECT frameworkname,TestInputData.title,TestInputData.purpose,exechostname,
+    try{
+        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $db->beginTransaction();
+
+        $query = "SELECT frameworkname,TestInputData.title,TestInputData.purpose,exechostname,
                   stathostname,priority,timeout,cc_list,
                   TestInputData.creation_time,modified,start_time,end_time FROM TestInputData
-                  JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE testid=$testid_arr[0]";
-    $test_info_result = $conn->query($test_info_sql);
-    $test_info_data = $test_info_result->fetch_assoc();
+                  JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE testid=:testid";
+        $stmt = $db->prepare($query);
+        $stmt->bindValue(':testid',$testid_arr[0],PDO::PARAM_INT);
+        $stmt->execute();
+        $test_info_data = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    $test_hosts_sql = "SELECT testid,hostassociationid,hostname,name FROM HostAssociation JOIN HostAssociationType
-                   USING(hostassociationtypeid) WHERE testid IN ($testids) ORDER BY hostassociationid";
-    $test_hosts_result = $conn->query($test_hosts_sql);
-    while ($row = $test_hosts_result->fetch_assoc()) {
-        if (!isset($test_info_data[$row["testid"]][$row["name"]])) {
-            $test_info_data[$row["testid"]][$row["name"]] = array();
+        $query = "SELECT testid,hostassociationid,hostname,name FROM HostAssociation JOIN HostAssociationType
+                   USING(hostassociationtypeid) WHERE testid IN (" . $bind_vale_str . ") ORDER BY hostassociationid";
+        $stmt = $db->prepare($query);
+        for ($x = 1; $x <=sizeof($s_compids_arr); $x++){
+            $stmt->bindValue(':test'.$x ,$s_compids_arr[$x-1], PDO::PARAM_INT);
         }
-        array_push($test_info_data[$row["testid"]][$row["name"]], $row["hostname"]);
+        $stmt->execute();
+        $test_hosts_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+	error_log(print_r($test_hosts_result,true));
+        foreach ($test_hosts_result as $row){
+            if(!isset($test_info_data[$row["testid"]][$row["name"]])) {
+                $test_info_data[$row["testid"]][$row["name"]] = array();
+            }
+            array_push($test_info_data[$row["testid"]][$row["name"]], $row["hostname"]);
+        }
+    }catch (PDOException $e){
+        $db->rollBack();
+        returnError("MySQL error: " . $e->getMessage());
     }
+
     $file_paths = array();
     foreach ($testid_arr as $l_id) {
         $report_path = "test_data/" . $test_info_data["frameworkname"] . "/$l_id/results/" .
             formatFilePath($filename, $test_info_data[$l_id]);
-        $report_path_file = strpos($report_path, ":") ? substr($report_path, 0, strpos($report_path, ":")) : $report_path;
-        if (file_exists($report_path_file)) {
-            array_push($file_paths,$report_path);
+        $valid_path = validate_file_path($report_path);
+        if ($valid_path === true){
+            if (file_exists($report_path)) {
+                array_push($file_paths,$report_path);
+            }
         }
     }
-    $file_name = basename($filename);
-    $zipname = $file_name . "-" . str_replace(",","-",$testids) . ".zip";
-    $zippath = "/tmp/" . $zipname;
-    $zip = new ZipArchive;
-    $zip->open($zippath, ZipArchive::CREATE);
-    $counter = 0;
-    foreach ($file_paths as $file) {
-        $zip->addFile($file,$testid_arr[$counter++] . "-" . basename($file));
+    if (sizeof($file_paths) > 0){
+        $file_name = basename($filename);
+        $zipname = $file_name . "-" . str_replace(",","-",$testids) . ".zip";
+        $zippath = "/tmp/" . $zipname;
+        $zip = new ZipArchive;
+        $zip->open($zippath, ZipArchive::CREATE);
+        $counter = 0;
+        foreach ($file_paths as $file) {
+            $zip->addFile($file,$testid_arr[$counter++] . "-" . basename($file));
+        }
+        $zip->close();
+        header('Content-Type: application/zip');
+        header('Content-disposition: attachment; filename='.$zipname);
+        header('Content-Length: ' . filesize($zippath));
+        ob_clean();
+        flush();
+        readfile($zippath);
+        unlink($zippath);
+    }else{
+        echo http_response_code(404);
     }
-    $zip->close();
-    header('Content-Type: application/zip');
-    header('Content-disposition: attachment; filename='.$zipname);
-    header('Content-Length: ' . filesize($zippath));
-    ob_clean();
-    flush();
-    readfile($zippath);
-    unlink($zippath);
 }

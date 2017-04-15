@@ -21,9 +21,6 @@ run = None
 arg_count = 0
 
 SERVER_PORT = 52222  # Change this if scheduler on server changes
-HOST_IP_PREFIX = 'http://'  # change this to 'https' for SSL connections
-HOST_IP_SUFFIX = '/verifyuser.php'
-FILE_EXT = ".json"
 OPTION_LIST = ("--definetest", "--addtest", "--updatetest", "--runtest", "--h", "--getresult")
 
 

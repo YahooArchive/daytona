@@ -530,6 +530,10 @@ class Scheduler:
                         d = "TSMON [F] : |*" + str(self.running_tests[k].testobj.TestInputData.testid) + "*|"
                         remove = True
                         break
+		    elif "TESTFAILED" == status.strip():
+                        remove = True
+                        lctx.error("TEST Failed : Cleaning test from running queue")
+                        break  # out of for loop
                     else:
                         remove = True
                         t.updateStatus("running", "failed")

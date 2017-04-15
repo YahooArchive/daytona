@@ -1,6 +1,0 @@
-QPS, 200
-AvgLatency-ms, 10.5
-MaxLatency-ms, 50
-MinLatency-ms, 6
-FailureRate, 0.1
-Duration-secs, 120

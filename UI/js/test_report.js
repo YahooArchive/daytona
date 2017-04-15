@@ -294,7 +294,7 @@ function buildGraphErrorView(text, graphid,title,error_type){
         var pGraphDiv = '#collapse' + graphid;
         $(pGraphDiv).append(pGraph);
         return;
-    }else{
+    }else if(error_type == '2'){
         var panel = $("<div></div>").addClass("panel panel-info partition-1");
         var pHeading = $("<div></div>").addClass("panel-heading collapse-heading");
         var pTitle = $("<h4></h4>").addClass("panel-title text-center");
@@ -311,6 +311,11 @@ function buildGraphErrorView(text, graphid,title,error_type){
         $(panel).append(pHeading).append(pGraphDiv);
         $("#output-panel").append(panel);
         return;
+    }
+    else{
+        var div_id = "#" + graphid;
+        var pText = $('<p></p>').text(text).attr("id","graph-error");
+        $(div_id).append(pText);
     }
 }
 

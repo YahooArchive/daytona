@@ -1,15 +1,20 @@
 #!/bin/bash
 
-cd ../../Scheduler+Agent
+source config.sh
 
-ip=`grep "Server started" Agent_logging_rotatingfile.log | awk '{print $12}' | sed 's/:/ /g' | awk '{print $1}'`
+if [ -z $db_name ] || [ -z $db_user ] || [ -z $db_password ] || [ -z $db_host ] || [ -z $db_root_pass ] || [ -z $daytona_install_dir ] || [ -z $daytona_data_dir ] || [ -z $ui_admin_pass ] || [ -z $email_user ] || [ -z $email_domain ] || [ -z $smtp_server ] || [ -z $smtp_port ]; then
+  echo 'one or more variables are undefined in config.sh'
+  echo 'Please configure config.sh'
+  echo 'For details that are unknown, enter some dummy values'
+  exit 1
+fi
 
-echo "Updating location of execution script, default exechost and default statstics host"
+ip=`hostname -I`
+
+echo "Updating default exechost"
 echo ""
-ip=`grep "Server started" Agent_logging_rotatingfile.log | awk '{print $12}' | sed 's/:/ /g' | awk '{print $1}'`
-script_location=$ip:/tmp/ExecScripts/sample_execscript.sh
-echo update ApplicationFrameworkMetadata set execution_script_location="'"`echo $script_location`"'" where frameworkid=50";" > fix_exec.sql
 echo update HostAssociationType set default_value="'"`echo $ip`"'" where frameworkid=50 and name="'"execution"';" >> fix_exec.sql
-echo update HostAssociationType set default_value="'"`echo $ip`"'" where frameworkid=50 and name="'"statistics"';" >> fix_exec.sql
 
-mysql -u daytona -p2wsxXSW@ daytona < ./fix_exec.sql
+mysql -u ${db_name} -p${db_password} daytona < ./fix_exec.sql
+
+sudo rm -rf fix_exec.sql

@@ -16,6 +16,8 @@ import config
 from logger import LOG
 
 lctx = None
+EXEC_SCRIPT_DIR = '/tmp/ExecScripts/'
+
 class activeTest():
     def __init__(self, testid, actionID, exec_thread, testobj):
         self.testid = testid
@@ -44,6 +46,8 @@ class activeTest():
 current_test = activeTest(0,None,None,None)
 
 #todo : sub class
+
+
 class commandThread(threading.Thread):
     def __init__(self, cmdstr, dcmdstr, streamfile, cdir):
         self.cmd = cmdstr
@@ -108,6 +112,7 @@ class commandThread(threading.Thread):
             lctx.debug(ca)
             p = subprocess.Popen(ca, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             self.stdout, self.stderr = p.communicate()
+
 
 def exec_cmd(cmd, daytona_cmd, sync, obj, actionid):
     lctx.debug("Execute cmd : " + cmd)
@@ -180,9 +185,11 @@ def exec_cmd(cmd, daytona_cmd, sync, obj, actionid):
     lctx.debug(daytona_cmd + " END [" + str(actionid) + "]")
     return "SUCCESS"
 
+
 def log( self, *args):
     (obj, command, test_serialized, actionID, sync) = (args[0], args[1], args[2], args[3], args[4])
     lctx.debug(args)
+
 
 def startMonitor( self, *args):
     (obj, command, params, actionID, sync) = (args[0], args[1], args[2], args[3], args[4])
@@ -230,6 +237,7 @@ def startMonitor( self, *args):
     lctx.debug("Completed start monitor")
     return "SUCCESS"
 
+
 def stopMonitor( self, *args):
     (obj, command, test_serialized, actionID, sync) = (args[0], args[1], args[2], args[3], args[4])
     t2 = testobj.testDefn()
@@ -256,6 +264,7 @@ def stopMonitor( self, *args):
 
     lctx.debug("Completed stop monitor")
     return "SUCCESS"
+
 
 def setupTest( self, *args):
     (obj, command, test_serialized, actionID, sync) = (args[0], args[1], args[2], args[3], args[4])
@@ -288,14 +297,10 @@ def setupTest( self, *args):
 
         #todo : check and validate if exec script is provided in expected format and
         #       the file exists in that location
-        execscript = current_test.tobj.testobj.TestInputData.execution_script_location.split(":")[1]
+        execscript = current_test.tobj.testobj.TestInputData.execution_script_location
         lctx.debug("TEST SETUP : " + str(execscript))
 
-        tmp = str(execscript).split("/")
-        tmp.reverse()
-        lctx.debug(tmp)
-        filename = tmp[0]
-        current_test.execscriptfile = current_test.execdir+"/"+filename
+        current_test.execscriptfile = current_test.execdir+"/"+execscript
         lctx.debug(current_test.execscriptfile)
     except Exception as e:
         lctx.error(e)
@@ -303,15 +308,35 @@ def setupTest( self, *args):
         return "ERROR"
 
     try:
-        ret = copyfile(execscript, current_test.execscriptfile)
+        # check if execution script is present in '/tmp/ExecScripts/' - execute script only if it present at this
+        # location
+
+        execscript_location = EXEC_SCRIPT_DIR + execscript
+        execscript_location = os.path.realpath(execscript_location)
+        valid_path = os.path.commonprefix([execscript_location, EXEC_SCRIPT_DIR]) == EXEC_SCRIPT_DIR
+
+        if valid_path:
+            if os.path.isfile(execscript_location):
+                ret = copyfile(execscript_location, current_test.execscriptfile)
+            else:
+                lctx.error("Execution script not found at Daytona Execution Script Location : " + EXEC_SCRIPT_DIR)
+                current_test.status = "TESTFAILED"
+                return "ERROR"
+        else:
+            lctx.error("Access Denied : Use Daytona Execution Script Location '" + EXEC_SCRIPT_DIR + "' for executing "
+                                                                                                     "exec scripts")
+	    current_test.status = "TESTFAILED"
+            return "ERROR"
     except shutil.Error as err:
         lctx.error("error copying file : " + str(execscript) + " to " + str(current_test.execscriptfile))
+        current_test.status = "TESTFAILED"
         return "ERROR"
 
     try:
         os.chmod(current_test.execscriptfile, 0744)
     except:
         lctx.error("error setting perm file : " +  str(current_test.execdir))
+        current_test.status = "TESTFAILED"
         return "ERROR"
 
     #create dirs
@@ -322,6 +347,7 @@ def setupTest( self, *args):
     #exec any custom setup script
     lctx.debug("Completed setuptest")
     return "SUCCESS"
+
 
 def startTest( self, *args):
     (obj, command, test_serialized, actionID, sync) = (args[0], args[1], args[2], args[3], args[4])
@@ -354,8 +380,10 @@ def startTest( self, *args):
     lctx.debug("Completed start test")
     return "SUCCESS"
 
+
 def cleanup(*args):
     return "SUCCESS"
+
 
 def endTest(self, *args):
     (obj, command, test_serialized, actionID, sync) = (args[0], args[1], args[2], args[3], args[4])
@@ -381,8 +409,6 @@ def endTest(self, *args):
         t.stop()
         t.join()
     lctx.debug("Stopped ASYNC action pending for this this test")
-
-
     cleanup()
     lctx.debug(command + "[" + str(actionID) + "]")
     return "SUCCESS"
@@ -390,6 +416,7 @@ def endTest(self, *args):
 
 def heartbeat( self, *args):
     return "ALIVE"
+
 
 def setFinish( self, *args):
     (obj, command, test_serialized, actionID, sync) = (args[0], args[1], args[2], args[3], args[4])
@@ -399,12 +426,14 @@ def setFinish( self, *args):
     current_test.status = "TESTFINISHED"
     return "SUCCESS"
 
+
 def getStatus( self, *args):
     (obj, command, test_serialized, actionID, sync) = (args[0], args[1], args[2], args[3], args[4])
     t2 = testobj.testDefn()
     t2.deserialize(test_serialized)
     lctx.debug(str(current_test.testid) + ":" + current_test.status)
     return current_test.status
+
 
 def fileDownload(self, *args):
     cl = client.TCPClient(LOG.getLogger("clientlog", "Agent"))
@@ -437,6 +466,7 @@ def fileDownload(self, *args):
         lctx.error(e.value)
         return e.value
     return "SUCCESS"
+
 
 def prepareResults(self, *args):
     (obj, command, test_serialized, actionID, sync) = (args[0], args[1], args[2], args[3], args[4])

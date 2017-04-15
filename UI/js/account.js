@@ -68,8 +68,9 @@ function buildAdminPanel(json) {
             var role = $(this).find("td").eq(2).text() == "0" ? "General User" : "Admin";
             $("#account-setting-user").text($(this).find("td").eq(0).text());
             $("#account-setting-user-hidden").val($(this).find("td").eq(0).text());
-            $("#account-setting-email").val($(this).find("td").eq(1).text());
-            $("#account-setting-state").val($(this).find("td").eq(3).text());
+            $("#account-setting-email").text($(this).find("td").eq(1).text());
+            $("#account-setting-email-hidden").val($(this).find("td").eq(1).text());
+	    $("#account-setting-state").val($(this).find("td").eq(3).text());
             $("#account-setting-role").text(role);
             $("#accountSettingsModal").modal("show");
         });

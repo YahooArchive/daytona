@@ -10,17 +10,28 @@ require('lib/auth.php');
 $pageTitle = "Account Settings";
 include_once('lib/header.php');
 
+unset($passwordChangeSucces);
+unset($error_msg);
+unset($succes_msg);
+
 if(isset($_REQUEST["oldPassword"])) {
     if(validatePassword($db, $userId, $_REQUEST["oldPassword"])) {
-        $query = "UPDATE LoginAuthentication SET password = :password WHERE username = :username";
-        $stmt = $db->prepare($query);
-        $stmt->bindValue(':password', password_hash($_REQUEST["newPassword"], PASSWORD_DEFAULT), PDO::PARAM_STR);
-        $stmt->bindValue(':username', $userId, PDO::PARAM_STR);
-        $stmt->execute();
-        $passwordChangeSuccess = true;
+        if (validatePasswordPolicy($_REQUEST["newPassword"])){
+            $query = "UPDATE LoginAuthentication SET password = :password WHERE username = :username";
+            $stmt = $db->prepare($query);
+            $stmt->bindValue(':password', password_hash($_REQUEST["newPassword"], PASSWORD_DEFAULT), PDO::PARAM_STR);
+            $stmt->bindValue(':username', $userId, PDO::PARAM_STR);
+            $stmt->execute();
+            $passwordChangeSuccess = true;
+            $success_msg = "<strong>Password Changed</strong> User password has been successfully changed";
+        }else{
+            $passwordChangeSuccess = false;
+            $error_msg = "<strong>Password Changed Failed:</strong> New password failed to meet password policies<br>Password should contain : 8-12 characters, atleast one lowercase character, one uppercase character, one digit, atleast one special character : @#-_$%^&+=§!?";
+        }
     }
     else {
         $passwordChangeSuccess = false;
+        $error_msg = "<strong>Incorrect Password:</strong> Please check that your password was correctly entered";
     }
 }
 
@@ -44,12 +55,12 @@ if($accountInfo->is_admin) {
 <?php if(isset($passwordChangeSuccess) and $passwordChangeSuccess): ?>
 <div class="alert alert-success fade in login-alert-alt">
   <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-  <strong>Password Changed</strong> User password has been successfully changed
+  <?php echo $success_msg; ?>
 </div>
 <?php elseif(isset($passwordChangeSuccess) and !$passwordChangeSuccess): ?>
 <div class="alert alert-danger fade in login-alert-alt">
   <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-  <strong>Incorrect Password:</strong> Please check that your password was correctly entered
+  <?php echo $error_msg; ?>
 </div>
 <?php endif; ?>
 
@@ -104,9 +115,10 @@ if($accountInfo->is_admin) {
         </div>
         <div class='account-row col-xs-12'>
           <label class='account-label col-sm-1 col-xs-12'>Email</label>
-          <input type="email" class='col-sm-4 col-xs-12' id="account-setting-email" name="ua_email" required></input>
+          <label class='account-label-value col-sm-4 col-xs-12' id="account-setting-email"></label>
+          <input type="hidden" id="account-setting-email-hidden" name="ua_email"></input>
         </div>
-        <div class='account-row col-xs-12'>
+	<div class='account-row col-xs-12'>
           <label class='account-label col-sm-1 col-xs-12'>State</label>
           <select class='col-sm-4 col-xs-12' id="account-setting-state" name="ua_state">
             <option>Active</option>

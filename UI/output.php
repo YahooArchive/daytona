@@ -9,6 +9,7 @@ $allTestData = array();
 $testId = getParam('testid');
 $filename = getParam('filename');
 $outputFormat = getParam('format');
+
 if (!$testId) {
     diePrint("No test ID passed in");
 }
@@ -48,34 +49,22 @@ if ($compIds) {
 }
 $resultsData = getTestResults($db, $testId);
 
-$ini_arr = parse_ini_file("daytona_config.ini");
-
-$servername = $ini_arr["servername"];
-$username = $ini_arr["username"];
-$password = $ini_arr["password"];
-$dbname = $ini_arr["dbname"];
-$conn = new mysqli($servername, $username, $password, $dbname);
-if ($conn->connect_error) {
-    echo "<script>alert('Connection failed');</script>\n";
-    die("Connection failed: " . $conn->connect_error);
-}
-
 $s_compids_orig = "";
 $s_compids_str = "";
 $s_compids = array();
 if (!empty($_GET["compids"])) {
-    $s_compids = explode(",", $_GET["compids"]);
-    $s_compids_orig = $_GET["compids"];
+    $s_compids = explode(",", getParam("compids"));
+    $s_compids_orig = getParam("compids");
     $s_compids_str = $s_compids_orig;
 }
 $s_testid = "none";
 if (isset($_GET["testid"])) {
-    $s_testid = $_GET["testid"];
+    $s_testid = getParam("testid");
     array_unshift($s_compids, $s_testid);
     if(!empty($s_compids_str)){
-      $s_compids_str = $s_testid . "," . $s_compids_str;
+        $s_compids_str = $s_testid . "," . $s_compids_str;
     }else{
-      $s_compids_str = $s_testid;
+        $s_compids_str = $s_testid;
     }
 }
 
@@ -102,21 +91,47 @@ function formatFilePath($path, $mapping)
 $extension = pathinfo($filename, PATHINFO_EXTENSION);
 
 $pageTitle = "Test Report ($testId)";
-$test_info_sql = "SELECT frameworkname,TestInputData.title,TestInputData.purpose,exechostname,
+
+$s_compids_arr = explode(",",$s_compids_str);
+$bind_vale_str = "";
+for ($x = 1; $x <=sizeof($s_compids_arr); $x++){
+    $bind_vale_str = $bind_vale_str . ":test" . $x;
+    if($x !== sizeof($s_compids_arr)){
+        $bind_vale_str = $bind_vale_str . ",";
+    }
+}
+
+try{
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $db->beginTransaction();
+    $query = "SELECT frameworkname,TestInputData.title,TestInputData.purpose,exechostname,
                   stathostname,priority,timeout,cc_list,
                   TestInputData.creation_time,modified,start_time,end_time FROM TestInputData
-                  JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE testid=$s_testid";
-$test_info_result = $conn->query($test_info_sql);
-$test_info_data = $test_info_result->fetch_assoc();
+                  JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE testid=:testid";
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':testid',$s_testid,PDO::PARAM_INT);
+    $stmt->execute();
+    $test_info_data = $stmt->fetch(PDO::FETCH_ASSOC);
 
-$test_hosts_sql = "SELECT testid,hostassociationid,hostname,name FROM HostAssociation JOIN HostAssociationType
-                   USING(hostassociationtypeid) WHERE testid IN ($s_compids_str) ORDER BY hostassociationid";
-$test_hosts_result = $conn->query($test_hosts_sql);
-while ($row = $test_hosts_result->fetch_assoc()) {
-    if (!isset($test_info_data[$row["testid"]][$row["name"]])) {
-        $test_info_data[$row["testid"]][$row["name"]] = array();
+    $query = "SELECT testid,hostassociationid,hostname,name FROM HostAssociation JOIN HostAssociationType
+                   USING(hostassociationtypeid) WHERE testid IN (" . $bind_vale_str . ") ORDER BY hostassociationid";
+    $stmt = $db->prepare($query);
+    for ($x = 1; $x <=sizeof($s_compids_arr); $x++){
+        $stmt->bindValue(':test'.$x ,$s_compids_arr[$x-1], PDO::PARAM_INT);
     }
-    array_push($test_info_data[$row["testid"]][$row["name"]], $row["hostname"]);
+
+    $stmt->execute();
+    $test_hosts_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($test_hosts_result as $row){
+        if(!isset($test_info_data[$row["testid"]][$row["name"]])) {
+            $test_info_data[$row["testid"]][$row["name"]] = array();
+        }
+        array_push($test_info_data[$row["testid"]][$row["name"]], $row["hostname"]);
+    }
+}catch (PDOException $e){
+    $db->rollBack();
+    returnError("MySQL error: " . $e->getMessage());
 }
 $err_threshold = sizeof($s_compids);
 $marked = 0;
@@ -139,7 +154,7 @@ include 'process_data.php';
 
 ?>
 <link href="css/c3.css" rel="stylesheet" type="text/css">
-<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <script src="js/c3.min.js" charset="utf-8"></script>
 <script src="js/bootstrap-sortable.js"></script>
 <script src="js/test_report.js"></script>
@@ -166,14 +181,14 @@ include 'process_data.php';
         echo "  </div>\n";
         ?>
         <div class="col-md-3 col-xs-12 action-buttons-alt" id="action-buttons-div">
-          <select class="form-control" onchange="switchFileViewerFormat(this)">
-            <option <?php echo $outputFormat == "graph" ? "selected" : ""; ?>>Graph</option>
-            <option <?php echo $outputFormat == "table" ? "selected" : ""; ?>>Table</option>
-            <option <?php echo $outputFormat == "plain" ? "selected" : ""; ?>>Plain</option>
-          </select>
+            <select class="form-control" onchange="switchFileViewerFormat(this)">
+                <option <?php echo $outputFormat == "graph" ? "selected" : ""; ?>>Graph</option>
+                <option <?php echo $outputFormat == "table" ? "selected" : ""; ?>>Table</option>
+                <option <?php echo $outputFormat == "plain" ? "selected" : ""; ?>>Plain</option>
+            </select>
         </div><br><br>
         <div class="col-md-6 action-buttons-alt" id ="action-buttons-div">
-	    <button type="button" onclick="downloadFIle('<?php echo $filename ?>','<?php echo $s_compids_str ?>')" class="btn btn-success btn-action">
+            <button type="button" onclick="downloadFIle('<?php echo $filename ?>','<?php echo $s_compids_str ?>')" class="btn btn-success btn-action">
                 <i class="fa fa-download fa-lg" aria-hidden="true"></i>
                 &nbsp;Download
             </button>
@@ -190,10 +205,14 @@ include 'process_data.php';
     <div class="col-xs-12" id="content-div">
         <div id="main-panel-alt">
             <?php
-	    $file_arr = explode(',',$full_paths);
-	    $file_arr_final = array_reverse($file_arr);
-	    $file_content = array_map("str_getcsv", file($file_arr_final[0],FILE_SKIP_EMPTY_LINES));
-	    $file_header = array_shift($file_content);
+            $file_arr = explode(',',$full_paths);
+            $file_arr_final = array_reverse($file_arr);
+            $valid_path = validate_file_path($file_arr_final[0]);
+            if ($valid_path === true){
+                $file_content = array_map("str_getcsv", file($file_arr_final[0],FILE_SKIP_EMPTY_LINES));
+                $file_header = array_shift($file_content);
+            }
+
             $act_file = pathinfo($filename, PATHINFO_BASENAME);
             if ($outputFormat == "graph") {
                 echo "<div id='output-panel'></div>";
@@ -212,23 +231,36 @@ include 'process_data.php';
                 $testid_arr = explode(',',$s_compids_str);
                 if (strpos($extension, 'plt') !== false) {
                     $file_data_array = buildTestCompareData($file_arr[0],$testid_arr[0]);
-                    $file_data_json = json_encode($file_data_array);
-                    echo "    <script>buildFileToTableView('$file_data_json', '$testid_arr[0]','output-table-display');</script>\n";
+                    if (strcmp(gettype($file_data_array),"string") !== 0){
+                        $file_data_json = json_encode($file_data_array);
+                        echo "    <script>buildFileToTableView('$file_data_json', '$testid_arr[0]','output-table-display');</script>\n";
+                    }else{
+                        echo "  <script> buildGraphErrorView('$file_data_array','output-table-display','Error','3'); </script>\n";
+                    }
                 } else if((strpos($extension, 'csv') !== false)) {
-                      $csv_col_count = getCsvColumnCount($full_paths);
-                      if ($csv_col_count == 2){
-                         $csv_compare = generateCompareCsv($full_paths,$s_compids_str);
-                         $csv_compare_json = json_encode($csv_compare);
-                         echo "    <script>buildJsonToTableView('$csv_compare_json', 'output-table-display');</script>\n";
-                      }else{
-                          $file_data_array = buildTestCompareData($full_paths,$s_compids_str);
-                          $file_data_json = json_encode($file_data_array);
-                          echo "    <script>buildFileToTableView('$file_data_json', '$s_compids_str','output-table-display');</script>\n";
-                      }
+                    $csv_col_count = getCsvColumnCount($full_paths);
+                    if ($csv_col_count == 2){
+                        $csv_compare = generateCompareCsv($full_paths,$s_compids_str);
+                        $csv_compare_json = json_encode($csv_compare);
+                        echo "    <script>buildJsonToTableView('$csv_compare_json', 'output-table-display');</script>\n";
+                    }else{
+                        $file_data_array = buildTestCompareData($full_paths,$s_compids_str);
+                        if (strcmp(gettype($file_data_array),"string") !== 0){
+                            $file_data_json = json_encode($file_data_array);
+                            echo "    <script>buildFileToTableView('$file_data_json', '$s_compids_str','output-table-display');</script>\n";
+                        }else{
+                            echo "  <script> buildGraphErrorView('$file_data_array','output-table-display','Error','3'); </script>\n";
+                        }
+                    }
                 }else {
                     $file_data_array = buildTestCompareData($full_paths,$s_compids_str);
-                    $file_data_json = json_encode($file_data_array);
-                    echo "    <script>buildTextCompareView('$file_data_json', '$s_compids_str','output-table-display');</script>\n";
+                    if (strcmp(gettype($file_data_array),"string") !== 0){
+                        $file_data_json = json_encode($file_data_array);
+                        echo "    <script>buildTextCompareView('$file_data_json', '$s_compids_str','output-table-display');</script>\n";
+                    }else{
+                        echo "  <script> buildGraphErrorView('$file_data_array','output-table-display','Error','3'); </script>\n";
+                    }
+
                 }
             } else {
                 echo "<div id='output-panel'>";
@@ -240,8 +272,12 @@ include 'process_data.php';
                 echo "</div>\n";
                 echo "</div>";
                 $file_data_array = buildTestCompareData($full_paths,$s_compids_str);
-                $file_data_json = json_encode($file_data_array);
-                echo "    <script>buildTextCompareView('$file_data_json', '$s_compids_str','output-table-display');</script>\n";
+                if (strcmp(gettype($file_data_array),"string") !== 0){
+                    $file_data_json = json_encode($file_data_array);
+                    echo "    <script>buildTextCompareView('$file_data_json', '$s_compids_str','output-table-display');</script>\n";
+                }else{
+                    echo "  <script> buildGraphErrorView('$file_data_array','output-table-display','Error','3'); </script>\n";
+                }
             }
             ?>
         </div>
@@ -281,23 +317,21 @@ include 'process_data.php';
         buildLeftPanelFramework('<?php echo $frameworkName; ?>', <?php echo $frameworkId; ?>);
         buildLeftPanelGlobal();
         <?php
-          addFrameworkDropdownJS($db, $userId);
-          addTestResults("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds);
-          if(array_key_exists("execution",$origTestData)) {
+        addFrameworkDropdownJS($db, $userId);
+        addTestResults("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds);
+        if(array_key_exists("execution",$origTestData)) {
             echo "createLabel('System Metrics')\n";
             addSystemMetrics("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds, "exec");
-          }
-          if(array_key_exists("statistics",$origTestData)){
+        }
+        if(array_key_exists("statistics",$origTestData)){
             addSystemMetrics("test_data/$frameworkName/$testId/results", $origTestData["statistics"], $testId, $compIds, "stat");
-          }
-          addLogs("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds);
+        }
+        addLogs("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds);
         ?>
-	loadNavigationBar();
+        loadNavigationBar();
         flushAllCharts();
     });
 </script>
 
 <?php include_once('lib/footer.php'); ?>
-<?php
-$conn->close();
-?>
+

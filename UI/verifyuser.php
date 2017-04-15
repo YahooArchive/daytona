@@ -26,7 +26,6 @@ require('lib/common.php');
 $db = initDB();
 
 if(validatePassword($db, $user,$password)) {
-    error_log(print_r("inside validate password",true));
     echo http_response_code(200);
     return;
 }

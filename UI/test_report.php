@@ -40,29 +40,17 @@ if ($compIds) {
     }
 }
 
-$ini_arr = parse_ini_file("daytona_config.ini");
-
-$servername = $ini_arr["servername"];
-$username = $ini_arr["username"];
-$password = $ini_arr["password"];
-$dbname = $ini_arr["dbname"];
-$conn = new mysqli($servername, $username, $password, $dbname);
-if($conn->connect_error) {
-    echo "<script>alert('Connection failed');</script>\n";
-    die("Connection failed: " . $conn->connect_error);
-}
-
 $s_compids_orig = "";
 $s_compids_str = "";
 $s_compids = array();
 if(!empty($_GET["compids"])) {
-    $s_compids = explode(",", $_GET["compids"]);
-    $s_compids_orig = $_GET["compids"];
+    $s_compids = explode(",", getParam("compids"));
+    $s_compids_orig = getParam("compids");
     $s_compids_str = $s_compids_orig;
 }
 $s_testid = "none";
 if(isset($_GET["testid"])) {
-    $s_testid = $_GET["testid"];
+    $s_testid = getParam("testid");
     array_unshift($s_compids, $s_testid);
     if(!empty($s_compids_str)){
         $s_compids_str = $s_testid . "," . $s_compids_str;
@@ -124,54 +112,79 @@ function convertTime($timeStr) {
 }
 include_once('lib/header.php');
 ?>
-<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/c3/0.4.10/c3.js" charset="utf-8"></script>
 <script src="js/bootstrap-sortable.js"></script>
 <script src="js/test_report.js"></script>
 <script src="js/output.js"></script>
 </head>
 <?php
-$test_info_sql = "SELECT frameworkname,TestInputData.title,TestInputData.purpose,exechostname,
+$s_compids_arr = explode(",",$s_compids_str);
+$bind_vale_str = "";
+for ($x = 1; $x <=sizeof($s_compids_arr); $x++){
+    $bind_vale_str = $bind_vale_str . ":test" . $x;
+    if($x !== sizeof($s_compids_arr)){
+        $bind_vale_str = $bind_vale_str . ",";
+    }
+}
+
+try{
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $db->beginTransaction();
+    $query = "SELECT frameworkname,TestInputData.title,TestInputData.purpose,exechostname,
                   stathostname,priority,timeout,cc_list,
                   TestInputData.creation_time,modified,start_time,end_time FROM TestInputData
-                  JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE testid=$s_testid";
-$test_info_result = $conn->query($test_info_sql);
-$test_info_data = $test_info_result->fetch_assoc();
-
-$test_hosts_sql = "SELECT testid,hostassociationid,hostname,name FROM HostAssociation JOIN HostAssociationType
-                   USING(hostassociationtypeid) WHERE testid IN ($s_compids_str) ORDER BY hostassociationid";
-$test_hosts_result = $conn->query($test_hosts_sql);
-while($row = $test_hosts_result->fetch_assoc()) {
-    if(!isset($test_info_data[$row["testid"]][$row["name"]])) {
-        $test_info_data[$row["testid"]][$row["name"]] = array();
+                  JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE testid=:testid";
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':testid',$s_testid,PDO::PARAM_INT);
+    $stmt->execute();
+    $test_info_data = $stmt->fetch(PDO::FETCH_ASSOC);
+    $query = "SELECT testid,hostassociationid,hostname,name FROM HostAssociation JOIN HostAssociationType
+                   USING(hostassociationtypeid) WHERE testid IN (" . $bind_vale_str . ") ORDER BY hostassociationid";
+    $stmt = $db->prepare($query);
+    for ($x = 1; $x <=sizeof($s_compids_arr); $x++){
+        $stmt->bindValue(':test'.$x ,$s_compids_arr[$x-1], PDO::PARAM_INT);
     }
-    array_push($test_info_data[$row["testid"]][$row["name"]], $row["hostname"]);
-}
-
-$test_args_sql = "SELECT argument_name,argument_default,argument_description,argument_value
+    $stmt->execute();
+    $test_hosts_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($test_hosts_result as $row){
+        if(!isset($test_info_data[$row["testid"]][$row["name"]])) {
+            $test_info_data[$row["testid"]][$row["name"]] = array();
+        }
+        array_push($test_info_data[$row["testid"]][$row["name"]], $row["hostname"]);
+    }
+    $query = "SELECT argument_name,argument_default,argument_description,argument_value
                   FROM TestArgs JOIN ApplicationFrameworkArgs USING(framework_arg_id)
-                  WHERE testid=$s_testid ORDER BY testargid";
-$test_args_result = $conn->query($test_args_sql);
-$test_args_arr = array();
-while($row = $test_args_result->fetch_assoc()) {
-    $l_test_arg_row = array();
-    $l_test_arg_row[0] = $row["argument_name"];
-    $l_test_arg_row[1] = $row["argument_default"];
-    $l_test_arg_row[2] = $row["argument_description"];
-    $l_test_arg_row[3] = $row["argument_value"];
-    array_push($test_args_arr, $l_test_arg_row);
-}
-
-$report_sql = "SELECT filename,TestResultFile.title,row FROM TestResultFile
-               JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE frameworkname='" .
-    $test_info_data["frameworkname"] . "' ORDER BY filename_order";
-$report_result = $conn->query($report_sql);
-$report_arr = array();
-while($row = $report_result->fetch_assoc()) {
-    if(!isset($report_arr[$row["row"]])) {
-        $report_arr[$row["row"]] = array();
+                  WHERE testid=:testid ORDER BY testargid";
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':testid',$s_testid,PDO::PARAM_INT);
+    $stmt->execute();
+    $test_args_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $test_args_arr = array();
+    foreach ($test_args_arr as $row) {
+        $l_test_arg_row = array();
+        $l_test_arg_row[0] = $row["argument_name"];
+        $l_test_arg_row[1] = $row["argument_default"];
+        $l_test_arg_row[2] = $row["argument_description"];
+        $l_test_arg_row[3] = $row["argument_value"];
+        array_push($test_args_arr, $l_test_arg_row);
     }
-    array_push($report_arr[$row["row"]], array(str_replace("rrd","csv",$row["filename"]), $row["title"]));
+    $query = "SELECT filename,TestResultFile.title,row FROM TestResultFile
+               JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE frameworkname=:frameworkname ORDER BY filename_order";
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':frameworkname',$test_info_data["frameworkname"],PDO::PARAM_STR);
+    $stmt->execute();
+    $report_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $report_arr = array();
+    foreach($report_result as $row){
+        if(!isset($report_arr[$row["row"]])) {
+            $report_arr[$row["row"]] = array();
+        }
+        array_push($report_arr[$row["row"]], array(str_replace("rrd","csv",$row["filename"]), $row["title"]));
+    }
+}catch (PDOException $e){
+    $db->rollBack();
+    returnError("MySQL error: " . $e->getMessage());
 }
 ?>
 
@@ -262,8 +275,12 @@ while($row = $report_result->fetch_assoc()) {
                         }else{
                             echo "    <div class='fixed-height' id=$div_id></div>\n";
                             $file_data_array = buildTestCompareData($full_paths,$s_compids_str);
-                            $file_data_json = json_encode($file_data_array);
-                            echo "    <script>buildFileToTableView('$file_data_json', '$s_compids_str','$div_id');</script>\n";
+                            if (strcmp(gettype($file_data_array),"string") !== 0){
+                                $file_data_json = json_encode($file_data_array);
+                                echo "    <script>buildFileToTableView('$file_data_json', '$s_compids_str','$div_id');</script>\n";
+                            }else{
+                                echo "  <script> buildGraphErrorView('$file_data_array','$div_id','Error','3'); </script>\n";
+                            }
                             echo "  </div>\n";
                         }
                     }else {
@@ -286,8 +303,12 @@ while($row = $report_result->fetch_assoc()) {
                         $div_id = "output-panel" . $collapse_id;
                         echo "    <div id=$div_id></div>\n";
                         $file_data_array = buildTestCompareData($full_paths,$s_compids_str);
-                        $file_data_json = json_encode($file_data_array);
-                        echo "    <script>buildTextCompareView('$file_data_json', '$s_compids_str','$div_id');</script>\n";
+                        if (strcmp(gettype($file_data_array),"string") !== 0){
+                            $file_data_json = json_encode($file_data_array);
+                            echo "    <script>buildTextCompareView('$file_data_json', '$s_compids_str','$div_id');</script>\n";
+                        }else{
+                            echo "  <script> buildGraphErrorView('$file_data_array','$div_id','Error','3'); </script>\n";
+                        }
                         echo "  </div>\n";
                     }
 
@@ -496,6 +517,4 @@ while($row = $report_result->fetch_assoc()) {
 </script>
 
 <?php require_once('lib/footer.php'); ?>
-<?php
-$conn->close();
-?>
+
