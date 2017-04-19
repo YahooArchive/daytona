@@ -310,7 +310,7 @@ CREATE TABLE `LoginAuthentication` (
 
 LOCK TABLES `LoginAuthentication` WRITE;
 /*!40000 ALTER TABLE `LoginAuthentication` DISABLE KEYS */;
-INSERT INTO `LoginAuthentication` VALUES ('admin','','','admin@daytona.com','Active');
+INSERT INTO `LoginAuthentication` VALUES ('admin','',1,'admin@daytona.com','Active');
 /*!40000 ALTER TABLE `LoginAuthentication` ENABLE KEYS */;
 UNLOCK TABLES;
 
