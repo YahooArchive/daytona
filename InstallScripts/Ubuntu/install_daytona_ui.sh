@@ -67,7 +67,7 @@ if ! grep -q daytona /etc/apache2/sites-available/000-default.conf ; then
   sudo sed -i.bak 's/DocumentRoot \/var\/www\/html/DocumentRoot \/var\/www\/html\/daytona/' /etc/apache2/sites-available/000-default.conf
 fi
 
-echo cookie_key = '"'`date +%s | sha512sum | base64 | head -c 64`'"' | sudo tee -a $daytona_ui_config > /dev/null
+echo cookie_key = '"'`head -c8 /dev/urandom | sha512sum | base64 | head -c 64`'"' | sudo tee -a $daytona_ui_config > /dev/null
 
 # Setting password for UI admin account in DB
 
