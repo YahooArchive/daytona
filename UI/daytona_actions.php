@@ -509,6 +509,10 @@ function delete_test($db) {
     try {
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $db->beginTransaction();
+	$query = "DELETE FROM ProfilerFramework WHERE testid = :testid";
+        $stmt = $db->prepare($query);
+        $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
+        $stmt->execute();
 
         $query = "DELETE FROM TestInputData WHERE testid = :testid";
 
@@ -561,6 +565,11 @@ function delete_tests($db) {
     try {
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $db->beginTransaction();
+	$query = "DELETE FROM ProfilerFramework WHERE FIND_IN_SET(testid, :array)";
+
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':array', implode(',', $testIds));
+        $stmt->execute();
 
         $query = "DELETE FROM TestInputData WHERE FIND_IN_SET(testid, :array)";
 

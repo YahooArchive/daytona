@@ -82,7 +82,10 @@ class TCPClient ():
       raise CommunicationError("ERROR:" + ip + "," +  "could not send file : " + filename)
     finally:
       self.lctx.debug("closing sock")
-      sock.shutdown(socket.SHUT_RDWR)
+      try:
+        sock.shutdown(socket.SHUT_RDWR)
+      except:
+        pass
       sock.close()
     return
 
@@ -105,6 +108,9 @@ class TCPClient ():
       raise CommunicationError("ERROR:" + ip + "," +  message)
     finally:
       self.lctx.debug("closing sock")
-      sock.shutdown(socket.SHUT_RDWR)
+      try:
+        sock.shutdown(socket.SHUT_RDWR)
+      except:
+        pass
       sock.close()
     return response
