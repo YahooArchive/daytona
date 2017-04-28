@@ -13,7 +13,7 @@ ip=`hostname`
 
 echo "Updating default exechost"
 echo ""
-echo update HostAssociationType set default_value="'"`echo $ip`"'" where frameworkid=50 and name="'"execution"';" >> fix_exec.sql
+echo update HostAssociationType set default_value="'"`echo $ip`"'" where frameworkid=51 and name="'"execution"';" >> fix_exec.sql
 
 mysql -u ${db_name} -p${db_password} daytona < ./fix_exec.sql
 

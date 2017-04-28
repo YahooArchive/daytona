@@ -57,7 +57,7 @@ if ! grep -q daytona /etc/httpd/conf/httpd.conf ; then
   sudo sed -i.bak 's/\/var\/www\/html/\/var\/www\/html\/daytona/' /etc/httpd/conf/httpd.conf
 fi
 
-echo cookie_key = '"'`date +%s | sha512sum | base64 | head -c 64`'"' | sudo tee -a $daytona_ui_config > /dev/null
+echo cookie_key = '"'`head -c8 /dev/urandom | sha512sum | base64 | head -c 64`'"' | sudo tee -a $daytona_ui_config > /dev/null
 
 # Setting password for UI admin account in DB
 

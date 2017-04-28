@@ -1,0 +1,40 @@
+version: '2'
+services:
+    ui:
+        build:
+            context: ../../.
+            dockerfile: InstallScripts/DockerInstall/Dockerfile.ui
+            args:
+                - MYSQL_DATABASE=${MYSQL_DATABASE}
+                - MYSQL_USER=${MYSQL_USER}
+                - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+        ports:
+            - "8084:80"
+        depends_on:
+            - db
+    db:
+        build:
+            context: ../../.
+            dockerfile: InstallScripts/DockerInstall/Dockerfile.db
+            args:
+                - DAYTONA_UI_ADMIN=${DAYTONA_UI_ADMIN}
+                - DAYTONA_UI_ADMIN_PASSWORD=${DAYTONA_UI_ADMIN_PASSWORD}
+                - MYSQL_DATABASE=${MYSQL_DATABASE}
+                - MYSQL_USER=${MYSQL_USER}
+                - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+        env_file:
+            - .env
+        ports:
+            - "3306:3306"
+    agent:
+            build:
+               context: ../../.
+               dockerfile: InstallScripts/DockerInstall/Dockerfile.agent
+               args:
+                - MYSQL_DATABASE=${MYSQL_DATABASE}
+                - MYSQL_USER=${MYSQL_USER}
+                - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+            security_opt:
+                - seccomp:unconfined
+            cap_add:
+                - SYS_PTRACE

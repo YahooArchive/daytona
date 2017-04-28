@@ -65,7 +65,7 @@ $(document).ready(function() {
                 $('#status-message .modal-body').text(message);
                 $('#status-message').on('hide.bs.modal', function(evt) {
                     if (response.test.running) {
-                        window.location.href = '/?frameworkid=' + response.test.frameworkid;
+                        window.location.href = '/';
                     } else {
                         window.location.href = '/test_info.php?testid=' + response.test.testid;
                     }
@@ -115,7 +115,7 @@ $(document).ready(function() {
                 $('#status-message .modal-header').text('Success');
                 $('#status-message .modal-body').text('Test successfully deleted.');
                 $('#status-message').on('hide.bs.modal', function(evt) {
-                    window.location.href = '/?frameworkid=' + response.test.frameworkid;
+                    window.location.href = '/';
                 });
             } else {
                 $('#status-message .modal-header').addClass('bg-danger');
