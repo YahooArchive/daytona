@@ -11,7 +11,7 @@ fi
 
 echo -e "Updating Linux...\n"
 # update & upgrade #
-sudo yum update -y
+# sudo yum update -y
 
 # Set up the ExecScripts directory
 cp -r ../../ExecScripts /tmp

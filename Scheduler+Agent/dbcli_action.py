@@ -106,7 +106,7 @@ class dbCliHandle():
 
                     # Adding execution host in HostAssociation
                     query_res = self.db.query("""INSERT INTO CommonHardwareMetadata(hostname, added, updated) VALUES(%s, %s, %s ) ON DUPLICATE KEY UPDATE updated = %s""",
-                                              (exec_host, tstr, tstr, tstr), False, True)
+                                              (exec_host, tstr, tstr, tstr), False, False)
 
                     query_res = self.db.query(
                         """INSERT INTO HostAssociation (hostassociationtypeid, testid, hostname) SELECT hostassociationtypeid, %s, %s FROM HostAssociationType WHERE frameworkid = %s AND name = %s""",
@@ -121,12 +121,16 @@ class dbCliHandle():
                         for host in stat_hosts_arr:
                             query_res = self.db.query(
                                 """INSERT INTO CommonHardwareMetadata(hostname, added, updated) VALUES(%s, %s, %s ) ON DUPLICATE KEY UPDATE updated = %s""",
-                                (host, tstr, tstr, tstr), False, True)
+                                (host, tstr, tstr, tstr), False, False)
                             query_res = self.db.query(
                                 """INSERT INTO HostAssociation (hostassociationtypeid, testid, hostname) SELECT hostassociationtypeid, %s, %s FROM HostAssociationType WHERE frameworkid = %s AND name = %s""",
                                 (testid, host, frameworkid, 'statistics'), False, False, True)
                             if not query_res:
                                 raise Exception("Error|Adding statistics host for the test failed")
+
+		    # Adding PERF profiler
+
+		    query_res = self.db.query("""INSERT INTO ProfilerFramework (profiler, testid, processname, delay, duration) VALUES (%s, %s, %s, %s, %s)""",('PERF', testid, None, 10, 10), False, False)
 
                     self.db.commit()
                     return "SUCCESS|" + str(testid)
@@ -317,8 +321,6 @@ class dbCliHandle():
                             query_res = self.db.query(
                                 """UPDATE TestArgs set argument_value = %s WHERE framework_arg_id = %s AND testid = %s""",
                                 (arg_val, arg_id, testid), False, False, False, True)
-                            if query_res < 1:
-                                raise Exception("Error|Test argument update failed")
 
                     # Delete any previously associated hosts associated with testid
                     query_res = self.db.query("""DELETE FROM HostAssociation WHERE testid = %s""",
@@ -361,7 +363,7 @@ class dbCliHandle():
             return str(err)
 
     def authenticate_user(self, luser, lpassword):
-        res = requests.post(HOST_IP_PREFIX + 'localhost' + HOST_IP_PREFIX, data={'user': luser, 'password': lpassword})
+        res = requests.post(HOST_IP_PREFIX + 'localhost' + HOST_IP_SUFFIX, data={'user': luser, 'password': lpassword})
         if res.status_code != 200:
             if res.status_code == 401:
                 return "Error|Invalid username/password"

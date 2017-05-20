@@ -98,6 +98,17 @@ $(document).ready(function() {
         }
 
     });
+    
+    $('#f_perf').change(function() {
+        if($(this).is(":checked")) {
+            $('#perf_process_config').show();
+            $('#f_perf_process').attr('disabled', false);
+        }else {
+            $('#perf_process_config').hide()
+            $('#f_perf_process').attr('disabled', 'disabled');
+        }
+
+    });
 
     $('#confirm-delete').on('click', '.btn-ok', function(evt) {
         var modal = $(evt.delegateTarget);

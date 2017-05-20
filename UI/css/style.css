@@ -1012,28 +1012,25 @@ div#search-div{
   margin: 8px 0px 0px 0px;
 }
 
+#modify-add {
+  margin: 6px 0px 5px 3px
+}
 
-.modify-add,
 .modify-del {
-  height: 22px;
-  width: 22px;
+  height: 12px;
+  width: 10px;
   background-color: transparent;
-  border-radius: 50px;
+  border: 0px;
   padding: 2px 0 0 0;
 }
 
 .modify-del {
-  border: 1px #F0162F solid;
   color: #F0162F;
+  padding: 0px 0px 0px 0px;
 }
 
 .modify-del:hover {
   background-color: rgba(240,22,47,0.2);
-}
-
-.modify-add {
-  border: 1px #1AC567 solid;
-  color: #1AC567;
 }
 
 .modify-add:hover {
@@ -1468,3 +1465,4 @@ div.compare-text-div{
   border: none;
   background: transparent;
 }
+

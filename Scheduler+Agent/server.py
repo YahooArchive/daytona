@@ -14,6 +14,7 @@ import config
 import testobj
 
 from logger import LOG
+from action import activeTest
 
 global serverInstance
 global actc
@@ -42,24 +43,18 @@ class ActionCaller():
     #send actionID for currently being executed action based on this we can stream resp
     #keep exec details over time in a buffer with actionID mapped
     #send actionID NULL and hold return till exec is complete
-    self.lctx.debug(command)
-    self.lctx.debug(paramcsv)
-    self.lctx.debug(actionID)
     module = self.conf.actionMap[command.strip()].split(".")[0]
     function = self.conf.actionMap[command.strip()].split(".")[1]
     sync = self.conf.actionMap[command.strip()].split(".")[2]
     
-    if command != "DAYTONA_CLI":
-      t2 = testobj.testDefn()
-      tst = ""
-      if paramcsv != "":
-        p = paramcsv.split(",")
-        tst = p[0]
-        if command == "DAYTONA_FILE_DOWNLOAD":
-          tst = p[3]
-
-      if tst != "":
-        t2.deserialize(tst)
+    t2 = testobj.testDefn()
+    try:
+	param = int(paramcsv)
+	action.action_lock.acquire()
+    	t2 = action.running_tests[param].tobj
+    	action.action_lock.release()
+    except Exception as e:
+	pass 
     
     m = __import__ (module)
     f = getattr(m,function)
@@ -122,7 +117,6 @@ class serv():
           msgid = ev[2]
           params = ev[3]
           serv.lctx.info(cmd)
-          serv.lctx.debug(cmd)
           serv.lctx.debug(msgid)
           serv.lctx.debug(params)
 
@@ -134,9 +128,16 @@ class serv():
             serv.registered_hosts[addr] = addr
 
             p = params.split(",")
-            action.current_test.serverip = p[0]
-            action.current_test.serverport = int(p[1])
-            action.current_test.status = "TESTSETUP"
+	    current_test = activeTest(0,None,None,None)
+	    current_test.stathostip = p[3]
+	    current_test.stathostport = self.server.server_address[1]
+            current_test.serverip = p[0]
+	    current_test.testid = int(p[2])
+            current_test.serverport = int(p[1])
+            current_test.status = "INIT"
+	    action.action_lock.acquire()
+	    action.running_tests[int(p[2])] = current_test
+	    action.action_lock.release()
             response = "{}".format("SUCCESS")
             self.request.sendall(response)
             return

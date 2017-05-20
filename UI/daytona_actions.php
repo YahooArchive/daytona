@@ -41,9 +41,9 @@ function save_framework($db) {
     // 5) Insert test report items
 
     if ($isNewFramework) {
-        $query = "INSERT INTO ApplicationFrameworkMetadata ( argument_passing_format, creation_time, default_cc_list, default_timeout, email_include_results, email_results, exec_user, execution_script_location, file_root, frameworkname, frameworkowner, last_modified, productname, purpose, show_profiling, title) VALUES ( :argument_passing_format, NOW(), :default_cc_list, :default_timeout, :email_include_results, :email_results, :exec_user, :execution_script_location, :file_root, :frameworkname, :frameworkowner, NOW(), :productname, :purpose, :show_profiling, :title )";
+        $query = "INSERT INTO ApplicationFrameworkMetadata ( argument_passing_format, creation_time, default_timeout, execution_script_location, frameworkname, frameworkowner, last_modified, productname, purpose, title) VALUES ( :argument_passing_format, NOW(), :default_timeout, :execution_script_location, :frameworkname, :frameworkowner, NOW(), :productname, :purpose, :title )";
     } else {
-        $query = "UPDATE ApplicationFrameworkMetadata SET argument_passing_format = :argument_passing_format, default_cc_list = :default_cc_list, default_timeout = :default_timeout, email_include_results = :email_include_results, email_results = :email_results, exec_user = :exec_user, execution_script_location = :execution_script_location, file_root = :file_root, frameworkname = :frameworkname, frameworkowner = :frameworkowner, last_modified = NOW(), productname = :productname, purpose = :purpose, show_profiling = :show_profiling, title = :title WHERE frameworkid = :frameworkid";
+        $query = "UPDATE ApplicationFrameworkMetadata SET argument_passing_format = :argument_passing_format, default_timeout = :default_timeout, execution_script_location = :execution_script_location, frameworkname = :frameworkname, frameworkowner = :frameworkowner, last_modified = NOW(), productname = :productname, purpose = :purpose, title = :title WHERE frameworkid = :frameworkid";
     }
 
     // TODO: Look into eliminating try-catch
@@ -58,19 +58,12 @@ function save_framework($db) {
         // to be explicit with what we're inserting into the DB (eg. PDO::PARAM_STR)
         // For more details: http://wiki.hashphp.org/PDO_Tutorial_for_MySQL_Developers
         $stmt->bindValue(':argument_passing_format', getParam('f_argument_passing_format', 'POST'), PDO::PARAM_STR);
-        $stmt->bindValue(':default_cc_list', getParam('f_default_cc_list', 'POST'), PDO::PARAM_STR);
-        $defaultTimeout = getParam('f_default_timeout', 'POST');
-        $stmt->bindValue(':default_timeout', getParam('f_default_timeout') ?: 0, PDO::PARAM_INT);
-        $stmt->bindValue(':email_include_results', getParam('f_email_include_results', 'POST') ?: 0, PDO::PARAM_INT);
-        $stmt->bindValue(':email_results', getParam('f_email_results', 'POST') ?: 0, PDO::PARAM_INT);
-        $stmt->bindValue(':exec_user', getParam('f_exec_user', 'POST'), PDO::PARAM_STR);
+        $stmt->bindValue(':default_timeout', getParam('f_default_timeout', 'POST') ?: 0, PDO::PARAM_INT);
         $stmt->bindValue(':execution_script_location', getParam('f_execution_script_location', 'POST'), PDO::PARAM_STR);
-        $stmt->bindValue(':file_root', getParam('f_file_root', 'POST'), PDO::PARAM_STR);
         $stmt->bindValue(':frameworkname', getParam('f_frameworkname', 'POST'), PDO::PARAM_STR);
         $stmt->bindValue(':frameworkowner', getParam('f_frameworkowner', 'POST'), PDO::PARAM_STR);
         $stmt->bindValue(':productname', getParam('f_productname', 'POST'), PDO::PARAM_STR);
         $stmt->bindValue(':purpose', getParam('f_purpose', 'POST'), PDO::PARAM_STR);
-        $stmt->bindValue(':show_profiling', getParam('f_show_profiling', 'POST') ?: 0, PDO::PARAM_INT);
         $stmt->bindValue(':title', getParam('f_title', 'POST'), PDO::PARAM_STR);
 
         if (!$isNewFramework) {
@@ -131,12 +124,11 @@ function save_framework($db) {
             // This count should be the same whether we look at 'filename' or 'row'
             $numItems = count($testReport['filename']);
             for ($x = 0; $x < $numItems; $x++) {
-                $query = "INSERT INTO TestResultFile ( filename, filename_order, frameworkid, height, row, title, width ) VALUES ( :filename, :filename_order, :frameworkid, 0, :row, :title, 0 )";
+                $query = "INSERT INTO TestResultFile ( filename, filename_order, frameworkid, title ) VALUES ( :filename, :filename_order, :frameworkid, :title)";
                 $stmt = $db->prepare($query);
                 $stmt->bindValue(':filename', $testReport['filename'][$x], PDO::PARAM_STR);
                 $stmt->bindValue(':filename_order', $x, PDO::PARAM_INT);
                 $stmt->bindValue(':frameworkid', $frameworkId, PDO::PARAM_INT);
-                $stmt->bindValue(':row', $testReport['row'][$x] ?: 1, PDO::PARAM_INT);
                 $stmt->bindValue(':title', $testReport['title'][$x], PDO::PARAM_STR);
                 $stmt->execute();
             }
@@ -439,6 +431,36 @@ function save_test($db,$state='new') {
                 $stmt->execute();
             }
         }
+
+        // Perf Configuration
+
+        try {
+            $perf_delay = getParam('f_perf_delay','POST');
+            $perf_duration = getParam('f_perf_duration','POST');
+            if (isset($_POST['f_perf'])){
+                $perf_process = getParam('f_perf_process','POST');
+            }
+        }catch (Exception $ex){
+            returnError("Some values missing for PERF configuration");
+        }
+
+        if ($isNewTest) {
+            $query = "INSERT INTO ProfilerFramework (profiler, testid, processname, delay, duration) VALUES (:profiler, :testid, :processname, :delay, :duration)";
+        } else {
+            $query = "UPDATE ProfilerFramework SET processname = :processname, delay = :delay, duration = :duration WHERE testid = :testid AND profiler = :profiler";
+        }
+
+        $stmt = $db->prepare($query);
+        $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
+        $stmt->bindValue(':profiler', 'PERF', PDO::PARAM_INT);
+        $stmt->bindValue(':delay', $perf_delay, PDO::PARAM_INT);
+        $stmt->bindValue(':duration', $perf_duration, PDO::PARAM_INT);
+        if (isset($_POST['f_perf'])){
+            $stmt->bindValue(':processname', $perf_process, PDO::PARAM_STR);
+        }else{
+            $stmt->bindValue(':processname', NULL, PDO::PARAM_STR);
+        }
+        $stmt->execute();
 
         $db->commit();
     } catch(PDOException $e) {

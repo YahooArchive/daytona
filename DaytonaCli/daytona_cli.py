@@ -72,13 +72,8 @@ def read_arguments():
         opt, arg = opts[i]
         if i == 0:
             if opt == "--host":
-                try:
-                    socket.inet_pton(socket.AF_INET, arg.strip())
-                    host = arg.strip()
-                    continue
-                except Exception as err:
-                    print("Error - option --host value should be an IP address")
-                    sys.exit()
+                host = arg.strip()
+                continue
             elif opt == "--h":
                 display_usage()
             else:
@@ -272,19 +267,15 @@ def define_test(cl, env):
     while 1:
         test_def['exec_host'] = raw_input("Enter exec host IP (required) : ")
         exec_host_arr = test_def['exec_host'].split(',')
-        if len(exec_host_arr) > 1:
-            print "Error - Exec host only accepts single IP address"
-            continue
-        else:
-            try:
-                socket.inet_pton(socket.AF_INET, test_def['exec_host'])
+	if check_required_input(test_def['exec_host']):
+	    if len(exec_host_arr) > 1:
+                print "Error - Exec host only accepts single IP address"
+                continue
+            else:
                 break
-            except socket.error as err:
-                print("Error - illegal IP address string passed as exec host IP")
-                continue
-            except err:
-                print (err)
-                continue
+        else:
+            print "Field is required"
+            continue
 
     while 1:
         test_def['stat_hosts'] = raw_input("Enter stat hosts : ")
@@ -294,18 +285,8 @@ def define_test(cl, env):
         stat_hosts_arr = test_def['stat_hosts'].split(',')
         error = 0
         for ip in stat_hosts_arr:
-            try:
-                socket.inet_pton(socket.AF_INET, ip.strip())
-                if ip.strip() == test_def['exec_host']:
-                    print "Error - Exec host and stat host IP cannot be same, remove exec host IP from stat host list"
-                    error = 1
-                    break
-            except socket.error as err:
-                print("Error - illegal IP address string passed as stat host")
-                error = 1
-                break
-            except err:
-                print err
+            if ip.strip() == test_def['exec_host']:
+                print "Error - Exec host and stat host IP cannot be same, remove exec host IP from stat host list"
                 error = 1
                 break
 
@@ -338,7 +319,7 @@ def define_test(cl, env):
         except Exception:
             print "Timeout should be number"
 
-    test_def['cc'] = raw_input("Enter CC : ")
+    test_def['cc'] = raw_input("Enter Email List : ")
 
     if arg_list:
         print "Test Arguments"
@@ -355,6 +336,7 @@ def define_test(cl, env):
     with open(file_name, 'w') as fp:
         json.dump(test_def, fp)
 
+    print "Success - Test configuration saved in a file " + file_name
 
 def add_test(cl, env):
     cli_param = dict()
@@ -495,7 +477,7 @@ def update_test(cl, env):
     print "Stat Hosts     : " + test_details_map['stat_host']
     print "Priority       : " + str(test_details_map['priority'])
     print "Timeout        : " + str(test_details_map['timeout'])
-    print "CC             : " + test_details_map['cc']
+    print "Email List     : " + test_details_map['cc']
     print ""
     print "Run Status"
     print "Creation Time  : " + str(test_details_map['creation'])
@@ -533,20 +515,16 @@ def update_test(cl, env):
         while 1:
             exec_host = raw_input("Update exec host IP : ")
             exec_host_arr = exec_host.split(',')
-            if len(exec_host_arr) > 1:
-                print "Error - Exec host only accepts single IP address"
-                continue
-            else:
-                try:
-                    socket.inet_pton(socket.AF_INET, exec_host)
-                    new_details_map['exec_host'] = exec_host
-                    break
-                except socket.error as err:
-                    print("Error - illegal IP address string passed as exec host IP")
-                    continue
-                except err:
-                    print (err)
-                    continue
+	    if check_required_input(exec_host):
+		if len(exec_host_arr) > 1:
+		    print "Error - Exec host only accepts single IP address"
+		    continue
+		else:
+		    new_details_map['exec_host'] = exec_host
+		    break
+	    else:
+		print "Field is required"
+		continue
 
         while 1:
             new_details_map['stat_host'] = raw_input("Update stat hosts : ")
@@ -556,19 +534,8 @@ def update_test(cl, env):
             stat_hosts_arr = new_details_map['stat_host'].split(',')
             error = 0
             for ip in stat_hosts_arr:
-                try:
-                    socket.inet_pton(socket.AF_INET, ip.strip())
-                    if ip.strip() == test_details_map['exec_host']:
-                        print "Error - Exec host and stat host IP cannot be same, " \
-                              "remove exec host IP from stat host list"
-                        error = 1
-                        break
-                except socket.error as err:
-                    print("Error - illegal IP address string passed as stat host")
-                    error = 1
-                    break
-                except err:
-                    print err
+                if ip.strip() == test_details_map['exec_host']:
+                    print "Error - Exec host and stat host IP cannot be same, remove exec host IP from stat host list"
                     error = 1
                     break
 
@@ -602,16 +569,18 @@ def update_test(cl, env):
             except Exception:
                 print "Timeout should be number"
 
-        new_details_map['cc'] = raw_input("Update CC : ")
+        new_details_map['cc'] = raw_input("Update Email List : ")
 
         print ""
         if 'test_arg' in test_details_map:
             print "Update Test Arguments"
             new_details_map['test_arg'] = dict()
-            for arg in test_details_map['test_arg'].keys():
-                arg_input = raw_input("Update " + arg + " : ")
+            for arg, val in test_details_map['test_arg'].iteritems():
+                arg_input = raw_input("Update " + arg + " (current value - " + val  + ") : ")
                 if check_required_input(arg_input):
                     new_details_map['test_arg'][arg] = arg_input
+		else:
+		    new_details_map['test_arg'][arg] = val
 
         print "*************************************************************************************************"
         print "Updated Test Information"
@@ -621,7 +590,7 @@ def update_test(cl, env):
         print "Stat Hosts     : " + new_details_map['stat_host']
         print "Priority       : " + str(new_details_map['priority'])
         print "Timeout        : " + str(new_details_map['timeout'])
-        print "CC             : " + new_details_map['cc']
+        print "Email List             : " + new_details_map['cc']
         print ""
         if 'test_arg' in new_details_map:
             print "Test Arguments"

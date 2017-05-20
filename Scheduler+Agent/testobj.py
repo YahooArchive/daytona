@@ -49,6 +49,10 @@ class TestInputData():
     strace_process = None
     strace_delay = None
     strace_duration = None
+    perf_process = None
+    perf_delay = None
+    perf_duration = None
+    timeout_flag = False
 
 
 class testObj():
@@ -85,7 +89,7 @@ class testDefn():
         return self.testobj.SerializeToString()
 
     def construct(self, tid):
-        import dbaccess
+	import dbaccess
         import config
 
         lctx = LOG.getLogger("dblog", "DH")
@@ -143,6 +147,14 @@ class testDefn():
             self.testobj.TestInputData.strace = True
             (self.testobj.TestInputData.strace_process, self.testobj.TestInputData.strace_delay, self.testobj.TestInputData.strace_duration) = query_result
 
+        query_result = self.db.query(
+            """select processname, delay, duration from ProfilerFramework where testid = %s and profiler = %s""",
+            (self.testobj.TestInputData.testid, 'PERF'), False, False);
+
+        if query_result:
+            (self.testobj.TestInputData.perf_process, self.testobj.TestInputData.perf_delay,
+             self.testobj.TestInputData.perf_duration) = query_result
+
     def updateStatus(self, curStatus, newStatus):
         lctx = LOG.getLogger("dblog", "DH")
         lctx.debug("setting status from %s to %s" %(curStatus, newStatus))
@@ -150,7 +162,7 @@ class testDefn():
         self.testobj.TestInputData.end_status = newStatus
         update_res = self.db.query("""update CommonFrameworkSchedulerQueue SET state = %s, message = %s, state_detail = %s where testid = %s""", (newStatus, newStatus, newStatus, self.testobj.TestInputData.testid), False, True)
 
-        if newStatus == "finished clean" or newStatus == "failed" or newStatus == "abort" or newStatus == "kill"  :
+        if newStatus == "finished clean" or newStatus == "failed" or newStatus == "abort" or newStatus == "kill" or newStatus == "timeout clean":
             update_res = self.db.query("""delete from CommonFrameworkSchedulerQueue where testid=%s""", (self.testobj.TestInputData.testid, ), False, True);
             lctx.debug("Deleted entry from CommonFrameworkSchedulerQueue because of failure for : " + str(self.testobj.TestInputData.testid))
 
@@ -169,3 +181,4 @@ class testDefn():
         update_res = self.db.query("""update TestInputData SET end_time = %s where testid=%s""", (timestr, self.testobj.TestInputData.testid), False, True);
         self.testobj.TestInputData.start_time = timestr
         return
+
