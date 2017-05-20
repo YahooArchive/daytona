@@ -180,9 +180,36 @@ function getTestById($db, $testId, $full=false) {
         $testData['strace'] = False;
     }
 
+    //Fetch PERF Configuration
+    $query = "SELECT * FROM ProfilerFramework WHERE testid = :testid AND profiler = :profiler";
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
+    $stmt->bindValue(':profiler', 'PERF', PDO::PARAM_STR);
+    $stmt->execute();
+
+    $perf_config = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($perf_config){
+        $testData['perf_duration'] = $perf_config['duration'];
+        $testData['perf_delay'] = $perf_config['delay'];
+        $testData['perf_process'] = $perf_config['processname'];
+    }
+
     return $testData;
 }
 
+function checkTestRunning($db, $testId){
+    $query = "SELECT * FROM CommonFrameworkSchedulerQueue where testid=:testid";
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if($row)
+    {
+        return true;
+    }else{
+        return false;
+    }
+}
 
 function getTestResults($db, $testId) {
     $query = "SELECT columnnumber, rownumber, result_name, result_value FROM TestResults JOIN TestResultsColumn USING(resultsid) JOIN TestResultsPair USING(columnid) WHERE testid = :testid";

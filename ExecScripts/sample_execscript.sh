@@ -9,21 +9,19 @@ echo $@
 echo "--------------------------------------------------"
 
 
-# The first argument is ignored to get aroud an issue in processing of the arguments string in our Python code 
-var_nop=${1}
-var_qps=`echo $2 | sed "s/\"//g"`
-var_duration=`echo $3 | sed "s/\"//g"`
+iterations=`echo $1 | sed "s/\"//g"`
+delay=`echo $2 | sed "s/\"//g"`
 
+x=1
+while [ $x -le $iterations ]
+do
+  dd if=/dev/zero of=/dev/null count=20000000
+  sleep $delay
+  x=$(( $x + 1 ))
+done
 
-# Insert your benchmark script here
-dd if=/dev/zero of=/dev/null count=20000000
-sleep 10
-dd if=/dev/zero of=/dev/null count=20000000
-sleep 10
-dd if=/dev/zero of=/dev/null count=20000000
-
-echo "QPS : " $var_qps
-echo "Duration : " $var_duration
+echo "Iterations : " $iterations
+echo "Delay : " $delay
 
 echo "Benchmark Test Completed"
 
@@ -35,12 +33,12 @@ failurerate=0.1
 
 # Create your results.csv with all KPI's in name, value format
 echo Key, Value > results.csv
-echo QPS, $var_qps >> results.csv
+echo Iterations, $iterations >> results.csv
 echo AvgLatency-ms, $avglatency >> results.csv
 echo MaxLatency-ms, $maxlatency >> results.csv
 echo MinLatency-ms, $minlatency >> results.csv
 echo FailureRate, $failurerate >>  results.csv
-echo Duration-secs, $var_duration >> results.csv
+echo Delay-secs, $delay >> results.csv
 
 # Create a multi-column ( > 2) csv file with multiple rows
 echo Col1, Col2, Col3, Col4 > multicol.csv

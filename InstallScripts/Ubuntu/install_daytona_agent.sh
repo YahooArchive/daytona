@@ -11,9 +11,9 @@ fi
 
 echo -e "Updating Ubuntu...\n"
 # update & upgrade #
-sudo apt-get -y update
-sudo apt-get -y upgrade
-sudo apt-get -y dist-upgrade
+# sudo apt-get -y update
+# sudo apt-get -y upgrade
+# sudo apt-get -y dist-upgrade
 
 # Set up the ExecScripts directory
 cp -r ../../ExecScripts /tmp

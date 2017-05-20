@@ -673,6 +673,7 @@ function buildTestCompareData($filepaths,$test_ids){
                 $line = str_replace("\t", "\\t", $line);
                 $line = str_replace("\n", "\\n", $line);
                 $line = str_replace('"', '', $line);
+		$line = str_replace("'", "", $line);
                 $file_data .= $line ;
             }
             fclose($fileptr);

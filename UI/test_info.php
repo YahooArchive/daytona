@@ -21,6 +21,7 @@ $frameworkId = $origTestData['frameworkid'];
 $frameworkData = getFrameworkById($db, $frameworkId, true);
 $frameworkName = $origTestData['frameworkname'];
 $allTestData[] = $origTestData;
+$testRunning = checkTestRunning($db, $testId);
 
 $compIds = getParam('compids');
 if ($compIds && ! preg_match('/^\d+(,\d+)*$/', $compIds)) {
@@ -95,7 +96,14 @@ include_once('lib/header.php');
             <?php
             $ownerAuthDisable = $origTestData["username"] == $userId ||
             $userIsAdmin ? "" : "disabled";
-            echo "    <button onclick=\"window.location='create_edit_test.php?action=edit&testid=$testId'\" class=\"btn btn-default btn-action\" $ownerAuthDisable>\n";
+	    $testRunning = $testRunning ? "disabled" : "";
+            $disable = "";
+            if ($testRunning === "disabled"){
+                $disable = "disabled";
+            }elseif ($ownerAuthDisable === "disabled"){
+                $disable = "disabled";
+            }
+            echo "    <button onclick=\"window.location='create_edit_test.php?action=edit&testid=$testId'\" class=\"btn btn-default btn-action\" $disable>\n";
             ?>
             Edit
             </button>
@@ -104,7 +112,7 @@ include_once('lib/header.php');
             ?>
             Clone
             </a>
-            <button type="button" class="btn btn-success btn-action" <?php echo "onclick='runTest($testId)' $ownerAuthDisable"; ?>>
+            <button type="button" class="btn btn-success btn-action" <?php echo "onclick='runTest($testId)' $disable"; ?>>
                 Run
             </button>
         </div>
@@ -148,11 +156,11 @@ include_once('lib/header.php');
                             <?php printRowFields($allTestData, 'priority'); ?>
                         </tr>
                         <tr>
-                            <td class="active">Timeout (minutes)</td>
+                            <td class="active">Timeout (seconds)</td>
                             <?php printRowFields($allTestData, 'timeout'); ?>
                         </tr>
                         <tr>
-                            <td class="active">CC List</td>
+                            <td class="active">Email List</td>
                             <?php printRowFields($allTestData, 'cc_list'); ?>
                         </tr>
                         </tbody>
@@ -258,6 +266,33 @@ include_once('lib/header.php');
                     echo "<h5 class='padding-left'>No STRACE configuration available</h5>";
                 }
                 ?>
+            </div>
+        </div>
+        <div class="panel panel-info panel-sub-main">
+            <div class="panel-heading">
+                PERF Configuration
+            </div>
+            <div class="panel-body" id='zero-padding'>
+                <table class='table table-hover form-table'>
+                    <tbody>
+                        <tr>
+                            <td class="active">Delay</td>
+                            <?php printRowFields($allTestData, 'perf_delay'); ?>
+                        </tr>
+                        <tr>
+                            <td class="active">Duration</td>
+                            <?php printRowFields($allTestData, 'perf_duration'); ?>
+                        </tr>
+                        <?php
+                            if ($allTestData[0]['perf_process']){
+                                echo "<tr>";
+                                echo "<td class=\"active\">Process Name</td>";
+                                printRowFields($allTestData, 'perf_process');
+                                echo "</tr>";
+                            }
+                        ?>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

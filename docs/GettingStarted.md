@@ -18,8 +18,7 @@
 * A docker-compose.yaml file has been has been included for your convinience to install and run Daytona
 * Install latest version of docker and docker-compose
 * clone the git repo
-* cd daytona/InstallScripts/DockerInstall/
-* Mention credentials in .env file
+* cd daytona
 * docker-compose up
 * Make sure you see the Daytona login page at http://daytona-host:8080
 

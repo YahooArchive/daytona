@@ -62,19 +62,12 @@ class Scheduler:
 
             ip = t.testobj.TestInputData.exechostname
             lctx.debug(status)
-            if status == "completed":
-                retsend = self.cl.send(ip, self.CPORT, self.ev.construct("DAYTONA_STOP_MONITOR", serialize_str))
+            if status in ["completed","timeout"]:
+                retsend = self.cl.send(ip, self.CPORT, self.ev.construct("DAYTONA_STOP_MONITOR", str(t2.testobj.TestInputData.testid)))
                 lctx.debug(retsend)
                 if retsend.split(",")[1] != "SUCCESS":
                     lctx.error(retsend)
                     raise Exception("Daytona command DAYTONA_STOP_MONITOR failed : ", t2.testobj.TestInputData.testid)
-
-                retsend = self.cl.send(ip, self.CPORT, self.ev.construct("DAYTONA_PREPARE_RESULTS", serialize_str))
-                lctx.debug(retsend)
-                if retsend.split(",")[1] != "SUCCESS":
-                    lctx.error(retsend)
-                    raise Exception("Daytona command DAYTONA_PREPARE_RESULTS failed : ",
-                                    t2.testobj.TestInputData.testid)
 
                 # get statistics hosts
                 for s in t.testobj.TestInputData.stathostname.split(','):
@@ -83,89 +76,81 @@ class Scheduler:
                     if len(s.strip()) == 0:
                         break
                     p = self.CPORT;
-                    retsend = self.cl.send(s.strip(), p, self.ev.construct("DAYTONA_STOP_MONITOR", serialize_str))
+		    try:
+                        retsend = self.cl.send(s.strip(), p, self.ev.construct("DAYTONA_STOP_MONITOR", str(t2.testobj.TestInputData.testid)))
+		    except:
+			continue
+
                     lctx.debug(retsend)
                     if retsend.split(",")[1] != "SUCCESS":
                         lctx.error(retsend)
                         raise Exception("Daytona command DAYTONA_STOP_MONITOR failed : ",
                                         t2.testobj.TestInputData.testid)
 
-                t.updateStatus("completed", "collating")
+		if t.testobj.TestInputData.timeout_flag:
+                    t.updateStatus("timeout", "collating")
+		else:
+		    t.updateStatus("completed", "collating")
 
+		ptop = process_top.ProcessTop(LOG.getLogger("processTop", "DH"))
                 # todo : avoid send client its own ip
-                lctx.debug("SENDING results.tgz download to : " + ip + ":" + str(self.CPORT))
-                results_file = cfg.daytona_agent_root + "/" + t.testobj.TestInputData.frameworkname + "/" + str(
-                    t.testobj.TestInputData.testid) + "/results/" + "results.tgz"
-                retsend = self.cl.send(ip, self.CPORT, self.ev.construct("DAYTONA_FILE_DOWNLOAD",
-                                                                         str(self.HOST) + "," + str(
-                                                                             self.PORT) + "," + results_file + "," + serialize_str + "," + "RESULTS" + "," + ip))
-                lctx.debug(retsend)
+                lctx.info("SENDING results.tgz download to : " + ip + ":" + str(self.CPORT))
+                retsend = self.cl.send(ip, self.CPORT, self.ev.construct("DAYTONA_FILE_DOWNLOAD", str(t2.testobj.TestInputData.testid)))
+		lctx.debug(retsend)
                 if retsend.split(",")[1] != "SUCCESS":
                     lctx.error(retsend)
                     raise Exception("Daytona command DAYTONA_FILE_DOWNLOAD failed :", t2.testobj.TestInputData.testid)
-
-                results_file = cfg.daytona_agent_root + "/" + t.testobj.TestInputData.frameworkname + "/" + str(
-                    t.testobj.TestInputData.testid) + "/results/" + "results_stats.tgz"
+		try:
+                    lctx.debug("Untar file : " + t2.testobj.TestInputData.exec_results_path + "results.tgz to location : " + t2.testobj.TestInputData.exec_results_path + "/../" )
+                    common.untarfile(t2.testobj.TestInputData.exec_results_path + "/results.tgz",
+                                     t2.testobj.TestInputData.exec_results_path + "/../")
+                except Exception as e:
+                    lctx.error("Error in untar EXEC host results")
+                    lctx.error(e)
+                    raise Exception("test result processing  error", t2.testobj.TestInputData.testid)
+	
+		ptop_ret = ptop.process_top_output(t2.testobj.TestInputData.stats_results_path[ip] + "sar/")
+	        lctx.debug(ptop_ret + " : " + t2.testobj.TestInputData.stats_results_path[ip])
 
                 for s in t.testobj.TestInputData.stathostname.split(','):
+		    if len(s.strip()) == 0:
+                        break
                     lctx.info("Downloading stats from STATS self.HOSTS : " + s)
                     lctx.info(s)
                     # stop stats monitors on req hosts
                     # any host that blocks stop monitor blocks the scheduling for the FW
-                    if len(s.strip()) == 0:
-                        break
 
                     p = self.CPORT
-
-                    lctx.info("Sending DOWNLOAD file to :" + s.strip() + ":" + str(
-                        p) + "File :" + results_file + "(upload to this host port:)" + str(self.HOST) + "," + str(
-                        self.PORT))
-                    retsend = self.cl.send(s.strip(), p, self.ev.construct("DAYTONA_FILE_DOWNLOAD",
-                                                                           str(self.HOST) + "," + str(
-                                                                               self.PORT) + "," + results_file + "," + serialize_str + "," + "STATS" + "," + s.strip()))
+		    lctx.info("Sending results.tgz download to :" + s.strip() + ":" + str(p))
+		    try:
+                        retsend = self.cl.send(s.strip(), p, self.ev.construct("DAYTONA_FILE_DOWNLOAD", str(t2.testobj.TestInputData.testid)))
+		    except:
+			continue
                     lctx.debug(retsend)
                     if retsend.split(",")[1] != "SUCCESS":
-                        lctx.error("Error downloading " + results_file + " From " + s.strip() + ":" + retsend)
+                        lctx.error("Error downloading STATS from " + s.strip() + ":" + retsend)
                         raise Exception("Daytona command DAYTONA_FILE_DOWNLOAD failed :",
                                         t2.testobj.TestInputData.testid)
-                try:
-                    lctx.debug(t2.testobj.TestInputData.exec_results_path + "results.tgz")
-                    lctx.debug(t2.testobj.TestInputData.exec_results_path + "/../")
-                    common.untarfile(t2.testobj.TestInputData.exec_results_path + "/results.tgz",
-                                     t2.testobj.TestInputData.exec_results_path + "/../")
-                    for s in t.testobj.TestInputData.stathostname.split(','):
-                        if len(s.strip()) == 0:
-                            break
-                        lctx.debug(t2.testobj.TestInputData.stats_results_path[s] + "results_stats.tgz")
-                        lctx.debug(t2.testobj.TestInputData.stats_results_path[s] + "/../")
-                        common.untarfile(t2.testobj.TestInputData.stats_results_path[s] + "/results_stats.tgz",
+		    try:
+			lctx.debug("Untar file : " + t2.testobj.TestInputData.stats_results_path[s] + "results.tgz to location : " + t2.testobj.TestInputData.stats_results_path[s] + "/../" )
+                        common.untarfile(t2.testobj.TestInputData.stats_results_path[s] + "/results.tgz",
                                          t2.testobj.TestInputData.stats_results_path[s] + "/../")
-                except Exception as e:
-                    lctx.error("Error in untar results")
-                    lctx.error(e)
-                    raise Exception("test result processing  error", t2.testobj.TestInputData.testid)
+                    except Exception as e:
+                        lctx.error("Error in untar STAT host " + s + " results")
+                        lctx.error(e)
+                        raise Exception("test result processing  error", t2.testobj.TestInputData.testid)
 
-                    # todo : invoke other scripts to transform results and update DB
-
+		    ptop_ret = ptop.process_top_output(t2.testobj.TestInputData.stats_results_path[s] + "sar/")
+                    lctx.debug(ptop_ret + " : " + t2.testobj.TestInputData.stats_results_path[s])
+                    
+		    # todo : invoke other scripts to transform results and update DB
         except Exception as e:
             lctx.error("Error in processing results")
             lctx.error(e)
             t.updateStatus("collating", "failed")
 
-        ptop = process_top.ProcessTop(LOG.getLogger("processTop", "DH"))
-        ptop_ret = ptop.process_top_output(t2.testobj.TestInputData.stats_results_path[ip] + "sar/")
-        lctx.debug(ptop_ret + " : " + t2.testobj.TestInputData.stats_results_path[ip])
-
-        for s in t.testobj.TestInputData.stathostname.split(','):
-            if len(s.strip()) == 0:
-                break
-            ptop_ret = ptop.process_top_output(t2.testobj.TestInputData.stats_results_path[s] + "sar/")
-            lctx.info(ptop_ret + " : " + t2.testobj.TestInputData.stats_results_path[s])
-
         try:
-            retsend = self.cl.send(ip, self.CPORT, self.ev.construct("DAYTONA_CLEANUP_TEST", serialize_str))
-            lctx.debug("DAYTONA_CLEANUP_TEST:" + str(retsend))
-            retsend = self.cl.send(ip, self.CPORT, self.ev.construct("DAYTONA_FINISH_TEST", serialize_str))
+            retsend = self.cl.send(ip, self.CPORT, self.ev.construct("DAYTONA_FINISH_TEST", str(t2.testobj.TestInputData.testid)))
             lctx.debug(retsend)
 
             for s in t.testobj.TestInputData.stathostname.split(','):
@@ -175,39 +160,50 @@ class Scheduler:
 
                 lctx.debug("self.HOST : " + s.strip())
                 lctx.debug("PORT to send CLEANUP & FINISH : " + str(p))
-                retsend = self.cl.send(s.strip(), p, self.ev.construct("DAYTONA_CLEANUP_TEST", serialize_str))
-                lctx.debug(retsend)
-                retsend = self.cl.send(s.strip(), p, self.ev.construct("DAYTONA_FINISH_TEST", serialize_str))
+		try:
+                    retsend = self.cl.send(s.strip(), p, self.ev.construct("DAYTONA_FINISH_TEST", str(t2.testobj.TestInputData.testid)))
+		except:
+		    pass
                 lctx.debug(retsend)
         except Exception as e:
             lctx.error("Error in processing results")
             t.updateStatus("collating", "failed")
+	
+	if t.testobj.TestInputData.timeout_flag:
+	    t.updateStatus("collating", "timeout clean")
+	else:
+            t.updateStatus("collating", "finished clean")
 
-        t.updateStatus("collating", "finished clean")
         now = time.time()
         tstr = str(time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(now)))
         t.updateEndTime(tstr)
+	f = None
+	try:
+            f = open(t2.testobj.TestInputData.exec_results_path + "/results.csv")
+	except IOError as e:
+	    lctx.debug("File results.csv not found")
+	    pass
 
-        f = open(t2.testobj.TestInputData.exec_results_path + "/results.csv")
         to = t.testobj.TestInputData.email
-        reader = csv.reader(f)
-        rownum = 0
-        htmlfile = '<table>'
-        for row in reader:
-            if rownum == 0:
-                htmlfile += '<tr>'
-                for column in row:
-                    htmlfile += '<th style="text-align: left;" width="70%">' + column + '</th>'
-                htmlfile += '</tr>'
-            else:
-                htmlfile += '<tr>'
-                for column in row:
-                    htmlfile += '<td style="text-align: left;" width="70%">' + column + '</td>'
-                htmlfile += '</tr>'
-            rownum += 1
-        htmlfile += '</table>'
-        f.close()
+	htmlfile = '<table>'
+	if f:
+            reader = csv.reader(f)
+            rownum = 0
+            for row in reader:
+                if rownum == 0:
+                    htmlfile += '<tr>'
+                    for column in row:
+                        htmlfile += '<th style="text-align: left;" width="70%">' + column + '</th>'
+                    htmlfile += '</tr>'
+                else:
+                    htmlfile += '<tr>'
+                    for column in row:
+                        htmlfile += '<td style="text-align: left;" width="70%">' + column + '</td>'
+                    htmlfile += '</tr>'
+                rownum += 1
+	    f.close()
 
+	htmlfile += '</table>'
         host_ip = "http://" + common.get_local_ip() + "/test_info.php?testid=" + str(t.testobj.TestInputData.testid)
 
         subject = "Test {} completed successfully".format(t.testobj.TestInputData.testid)
@@ -241,6 +237,7 @@ class Scheduler:
 
         return "SUCCESS"
 
+
     def trigger(self, *args):
         # trigger starts in a thread, keep track of all triggers and they should complete in a specified time,
         # otherwise signal a close
@@ -259,22 +256,26 @@ class Scheduler:
                 raise Exception("test trigger error", t2.testobj.TestInputData.testid)
 
             ip = t.testobj.TestInputData.exechostname
-            retsend = self.cl.send(ip, self.CPORT, self.ev.construct("DAYTONA_SETUP_TEST", serialize_str))
+            retsend = self.cl.send(ip, self.CPORT, self.ev.construct("DAYTONA_SETUP_TEST", serialize_str + ",EXEC"))
             lctx.debug(retsend)
             st = retsend.split(",")
             if len(st) > 1:
                 if retsend.split(",")[1] != "SUCCESS":
                     lctx.error(retsend)
                     raise Exception("test trigger error", t2.testobj.TestInputData.testid)
+            else:
+                raise Exception("Test Setup Failure : Test -  ", t2.testobj.TestInputData.testid)
 
             retsend = self.cl.send(ip, self.CPORT,
-                                   self.ev.construct("DAYTONA_START_MONITOR", str(serialize_str) + "," + ip))
+                                   self.ev.construct("DAYTONA_START_MONITOR", str(t2.testobj.TestInputData.testid)))
             lctx.debug(retsend)
             st = retsend.split(",")
             if len(st) > 1:
                 if retsend.split(",")[1] != "SUCCESS":
                     lctx.error(retsend)
                     raise Exception("test trigger error", t2.testobj.TestInputData.testid)
+            else:
+                raise Exception("Test monitor start failure : Test -  ", t2.testobj.TestInputData.testid)
 
             track_monitor.append(ip)
 
@@ -287,15 +288,13 @@ class Scheduler:
                 p = self.CPORT
 
                 retsend = self.cl.send(s, p, self.ev.construct("DAYTONA_HEARTBEAT", ""))
-                lctx.debug(retsend)
                 st = retsend.split(",")
                 if len(st) > 1:
                     if retsend.split(",")[1] != "ALIVE":
-                        lctx.error(retsend)
                         raise Exception("Remove host not avaliable - No Heartbeat ", t2.testobj.TestInputData.testid)
                     else:
                         retsend = self.cl.send(s, p,
-                                               self.ev.construct("DAYTONA_HANDSHAKE", self.HOST + "," + str(self.PORT)))
+                                               self.ev.construct("DAYTONA_HANDSHAKE", self.HOST + "," + str(self.PORT) + "," + str(t2.testobj.TestInputData.testid) + "," + s))
                         lctx.debug(retsend)
                         if retsend == "SUCCESS":
                             alive = True
@@ -303,39 +302,55 @@ class Scheduler:
                             addr = socket.gethostbyname(s)
                             server.serv.registered_hosts[addr] = addr
                         else:
-                            lctx.error(retsend)
                             raise Exception("Unable to handshake with agent on stats host:" + s,
                                             t2.testobj.TestInputData.testid)
+		else:
+                    raise Exception("Remove host not avaliable - No Heartbeat ", t2.testobj.TestInputData.testid)
 
                 # start stats monitors on req hosts
                 # any host that blocks start monitor blocks the scheduling for the FW
-                retsend = self.cl.send(s.strip(), p,
-                                       self.ev.construct("DAYTONA_START_MONITOR", str(serialize_str) + "," + s))
+
+		retsend = self.cl.send(s.strip(), p, self.ev.construct("DAYTONA_SETUP_TEST", serialize_str + ",STAT"))
                 lctx.debug(retsend)
                 st = retsend.split(",")
                 if len(st) > 1:
                     if retsend.split(",")[1] != "SUCCESS":
                         lctx.error(retsend)
                         raise Exception("test trigger error", t2.testobj.TestInputData.testid)
+                else:
+                    raise Exception("Test Setup Failure : Test -  ", t2.testobj.TestInputData.testid)
+
+                retsend = self.cl.send(s.strip(), p,
+                                       self.ev.construct("DAYTONA_START_MONITOR", str(t2.testobj.TestInputData.testid)))
+                lctx.debug(retsend)
+                st = retsend.split(",")
+                if len(st) > 1:
+                    if retsend.split(",")[1] != "SUCCESS":
+                        lctx.error(retsend)
+                        raise Exception("test trigger error", t2.testobj.TestInputData.testid)
+                else:
+                    raise Exception("Test monitor start failure : Test -  ", t2.testobj.TestInputData.testid)
 
                 track_monitor.append(s.strip())
 
             # Trigger the start of test to test box
             retsend = self.cl.send(t.testobj.TestInputData.exechostname, self.CPORT,
-                                   self.ev.construct("DAYTONA_START_TEST", serialize_str))
+                                   self.ev.construct("DAYTONA_START_TEST", str(t2.testobj.TestInputData.testid)))
             lctx.debug(retsend)
             st = retsend.split(",")
             if len(st) > 1:
                 if retsend.split(",")[1] != "SUCCESS":
                     lctx.error(retsend)
                     raise Exception("test trigger error", t2.testobj.TestInputData.testid)
+	    else:
+                raise Exception("Failed to start Test : ", t2.testobj.TestInputData.testid)
 
             # Get status from tst box
             retsend = self.cl.send(t.testobj.TestInputData.exechostname, self.CPORT,
-                                   self.ev.construct("DAYTONA_GET_STATUS", serialize_str))
+                                   self.ev.construct("DAYTONA_GET_STATUS", str(t2.testobj.TestInputData.testid)))
             st = retsend.split(",")
             if len(st) > 1:
-                if "TESTRUNNING" == st[1] or "TESTSETUP" == st[1]:
+                if "RUNNING" == st[1] or "MONITOR_ON" == st[1]:
                     # update from setup to running
                     lctx.debug("Updating test status to running in DB")
                     t.updateStatus("setup", "running")
@@ -348,14 +363,14 @@ class Scheduler:
                     # Killing of threads on client host and remove from list with status=fail is done in testmon
 
         except Exception as e:
-            lctx.debug(e)
+            lctx.error(e)
             lctx.error("ERROR : Unknown trigger error : " + str(t.testobj.TestInputData.testid))
             t.updateStatus("setup", "failed")
             lctx.debug(traceback.print_exc())
             if ip in track_monitor:
-                retsend = self.cl.send(ip, self.CPORT, self.ev.construct("DAYTONA_STOP_MONITOR", serialize_str))
+                retsend = self.cl.send(ip, self.CPORT, self.ev.construct("DAYTONA_STOP_MONITOR", str(t2.testobj.TestInputData.testid)))
                 lctx.debug(retsend)
-                retsend = self.cl.send(ip, self.CPORT, self.ev.construct("DAYTONA_END_TEST", serialize_str))
+                retsend = self.cl.send(ip, self.CPORT, self.ev.construct("DAYTONA_ABORT_TEST", str(t2.testobj.TestInputData.testid)))
                 lctx.debug(retsend)
 
             for s in t.testobj.TestInputData.stathostname.split(','):
@@ -363,9 +378,9 @@ class Scheduler:
                     break
                 if s.strip() in track_monitor:
                     retsend = self.cl.send(s.strip(), self.CPORT,
-                                           self.ev.construct("DAYTONA_STOP_MONITOR", serialize_str))
+                                           self.ev.construct("DAYTONA_STOP_MONITOR", str(t2.testobj.TestInputData.testid)))
                     lctx.debug(retsend)
-                    retsend = self.cl.send(s.strip(), self.CPORT, self.ev.construct("DAYTONA_END_TEST", serialize_str))
+                    retsend = self.cl.send(s.strip(), self.CPORT, self.ev.construct("DAYTONA_ABORT_TEST", str(t2.testobj.TestInputData.testid)))
                     lctx.debug(retsend)
             return "FAILED"
 
@@ -407,10 +422,12 @@ class Scheduler:
                     st = ret.split(",")
                     if len(st) > 2:
                         status = st[1]
+                    else:
+                        raise Exception("Remove host not avaliable - No Heartbeat ", tmp_t.testobj.TestInputData.testid)
 
                     if "ALIVE" == status:
                         ret = self.cl.send(h, self.CPORT,
-                                           self.ev.construct("DAYTONA_HANDSHAKE", self.HOST + "," + str(self.PORT)))
+                                           self.ev.construct("DAYTONA_HANDSHAKE", self.HOST + "," + str(self.PORT) + "," + str(tmp_t.testobj.TestInputData.testid) + "," + h))
                         if ret == "SUCCESS":
                             alive = True
                             lctx.debug("Handshake successful in scheduler, adding ip/hostname to reg hosts")
@@ -418,9 +435,11 @@ class Scheduler:
                             addr = socket.gethostbyname(h)
                             lctx.debug(addr)
                             server.serv.registered_hosts[addr] = addr
-                except Exception as e:
-                    lctx.error("Unable to handshake with agent:" + h)
-                    lctx.debug(e)
+                        else:
+                            raise Exception("Unable to handshake with agent:" + h)
+
+		except Exception as e:
+                    lctx.error(e)
                     alive = False
                     found = False
                     # pause the dbmon here as we dont want the same test to be picked again after we pop
@@ -479,6 +498,7 @@ class Scheduler:
         while True:
             d = "TSMON [R] : |"
             remove = False
+	    error = False
 
             for k in self.running_tests:
                 if (self.running_tests[k] != None):
@@ -492,27 +512,34 @@ class Scheduler:
                         t.updateStatus("running", "failed")
                         remove = True
                         break  # out of for loop
-
+		    
                     try:
                         ret = self.cl.send(t.testobj.TestInputData.exechostname, self.CPORT,
-                                           self.ev.construct("DAYTONA_GET_STATUS", serialize_str))
+                                           self.ev.construct("DAYTONA_GET_STATUS", str(t2.testobj.TestInputData.testid)))
                         status = ret.split(",")[1]
                         lctx.debug(status)
                     except Exception as e:
                         lctx.debug(e)
                         t.updateStatus("running", "failed")
-                        remove = True
+                        error = True
                         break  # out of for loop
 
-                    if "TESTRUNNING" == status or "TESTSETUP" == status:
+                    if status in ["RUNNING","INIT","SETUP","MONITOR_ON","MONITOR_OFF"]:
+			found = checkTestRunning(t.testobj.TestInputData.testid)
+			if not found:
+			    error = True
+			    break
                         d = d + str(self.running_tests[k].testobj.TestInputData.testid) + "|"
-                    elif "TESTEND" == status.strip():
+                    elif status in ["TESTEND","TIMEOUT"]:
                         d = d + "*" + str(self.running_tests[k].testobj.TestInputData.testid) + "*|"
                         if t.testobj.TestInputData.end_status == "running":
                             lctx.debug(t.testobj.TestInputData.end_status)
                             if t.testobj.TestInputData.end_status == "running":
-                                lctx.debug("Updating status to completed in DB")
-                                t.updateStatus("running", "completed")
+				if status == "TIMEOUT":
+				    t.testobj.TestInputData.timeout_flag = True
+				    t.updateStatus("running", "timeout")
+				else:
+                                    t.updateStatus("running", "completed")
                                 pt = common.FuncThread(self.process_results, True, t,
                                                        t.testobj.TestInputData.end_status)
                                 process_results_threads[t.testobj.TestInputData.testid] = (pt, t)
@@ -526,13 +553,17 @@ class Scheduler:
                                 "ERROR : Unknown test status for : " + str(t.testobj.TestInputData.testid) + ":" + str(
                                     status))
                             break  # out of for loop
-                    elif "TESTFINISHED" == status.strip():
+                    elif status.strip() == "FINISHED":
                         d = "TSMON [F] : |*" + str(self.running_tests[k].testobj.TestInputData.testid) + "*|"
                         remove = True
                         break
-		    elif "TESTFAILED" == status.strip():
-                        remove = True
-                        lctx.error("TEST Failed : Cleaning test from running queue")
+		    elif status.strip() in ["FAILED","ABORT","TESTNA"]:
+			if status.strip() == "FAILED":
+                            error = True
+		        elif status.strip() in ["ABORT","TESTNA"]:
+			    remove = True
+			t.updateStatus("", "failed")
+                        lctx.error("TEST " + status.strip() + " : Cleaning test from running queue")
                         break  # out of for loop
                     else:
                         remove = True
@@ -544,6 +575,45 @@ class Scheduler:
 
                 lctx.info(d)
                 d = ""
+
+            if error:
+		retsend = None
+                ip = t.testobj.TestInputData.exechostname
+                try:
+                    retsend = self.cl.send(ip, self.CPORT, self.ev.construct("DAYTONA_HEARTBEAT", ""))
+                except:
+                    pass
+
+                if retsend and retsend.split(",")[1] == "ALIVE":
+                    retsend = self.cl.send(ip, self.CPORT,
+                                           self.ev.construct("DAYTONA_STOP_MONITOR", str(t.testobj.TestInputData.testid)))
+                    retsend = self.cl.send(ip, self.CPORT,
+                                           self.ev.construct("DAYTONA_ABORT_TEST", str(t.testobj.TestInputData.testid)))
+                for s in t.testobj.TestInputData.stathostname.split(','):
+                    if len(s.strip()) == 0:
+                        break
+                    try:
+                        retsend = self.cl.send(s.strip(), self.CPORT, self.ev.construct("DAYTONA_HEARTBEAT",""))
+                    except:
+                        pass
+                    if retsend and retsend.split(",")[1] == "ALIVE":
+                        retsend = self.cl.send(s.strip(), self.CPORT,
+                                               self.ev.construct("DAYTONA_STOP_MONITOR",
+                                                                 str(t.testobj.TestInputData.testid)))
+
+                        retsend = self.cl.send(s.strip(), self.CPORT,
+                                               self.ev.construct("DAYTONA_ABORT_TEST",
+                                                                 str(t.testobj.TestInputData.testid)))
+
+                self.lock.acquire()
+                for k in self.running_tests:
+                    if self.running_tests[k].testobj.TestInputData.testid == t.testobj.TestInputData.testid:
+                        lctx.debug("removing entry for this test")
+                        rt = self.running_tests.pop(k)
+                        break
+                if k in self.running_tests:
+                    del self.running_tests[k]
+                self.lock.release()         
 
             if remove:
                 self.lock.acquire()
@@ -633,6 +703,19 @@ def daytonaCli(self, *args):
             return res
     else:
         return "Error|Unknown command received on server"
+
+
+def checkTestRunning(testid):
+    lctx = LOG.getLogger("dblog", "DH")
+    cfg = config.CFG("DaytonaHost", lctx)
+    cfg.readCFG("config.ini")
+    db = dbaccess.DBAccess(cfg, LOG.getLogger("dblog", "DH"))
+    check = db.query("""SELECT COUNT(*) FROM CommonFrameworkSchedulerQueue where testid=%s""", (testid,), False, False);
+    db.close()
+    if check[0] == 0:
+        return False
+    else:
+        return True
 
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ if [ -z $db_name ] || [ -z $db_user ] || [ -z $db_password ] || [ -z $db_host ] 
   exit 1
 fi
 
-ip=`hostname -I`
+ip=`hostname`
 
 echo "Updating default exechost"
 echo ""

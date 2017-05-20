@@ -169,18 +169,18 @@ try{
         $l_test_arg_row[3] = $row["argument_value"];
         array_push($test_args_arr, $l_test_arg_row);
     }
-    $query = "SELECT filename,TestResultFile.title,row FROM TestResultFile
+    $query = "SELECT filename,TestResultFile.title FROM TestResultFile
                JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE frameworkname=:frameworkname ORDER BY filename_order";
     $stmt = $db->prepare($query);
     $stmt->bindValue(':frameworkname',$test_info_data["frameworkname"],PDO::PARAM_STR);
     $stmt->execute();
     $report_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $report_arr = array();
+    $y = 1;
     foreach($report_result as $row){
-        if(!isset($report_arr[$row["row"]])) {
-            $report_arr[$row["row"]] = array();
-        }
-        array_push($report_arr[$row["row"]], array(str_replace("rrd","csv",$row["filename"]), $row["title"]));
+        $report_arr[$y] = array();
+        array_push($report_arr[$y], array(str_replace("rrd","csv",$row["filename"]), $row["title"]));
+        ++$y;
     }
 }catch (PDOException $e){
     $db->rollBack();
@@ -360,7 +360,7 @@ try{
                                 <?php printRowFields($allTestData, 'timeout'); ?>
                             </tr>
                             <tr>
-                                <td class="active">CC List</td>
+                                <td class="active">Email List</td>
                                 <?php printRowFields($allTestData, 'cc_list'); ?>
                             </tr>
                             </tbody>

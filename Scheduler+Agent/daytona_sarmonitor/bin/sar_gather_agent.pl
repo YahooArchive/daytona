@@ -25,6 +25,7 @@ my $iostat_data_file = "/tmp/iostat.dat";
 my $top_data_file = "/tmp/top.dat";
 my $top_output_file = "/tmp/top_output.csv";
 my $strace_output_file = "/tmp/strace_output.txt";
+my $perf_output_file = "/tmp/perf_output.txt";
 
 my $daemonize = 0;
 my $shutdown = 0;
@@ -41,6 +42,11 @@ my $strace_delay = 0;
 my $strace_duration = 1;
 my $strace_proc;
 my $strace_pid = 0;
+
+my $perf_delay = 0;
+my $perf_duration = 1;
+my $perf_proc;
+my $perf_pid = 0;
 
 my %stats = (
     cpu_utilization => {
@@ -201,7 +207,10 @@ GetOptions(
     'strace!'     => \$strace,
     'strace-delay=s' => \$strace_delay,
     'strace-duration=s' => \$strace_duration,
-    'strace-proc=s' => \$strace_proc
+    'strace-proc=s' => \$strace_proc,
+    'perf-delay=s' => \$perf_delay,
+    'perf-duration=s' => \$perf_duration,
+    'perf-proc=s' => \$perf_proc
 ) or die "Oops";
 
 $SIG{'TERM'} = sub {
@@ -238,6 +247,7 @@ MAIN: {
     $iostat_data_file = $root_dir . "/iostat.dat";
     $top_data_file = $root_dir . "/top.dat";
     $strace_output_file = $root_dir . "strace_output.txt";
+    $perf_output_file = $root_dir . "perf_output.txt";
 
     if($shutdown) {
         my $pgid = 0;
@@ -269,7 +279,7 @@ MAIN: {
     prepare_exec();
     $pid_group = getpgrp();
     write_pid_group_file();
-    for(my $i=0;$i<3;$i=$i+1){
+    for(my $i=0;$i<4;$i=$i+1){
         my $temp_pid;
         $temp_pid = fork();
         die "fork() failed: $!" unless defined $temp_pid;
@@ -280,13 +290,15 @@ MAIN: {
                 if ($strace){
                     run_strace_daemon();
                 }
+            }elsif ($i == 2){
+                run_perf_daemon();
             }else{
                 run_top_daemon();
             }
             last;
         }
         else {
-            if ($i != 2){
+            if ($i != 3){
                 next;
             }else{
                 run_iostat_daemon();
@@ -381,7 +393,22 @@ sub run_strace_daemon {
     exec_strace();
 }
 
-
+sub run_perf_daemon {
+    print $debug_fh "Starting perf monitor in $perf_delay secs \n";
+    sleep($perf_delay);
+    if ($perf_proc){
+        print $debug_fh "Setting up perf for process : $perf_proc\n";
+        my $cmd = "ps -eo pid,cmd,%cpu --sort=-%cpu | grep " . $perf_proc .  " | grep -v grep | awk 'FNR == 1 {print \$1}'";
+        $perf_pid = `$cmd`;
+        $perf_pid =~ s/^\s+|\s+$//g;
+        if ($perf_pid == 0 ){
+            print $debug_fh "No active PID found for given process : $perf_proc\n";
+        }else {
+            print $debug_fh "PID selected for process $perf_proc : $perf_pid\n";
+        }
+    }
+    exec_perf();
+}
 
 # Delete all /tmp files created
 sub cleanup {
@@ -497,6 +524,17 @@ sub exec_strace {
     my $cmd = 'perl -pi -e \'print  "Strace Process : '. $strace_proc . ' | PID : ' . $strace_pid . ' \n\n" if $. == 1\' ' . $root_dir . '/strace_output.txt';
     print $debug_fh "$cmd\n";
     `$cmd`;
+}
+
+sub exec_perf {
+    my $perf_sys_cmd = 'perf stat -e cycles,instructions,LLC-load-misses,LLC-prefetch-misses,LLC-store-misses -a -o ' . $root_dir . '/perf_output.txt sleep ' . $perf_duration;
+    print $debug_fh "exec_perf() Executing cmd: " . $perf_sys_cmd . "\n";
+    `$perf_sys_cmd`;
+    if ($perf_pid != 0){
+        my $perf_proc_cmd = 'perf stat -e cycles:u,instructions:u -a -p ' . $perf_pid . ' -o ' . $root_dir . '/perf_output.txt  --append sleep ' . $perf_duration;
+        print $debug_fh "exec_perf() Executing cmd: " . $perf_proc_cmd . "\n";
+        `$perf_proc_cmd`;
+    }
 }
 
 sub finish_exec {
@@ -1070,4 +1108,5 @@ terminate the process and delete the temporary files, including
 output.dat.
 
 =cut
+
 
