@@ -175,20 +175,20 @@ We have no mechanism in place to keep the test results private to the creator of
 ### Directory Structure (Scheduler)
 The primary directory on the Daytona host is the location where daytona_root is pointing. Let's look at the following example:
 
-ls -l /tmp/daytona_root/test_data_DH/DaytonaSampleFramework/1129/results/172.40.31.120
-
+ls -l /var/www/html/daytona/test_data/DaytonaSampleFramework/1001/results/10.91.35.168/
 ```
--rw-rw-r-- 1 ubuntu ubuntu   104 Sep  9 17:58 app_kpi.csv
-drwxrwxr-x 2 ubuntu ubuntu  4096 Aug 29 19:14 application
--rw-rw-r-- 1 ubuntu ubuntu   829 Sep  9 17:58 cpuinfo.txt
--rw-rw-r-- 1 ubuntu ubuntu   584 Sep  9 17:58 onecol.plt
-drwxrwxr-x 2 ubuntu ubuntu  4096 Sep  9 17:58 sar
+drwxrwxrwx 2 48 48    26 May 18 18:12 application
+-rwxrwxrwx 1 48 48  2928 May 18 18:12 cpuinfo.txt
+-rwxrwxrwx 1 48 48  1226 May 18 18:12 meminfo.txt
+-rwxrwxrwx 1 48 48    74 May 18 18:12 multicol.csv
+-rwxrwxrwx 1 48 48   111 May 18 18:12 results.csv
+drwxrwxrwx 2 48 48  4096 May 18 18:12 sar
 ```
 
-* daytona_root is pointing to /tmp/daytona_root
-* test_data_DH: Directory holding test results for all frameworks
+* test_data is pointing to /var/www/html/daytona/daytona_root/test_data_DH
+* test_data: Directory holding test results for all frameworks
 * DaytonaSampleFramework: Name of one of the test frameworks
-* 172.40.31.120: IP Address of the execution host
+* 10.91.35.168: IP Address of the execution host
 * *.csv, *.txt and *.plt are test result files
 * application: Directory holding Daytona and application log files
 * sar: Directory holding .plt fils for system metrics
@@ -198,10 +198,11 @@ drwxrwxr-x 2 ubuntu ubuntu  4096 Sep  9 17:58 sar
 
 The directory structure for the agent looks very similar to the one for the scheduler
 
-ls -l /tmp/daytona_root/test_data_AGENT/DaytonaSampleFramework/1129/results/172.40.31.120
+ls -l /tmp/daytona_root/test_data_AGENT/DaytonaSampleFramework/1001/results/10.91.35.168/
 
 ```
--rw-rw-r-- 1 ubuntu  104 Sep  9 17:58 app_kpi.csv
--rw-rw-r-- 1 ubuntu  829 Sep  9 17:58 cpuinfo.txt
--rw-rw-r-- 1 ubuntu  584 Sep  9 17:58 onecol.plt
-drwxrwxr-x 2 ubuntu 4.0K Sep  9 17:58 sar
+-rw-r--r-- 1 root root 23394 May 18 18:36 cpuinfo.txt
+-rw-r--r-- 1 root root  1226 May 18 18:36 meminfo.txt
+-rw-r--r-- 1 root root    74 May 18 18:36 multicol.csv
+-rw-r--r-- 1 root root   111 May 18 18:36 results.csv
+drwxr-xr-x 2 root root  4096 May 18 18:35 sar
