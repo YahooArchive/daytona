@@ -54,7 +54,7 @@ CREATE TABLE `ApplicationFrameworkArgs` (
 
 LOCK TABLES `ApplicationFrameworkArgs` WRITE;
 /*!40000 ALTER TABLE `ApplicationFrameworkArgs` DISABLE KEYS */;
-INSERT INTO `ApplicationFrameworkArgs` VALUES (424,51,'QPS','text','','200',0,'Queries per second'),(425,51,'Duration','text','','120',1,'Duration of test in seconds');
+INSERT INTO `ApplicationFrameworkArgs` VALUES (424,51,'Iterations','text','','3',0,'Number of iterations'),(425,51,'Delay','text','','10',1,'Delay between each iteration');
 /*!40000 ALTER TABLE `ApplicationFrameworkArgs` ENABLE KEYS */;
 UNLOCK TABLES;
 
