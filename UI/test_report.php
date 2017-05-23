@@ -339,6 +339,10 @@ try{
                                 <td class="active">Title</td>
                                 <?php printRowFields($allTestData, 'title'); ?>
                             </tr>
+			    <tr>
+                                <td class="active">Owner</td>
+                                <?php printRowFields($allTestData, 'username'); ?>
+                            </tr>
                             <tr>
                                 <td class="active">Purpose</td>
                                 <?php printRowFields($allTestData, 'purpose'); ?>

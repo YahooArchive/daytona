@@ -19,6 +19,20 @@ function registerUser($db, $user, $password, $email, $state) {
     return true;
 }
 
+function giveFrameworkAccess($db, $user) {
+    $query = "select frameworkid from ApplicationFrameworkMetadata";
+    $stmt = $db->prepare($query);
+    $stmt->execute();
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $query = "INSERT INTO CommonFrameworkAuthentication (username, administrator, frameworkid) VALUES( :userid, 0, :frameworkid ) ON DUPLICATE KEY UPDATE frameworkid = :frameworkid";
+        $stmt = $db->prepare($query);
+            $stmt->bindValue(':userid', $user, PDO::PARAM_STR);
+            $stmt->bindValue(':frameworkid', $row['frameworkid'], PDO::PARAM_INT);
+            $stmt->execute();
+    }
+    return true;
+}
+
 function sendEmailValidation($email, $code, $user) {
     $message = "<html><head>Welcome to Daytona</head><body><p>Validate your email here: <a href='http://52.42.114.108/login.php?email_user=$user&email_code=$code'>Validate Me</a></p><p>Thanks!</p>";
     $headers  = 'MIME-Version: 1.0' . "\r\n";
@@ -108,6 +122,7 @@ if(isset($_REQUEST["register_user"])) {
     if (validatePasswordPolicy($_REQUEST["register_password"])){
         $validNewAccount = registerUser($db, $_REQUEST["register_user"], $_REQUEST["register_password"], $_REQUEST["register_email"], "Email:$email_code:0");
         sendEmailValidation($_REQUEST["register_email"], $email_code, $_REQUEST["register_user"]);
+	giveFrameworkAccess($db, $_REQUEST["register_user"]);
     }else{
         $validPassword = false;
         $error_msg = "<strong>User Registration Failed:</strong> Password failed to meet password policies<br>Password should contain : 8-12 characters, atleast one lowercase character, one uppercase character, one digit, atleast one special character : @#-_$%^&+=§!?";
