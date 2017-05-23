@@ -135,6 +135,10 @@ include_once('lib/header.php');
                             <td class="active">Title</td>
                             <?php printRowFields($allTestData, 'title'); ?>
                         </tr>
+			<tr>
+                            <td class="active">Owner</td>
+                            <?php printRowFields($allTestData, 'username'); ?>
+                        </tr>
                         <tr>
                             <td class="active">Purpose</td>
                             <?php printRowFields($allTestData, 'purpose'); ?>
@@ -249,16 +253,16 @@ include_once('lib/header.php');
                     echo "<table class='table table-hover form-table'>";
                     echo "<tbody>";
                     echo "<tr>";
-                    echo "<td class=\"active\">Process Name</td>";
-                    printRowFields($allTestData, 'strace_process');
-                    echo "</tr>";
-                    echo "<tr>";
                     echo "<td class=\"active\">Delay</td>";
                     printRowFields($allTestData, 'strace_delay');
                     echo "</tr>";
                     echo "<tr>";
                     echo "<td class=\"active\">Duration</td>";
                     printRowFields($allTestData, 'strace_duration');
+                    echo "</tr>";
+		    echo "<tr>";
+                    echo "<td class=\"active\">Process Name</td>";
+                    printRowFields($allTestData, 'strace_process');
                     echo "</tr>";
                     echo "</tbody>";
                     echo "</table>";
