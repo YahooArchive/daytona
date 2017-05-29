@@ -20,7 +20,7 @@
 * clone the git repo
 * cd daytona
 * docker-compose up
-* Make sure you see the Daytona login page at http://daytona-host:8080
+* Make sure you see the Daytona login page at http://daytona-host:8084
 
 #### TestData, sample framework and sample execution script
 To expedite your learning experience, Daytona has been packaged with a sample test framework, a sample execution script and an admin account which is configurable before installation through config.sh file in installation folder. Once UI comes up, user can register themselves and admin need to activate the account from settings panel. Also, You can login as admin with the password configured during installation and can browse and compare test results for few sample tests already packaged with the initial installation. To be able create and run a new test with the sample framework, you need to do the following:
