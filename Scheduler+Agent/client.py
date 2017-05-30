@@ -50,7 +50,7 @@ class TCPClient ():
     except IOError:
       self.lctx.error("Server not responding, perhaps server not running")
       self.lctx.error(ip + "," +  "could not stream ")
-      raise CommunicationError("ERROR:" + ip + "," +  "could not stream")
+      # raise CommunicationError("ERROR:" + ip + "," +  "could not stream")
     return (sock,sfile)
 
   def sendFile(self, ip, port, filename, loc):
@@ -79,7 +79,7 @@ class TCPClient ():
     except IOError:
       self.lctx.error("Server not responding, perhaps server not running")
       self.lctx.error(ip + "," +  "could not send file : " + filename)
-      raise CommunicationError("ERROR:" + ip + "," +  "could not send file : " + filename)
+      # raise CommunicationError("ERROR:" + ip + "," +  "could not send file : " + filename)
     finally:
       self.lctx.debug("closing sock")
       try:
@@ -105,7 +105,7 @@ class TCPClient ():
     except IOError:
       self.lctx.error("Server not responding, perhaps server not running")
       self.lctx.error("Could not send message to " + ip + ":" + str(port)+ "," +  message)
-      raise CommunicationError("ERROR:" + ip + "," +  message)
+      # raise CommunicationError("ERROR:" + ip + "," +  message)
     finally:
       self.lctx.debug("closing sock")
       try:

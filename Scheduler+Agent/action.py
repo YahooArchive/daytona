@@ -143,6 +143,13 @@ def save_test(testid, test):
     return found
 
 
+def delete_test(testid):
+    action_lock.acquire()
+    if testid in running_tests:
+        del running_tests[testid]
+    action_lock.release()
+
+
 def exec_cmd(cmd, daytona_cmd, sync, obj, actionid, current_test):
     lctx.debug("Execute cmd : " + cmd)
     sfile = None
@@ -242,13 +249,6 @@ def startMonitor(self, *args):
     testid = int(params)
     current_test = get_test(testid)
 
-    if current_test:
-        if current_test.status is not "SETUP":
-            lctx.error("Invalid state for START MONITOR action : " + current_test.status)
-            current_test.status = "ABORT"
-            save_test(current_test.testid, current_test)
-            return "ERROR"
-
     try:
         if current_test:
             lctx.debug("MONITOR ON | " + str(current_test.testid) + " | START")
@@ -268,8 +268,6 @@ def startMonitor(self, *args):
                 execline += " --perf-proc=" +  current_test.tobj.testobj.TestInputData.perf_process
 
             lctx.info(execline)
-            current_test.status = "MONITOR_ON"
-            save_test(current_test.testid, current_test)
             exec_cmd(execline, command, sync, obj, actionID, current_test)
 	    lctx.debug("MONITOR ON | " + str(current_test.testid) + " | COMPLETE")
             return "SUCCESS"
@@ -277,9 +275,6 @@ def startMonitor(self, *args):
             raise Exception("Invalid Test ID")
 
     except Exception as e:
-        if current_test:
-            current_test.status = "ABORT"
-            save_test(current_test.testid, current_test)
 	lctx.error(e)
         return "ERROR"
 
@@ -305,17 +300,12 @@ def stopMonitor(self, *args):
             lctx.debug(current_test.statsdir)
             lctx.debug("removed monitor temp files from : " + current_test.archivedir)
             common.make_tarfile(current_test.archivedir + "results.tgz", current_test.resultsdir + "/")
-	    current_test.status = "MONITOR_OFF"
-            save_test(current_test.testid, current_test)
             lctx.debug("MONITOR OFF | " + str(current_test.testid) + " | COMPLETE")
             return "SUCCESS"
         else:
             raise Exception("Monitor is not running for TESTID : " + str(current_test.testid))
 
     except Exception as e:
-        if current_test:
-            current_test.status = "FAILED"
-            save_test(current_test.testid, current_test)
         lctx.error(e)
         return "ERROR"
 
@@ -328,13 +318,6 @@ def setupTest(self, *args):
     t2 = testobj.testDefn()
     t2.deserialize(test_serialized)
     current_test = get_test(t2.testobj.TestInputData.testid)
-
-    if current_test:
-        if current_test.status is not "INIT":
-            lctx.error("Invalid state for TEST SETUP action : " + current_test.status)
-            current_test.status = "ABORT"
-            save_test(current_test.testid, current_test)
-            return "ERROR"
 
     try:
         if current_test:
@@ -400,7 +383,6 @@ def setupTest(self, *args):
                                                                                                       "exec scripts")
                 os.chmod(current_test.execscriptfile, 0744)
 
-            current_test.status = "SETUP"
             save_test(current_test.testid, current_test)
             lctx.debug("TEST SETUP | " + str(current_test.testid) + " | COMPLETE")
             return "SUCCESS"
@@ -410,15 +392,10 @@ def setupTest(self, *args):
     except shutil.Error as err:
         if current_test:
             lctx.error("error copying file : " + str(execscript) + " to " + str(current_test.execscriptfile))
-            current_test.status = "ABORT"
-            save_test(current_test.testid, current_test)
         lctx.error(err)
         return "ERROR"
 
     except Exception as e:
-        if current_test:
-            current_test.status = "ABORT"
-            save_test(current_test.testid, current_test)
         lctx.error(e)
         return "ERROR"
 
@@ -434,13 +411,6 @@ def startTest(self, *args):
     (obj, command, params, actionID, sync) = (args[0], args[1], args[2], args[3], args[4])
     testid = int(params)
     current_test = get_test(testid)
-
-    if current_test:
-        if current_test.status not in ["MONITOR_ON","SETUP"]:
-            lctx.error("Invalid state for START TEST action : " + current_test.status)
-            current_test.status = "FAILED"
-            save_test(current_test.testid, current_test)
-            return "ERROR"
 
     try:
         if current_test:
@@ -465,9 +435,6 @@ def startTest(self, *args):
             raise Exception("Invalid Test ID")
 
     except Exception as e:
-        if current_test:
-            current_test.status = "FAILED"
-            save_test(current_test.testid, current_test)
         lctx.error(e)
         return "ERROR"
 
@@ -481,15 +448,13 @@ def cleanup(self, *args):
         if current_test:
             lctx.debug("CLEANUP | " + str(current_test.testid) + " | START")
             shutil.rmtree(current_test.resultsdir, ignore_errors=True)
+	    delete_test(testid)
             lctx.debug("CLEANUP | " + str(current_test.testid) + " | COMPLETE")
             return "SUCCESS"
         else:
             raise Exception("Invalid Test ID")
 
     except Exception as e:
-        if current_test:
-            current_test.status = "FAILED"
-            save_test(current_test.testid, current_test)
         lctx.error(e)
         return "ERROR"
 
@@ -519,9 +484,6 @@ def abortTest(self, *args):
     lctx.debug("Stopped ASYNC action pending for this this test")
     cleanup(self, self, command, params, actionID, sync)
     lctx.debug(command + "[" + str(actionID) + "]")
-    action_lock.acquire()
-    del running_tests[testid]
-    action_lock.release()
     return "SUCCESS"
 
 
@@ -533,9 +495,6 @@ def setFinish(self, *args):
     (obj, command, params, actionID, sync) = (args[0], args[1], args[2], args[3], args[4])
     testid = int(params)
     cleanup(self, self, command, params, actionID, sync)
-    current_test = get_test(testid)
-    current_test.status = "FINISHED"
-    save_test(current_test.testid, current_test)
     return "SUCCESS"
 
 
@@ -544,10 +503,6 @@ def getStatus(self, *args):
     testid = int(params)
     current_test = get_test(testid)
     if current_test:
-        if current_test.status in ["FINISHED","ABORT"]:
-            action_lock.acquire()
-            del running_tests[testid]
-            action_lock.release()
         lctx.debug(str(current_test.testid) + ":" + current_test.status)
         return current_test.status
     else:
@@ -558,13 +513,6 @@ def fileDownload(self, *args):
     cl = client.TCPClient(LOG.getLogger("clientlog", "Agent"))
     testid = int(args[2])
     current_test = get_test(testid)
-
-    if current_test:
-        if current_test.status is not "MONITOR_OFF":
-            lctx.error("Invalid state for START TEST action : " + current_test.status)
-            current_test.status = "FAILED"
-            save_test(current_test.testid, current_test)
-            return "ERROR"
 
     try:
         if current_test:
@@ -578,9 +526,6 @@ def fileDownload(self, *args):
             raise Exception("Invalid Test ID")
 
     except Exception as e:
-        if current_test:
-            current_test.status = "FAILED"
-            save_test(current_test.testid, current_test)
         lctx.error(e)
         return "ERROR"
 

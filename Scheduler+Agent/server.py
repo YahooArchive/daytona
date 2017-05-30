@@ -50,9 +50,9 @@ class ActionCaller():
     t2 = testobj.testDefn()
     try:
 	param = int(paramcsv)
-	action.action_lock.acquire()
-    	t2 = action.running_tests[param].tobj
-    	action.action_lock.release()
+	current_test = action.get_test(param)
+        if current_test:
+            t2 = current_test.tobj
     except Exception as e:
 	pass 
     
@@ -134,7 +134,7 @@ class serv():
             current_test.serverip = p[0]
 	    current_test.testid = int(p[2])
             current_test.serverport = int(p[1])
-            current_test.status = "INIT"
+            current_test.status = "SETUP"
 	    action.action_lock.acquire()
 	    action.running_tests[int(p[2])] = current_test
 	    action.action_lock.release()

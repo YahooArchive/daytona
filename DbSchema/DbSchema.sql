@@ -331,7 +331,7 @@ CREATE TABLE `ProfilerFramework` (
   PRIMARY KEY (`profiler_framework_id`),
   KEY `profiler_framework_id` (`profiler_framework_id`),
   KEY `testID_idx` (`testid`),
-  CONSTRAINT `testID` FOREIGN KEY (`testid`) REFERENCES `TestInputData` (`testid`) ON DELETE NO ACTION ON UPDATE NO ACTION
+  CONSTRAINT `testID` FOREIGN KEY (`testid`) REFERENCES `TestInputData` (`testid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
