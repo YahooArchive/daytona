@@ -448,7 +448,7 @@ function validate_file_path($filepath){
 }
 
 function validatePasswordPolicy($password){
-    if (!preg_match('/^(?=.*\d)(?=.*[@#\-_$%^&+=§!\?])(?=.*[a-z])(?=.*[A-Z])[1-9A-Za-z@#\-_$%^&+=§!\?]{8,12}$/',$password)){
+    if (!preg_match('/^(?=.*\d)(?=.*[@#\-_$%^&+=§!\?])(?=.*[a-z])(?=.*[A-Z])[0-9A-Za-z@#\-_$%^&+=§!\?]{8,12}$/',$password)){
         return false;
     }else{
         return true;

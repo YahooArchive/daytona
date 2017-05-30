@@ -226,6 +226,8 @@ if(isset($_REQUEST["register_user"])) {
                 <input type="password" name="register_password" placeholder="Password" required>
                 <label>Verify</label>
                 <input type="password" name="register_password2" placeholder="Re-Type Password" required>
+		<br>
+                <h5 style="color:RED">Password Policy : 8-12 characters, atleast one lowercase character, one uppercase character, one digit, atleast one special character : @#-_$%^&+=§!?</h5>
             </div>
             <div class='modal-footer'>
                 <button type='button' class='btn btn-default' data-dismiss='modal'>Close</button>
