@@ -3,7 +3,7 @@
 #### Installing core Daytona components, scheduler and agent on the same machine (tested with Ubuntu 16.04 and Centos 7.3)
 * Running all the core components, scheduler and agent on the same machine should be the first step in gaining familiarity with Daytona
 * Clone the git repo
-* cd daytona/InstallScrips/{Ubuntu,Centos}
+* cd daytona/InstallScripts/{Ubuntu,Centos}
 * Edit config.sh to fill in the required credentials
 * ./install_daytona_all.sh
 * Make sure you see the Daytona login page at http://daytona-host
@@ -11,14 +11,15 @@
 #### Installing Daytona agent on any other execution Host (Tested with Ubuntu 16.04 and Centos 7.3)
 * This should be pursued only after you are familiar with basic functionalities of Daytona
 * Clone the git repo
-* cd daytona/InstallScrips/{Ubuntu,Centos}
+* cd daytona/InstallScripts/{Ubuntu,Centos}
 * ./install_daytona_agent.sh
 
 #### Using Docker
 * A docker-compose.yaml file has been has been included for your convinience to install and run Daytona
 * Install latest version of docker and docker-compose
 * clone the git repo
-* cd daytona
+* cd daytona/InstallScripts/DockerInstall/
+* Edit .env and set passwords for MYSQL_ROOT_PASSWORD, MYSQL_PASSWORD, DAYTONA_UI_ADMIN_PASSWORD
 * docker-compose up
 * Make sure you see the Daytona login page at http://daytona-host:8084
 
