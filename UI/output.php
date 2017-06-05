@@ -4,6 +4,16 @@
 //error_reporting(-1);
 
 require('lib/auth.php');
+include 'process_data.php';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST'){
+    $file = getParam('file', 'POST');
+    $div_id = getParam('div_id', 'POST');
+    $proc_list = getParam('proc_list' . $div_id , 'POST');
+    $response_json = buildSingleGraphView($file, $proc_list);
+    echo $response_json;
+    return;
+}
 
 $allTestData = array();
 $testId = getParam('testid');
@@ -150,7 +160,6 @@ foreach ($s_compids as $l_id) {
     $full_paths .= $report_path;
 }
 include_once('lib/header.php');
-include 'process_data.php';
 
 ?>
 <link href="css/c3.css" rel="stylesheet" type="text/css">
@@ -215,8 +224,9 @@ include 'process_data.php';
 
             $act_file = pathinfo($filename, PATHINFO_BASENAME);
             if ($outputFormat == "graph") {
-                echo "<div id='output-panel'></div>";
+                echo "<div id='output-panel'>";
                 buildOutputGraphView($full_paths, $s_compids_str,$act_file);
+		echo "</div>";
             } else if ($outputFormat == "table") {
                 echo "<div id='output-panel'>";
                 echo "<div class='panel panel-info'>\n";

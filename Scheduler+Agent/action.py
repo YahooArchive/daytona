@@ -373,6 +373,8 @@ def setupTest(self, *args):
 
                 if valid_path:
                     if os.path.isfile(execscript_location):
+			if not os.path.exists(os.path.dirname(current_test.execscriptfile)):
+                            os.makedirs(os.path.dirname(current_test.execscriptfile))
                         ret = copyfile(execscript_location, current_test.execscriptfile)
                     else:
                         raise Exception(

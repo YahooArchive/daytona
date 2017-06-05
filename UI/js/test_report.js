@@ -285,7 +285,7 @@ function CreateSubGraph(graphid, x_value, xs, graph_data){
 }
 
 
-function buildGraphErrorView(text, graphid,title,error_type){
+function buildGraphErrorView(text, graphid, title, error_type, div_id){
     if(error_type == '1'){
         var pGraph = $("<div></div>").addClass("c3-graph-panel")
             .attr("id", "c3item" + graphid);
@@ -309,7 +309,11 @@ function buildGraphErrorView(text, graphid,title,error_type){
         $(pGraph).append(pText);
         $(pGraphDiv).append(pGraph);
         $(panel).append(pHeading).append(pGraphDiv);
-        $("#output-panel").append(panel);
+	if (div_id) {
+            $(div_id).append(panel);
+	}else {
+	    $("#output-panel").append(panel);
+	}
         return;
     }
     else{
