@@ -12,6 +12,7 @@ echo "--------------------------------------------------"
 iterations=`echo $1 | sed "s/\"//g"`
 delay=`echo $2 | sed "s/\"//g"`
 
+# Run your performance/benchmark/workload here
 x=1
 while [ $x -le $iterations ]
 do

@@ -286,3 +286,40 @@ table.table.table-hover.form-table {
     font-size:70%;
   }
 }
+
+.filter-table {
+  border-collapse:collapse;
+  table-layout: auto;
+}
+
+.filter-table > tbody > tr {
+  border-top: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+}
+
+.filter-table > tbody > tr  > td {
+  border: 0px;
+  min-width: 200px;
+}
+
+#filter-table-div{
+  overflow-x: scroll;
+}
+
+.filter-table > tbody > tr  > td.success {
+  max-width: 80px;
+}
+
+
+@media only screen and (max-width: 1024px) {
+  .filter-table > tbody > tr  > td {
+    min-width: 100px;
+  }
+}
+
+@media only screen and (max-width: 767px) {
+  .filter-table > tbody > tr  > td {
+    padding: 0 2px 0 2px;
+  }
+}
+

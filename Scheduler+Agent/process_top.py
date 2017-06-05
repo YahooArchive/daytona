@@ -66,9 +66,9 @@ class ProcessTop:
             res_mem_map.clear()
           except:
             line_array = line.split(",")
-            cpu_map[line_array[0] + " - " + line_array[11]] = line_array[8]
-            mem_map[line_array[0] + " - " + line_array[11]] = line_array[9]
-            res_mem_map[line_array[0] + " - " + line_array[11]] = line_array[5]
+            cpu_map[line_array[11] + " - " + line_array[0]] = line_array[8]
+            mem_map[line_array[11] + " - " + line_array[0]] = line_array[9]
+            res_mem_map[line_array[11] + " - " + line_array[0]] = line_array[5]
 
     cpu_array = self.update_array_from_map(timestamp,cpu_array,cpu_map)
     mem_array = self.update_array_from_map(timestamp,mem_array,mem_map)

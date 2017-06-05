@@ -1,3 +1,57 @@
+var MAX_PROCESS_COUNT = 10;
+
+$(function() {
+    $(".group-checkbox:checkbox").change(function(){
+        var group = this.name;
+        var group_id = group.split("-")[1];
+        var subgroup_id = "input[id='group[" + group_id + "]']";
+        if ($(this).prop('checked')){
+            $(subgroup_id).each(function (){
+                $(this).prop('checked', true);
+            });
+        }else{
+            $(subgroup_id).each(function (){
+                $(this).prop('checked', false);
+            });
+        }
+    });
+
+});
+
+
+$(document).ready(function() {
+$(".proc_filter_form").submit(function(e){
+    e.preventDefault();
+    div_id = this.div_id.value;
+    title = this.title.value;
+
+    var proc_count = $("input[name='proc_list[]']:checked").length;
+    if (proc_count > MAX_PROCESS_COUNT){
+        alert("Maximum " + MAX_PROCESS_COUNT + " process can be selected");
+        return false;
+    }else if (proc_count < 1){
+        alert("Select atleast 1 process");
+        return false;
+    }else{
+	$.ajax({
+            type: 'post',
+            url: 'output.php',
+            data: $(this).serialize(),
+            success: function (data) {
+		var graph_div = "#graph-" + div_id;
+                $(graph_div).empty();
+       	        try {
+	            var response = JSON.parse(data);
+                    buildOutputPageGraphView(response['graph_data_json'], response['column_json'], response['metric_data'], response['x_value'], response['xs_json'], title, div_id, graph_div);
+	        } catch (e) {
+		    buildGraphErrorView(data, div_id, "Graph-Error", '2', graph_div);
+	      }
+            }
+        });
+    }
+});
+});
+
 function buildTextCompareView(json_data,test_list,div_id){
     if (div_id === "output-table-display"){
         div_class="output-text-panel";
@@ -26,7 +80,7 @@ function buildTextCompareView(json_data,test_list,div_id){
 }
 
 
-function buildOutputPageGraphView(json_data, col_name, metric_json, x_value , xs_json , title, graphid) {
+function buildOutputPageGraphView(json_data, col_name, metric_json, x_value , xs_json , title, graphid, div_id) {
     var panel = $("<div></div>").addClass("panel panel-info partition-1");
     var pHeading = $("<div></div>").addClass("panel-heading collapse-heading");
     var pTitle = $("<h4></h4>").addClass("panel-title text-center");
@@ -49,8 +103,11 @@ function buildOutputPageGraphView(json_data, col_name, metric_json, x_value , xs
     $(pFooter).append(pLegend);
     $(pGraphDiv).append(pGraph).append(pFooter);
     $(panel).append(pHeading).append(pGraphDiv);
-    $("#output-panel").append(panel);
-
+    if (div_id){
+        $(div_id).append(panel);    
+    }else{
+        $("#output-panel").append(panel);    
+    }
     buildGraph(json_data, col_name, metric_json, x_value ,xs_json ,title, graphid);
 }
 
