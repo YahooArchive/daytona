@@ -24,8 +24,8 @@ $(".proc_filter_form").submit(function(e){
     e.preventDefault();
     div_id = this.div_id.value;
     title = this.title.value;
-
-    var proc_count = $("input[name='proc_list[]']:checked").length;
+    checkbox_array = "input[name='proc_list" + div_id + "[]']:checked";
+    var proc_count = $(checkbox_array).length;
     if (proc_count > MAX_PROCESS_COUNT){
         alert("Maximum " + MAX_PROCESS_COUNT + " process can be selected");
         return false;

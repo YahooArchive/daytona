@@ -1,3 +1,6 @@
+var isAdmin;
+var userid;
+
 function updateCurrentlyRunning(json_obj) {
   var parentContainer = $('#currently-running');
   $(parentContainer).empty();
@@ -33,10 +36,15 @@ function updateCurrentlyRunning(json_obj) {
     var td_username = $('<td></td>').text(json_obj[i].username);
     var td_state_detail = $('<td></td>').text(json_obj[i].state_detail);
     var td_start_time = $('<td></td>').text(json_obj[i].start_time);
-    var td_kill = $('<td></td>').css('vertical-align', 'middle')
+    if (isAdmin || userid == json_obj[i].username){
+	var td_kill = $('<td></td>').css('vertical-align', 'middle')
       .append($('<a></a>').css('cursor', 'pointer')
       .append($('<i></i>').addClass('fa fa-times-circle fa-lg abort-btn'))
       .attr('onclick', 'killTest(' + json_obj[i].testid + ')'));
+    }else{
+        var td_kill = $('<td></td>');
+    }
+
     $(tr).append(td_frameworkname)
       .append(td_testid)
       .append(td_title)
@@ -98,13 +106,17 @@ function updateWaitingQueue(json_obj) {
     var td_title = $('<td></td>').text(json_obj[i].title);
     var td_username = $('<td></td>').text(json_obj[i].username);
     var td_state_detail = $('<td></td>').text(json_obj[i].state_detail);
-    var td_kill = $('<td></td>')
-      .css('vertical-align', 'middle')
-      .append($('<a></a>')
-      .css('cursor', 'pointer')
-      .append($('<i></i>')
-      .addClass('fa fa-times-circle fa-lg abort-btn'))
-      .attr('onclick', 'killTest(' + json_obj[i].testid + ')'));
+    if (isAdmin || userid == json_obj[i].username){
+        var td_kill = $('<td></td>')
+          .css('vertical-align', 'middle')
+          .append($('<a></a>')
+          .css('cursor', 'pointer')
+          .append($('<i></i>')
+          .addClass('fa fa-times-circle fa-lg abort-btn'))
+          .attr('onclick', 'killTest(' + json_obj[i].testid + ')'));
+    }else{
+	var td_kill = $('<td></td>')
+    }
     $(tr)
       .append(td_frameworkname)
       .append(td_testid)
@@ -217,8 +229,11 @@ function queryLastCompleted(frameworkId,user) {
   xhttp.send();
 }
 
-function queryAll(frameworkId,user) {
+function queryAll(frameworkId,user,admin,userId) {
+  isAdmin = admin;
+  userid = userId;
   queryCurrentlyRunning(frameworkId,user);
   queryWaitingQueue(frameworkId,user);
   queryLastCompleted(frameworkId,user);
 }
+
