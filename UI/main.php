@@ -67,9 +67,9 @@ $(document).ready(function() {
     }else{
       user="2";
     } 
-    queryAll(<?php echo $frameworkId ?: 'undefined'; ?>,user);
+    queryAll(<?php echo $frameworkId ?: 'undefined'; ?>, user, <?php echo $userIsAdmin ?>, '<?php echo $userId ?>');
   });
-  queryAll(<?php echo $frameworkId ?: 'undefined'; ?>, "2");
+  queryAll(<?php echo $frameworkId ?: 'undefined'; ?>, "2", <?php echo $userIsAdmin ?>, '<?php echo $userId ?>');
   setInterval(function() {
     var user;
     if($('input[name=owner]').prop("checked")){
@@ -77,8 +77,8 @@ $(document).ready(function() {
     }else{
       user="2";
     }
-    queryAll(<?php echo $frameworkId ?: 'undefined'; ?>, user);
-  }, 10000);
+    queryAll(<?php echo $frameworkId ?: 'undefined'; ?>, user, <?php echo $userIsAdmin ?>, '<?php echo $userId ?>');
+  }, 2000);
   $("select[id=framework-select] option").each(function() {
     if($(this).text() == "<?php echo $frameworkName ?: ''; ?>") {
       $(this).attr('selected', 'selected');
@@ -88,3 +88,4 @@ $(document).ready(function() {
 </script>
 
 <?php include_once('lib/footer.php'); ?>
+

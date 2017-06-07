@@ -106,11 +106,18 @@ class DaytonaDBmon():
       print self.cfg.mysql_host
       while True:
         self.db = DBAccess(self.cfg, self.lctx)
+	query_result = self.db.query("""select testid from CommonFrameworkSchedulerQueue where state = %s or state = %s""", ("waiting", "scheduled"), True, False)
+        test_list = [item[0] for item in query_result]
         d = "DBMON [W] : |"
         for k in self.tests_to_run:
           l = self.tests_to_run[k]
           for t in l :
-            d = d + str(t.testobj.TestInputData.testid) + "|"
+            if t.testobj.TestInputData.testid in test_list:
+              d = d + str(t.testobj.TestInputData.testid) + "|"
+            else:
+              self.lock.acquire()
+              self.tests_to_run[k].remove(t)
+              self.lock.release()
         self.lctx.info(d)
         d = ""
 
