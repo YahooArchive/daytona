@@ -59,6 +59,9 @@ class Scheduler:
         t2 = testobj.testDefn()
         t2.deserialize(serialize_str)
 
+	test_logger = LOG.getLogger("test_logger",str(t2.testobj.TestInputData.testid),True,t2.testobj.TestInputData.exec_results_path)
+        test_logger.info("Test execution completes, preocessing test results")
+
         try:
             if t.testobj.TestInputData.testid != t2.testobj.TestInputData.testid:
                 lctx.error("testobj not same")
@@ -76,7 +79,10 @@ class Scheduler:
                                        self.ev.construct("DAYTONA_STOP_MONITOR", str(t2.testobj.TestInputData.testid)))
                 lctx.debug(retsend)
                 if retsend.split(",")[1] != "SUCCESS":
-                    lctx.error(retsend)
+                    lctx.error("Failed to stop SAR monitor on exec host " + ip + " : "  + retsend)
+		    test_logger.error("Failed to stop SAR monitor on exec host " + ip + " : " + retsend)
+		else:
+		    test_logger.info("SAR monitor stopped on exec host " + ip)
 
                 ptop = process_top.ProcessTop(LOG.getLogger("processTop", "DH"))
                 # todo : avoid send client its own ip
@@ -85,7 +91,11 @@ class Scheduler:
                                        self.ev.construct("DAYTONA_FILE_DOWNLOAD", str(t2.testobj.TestInputData.testid)))
                 lctx.debug(retsend)
                 if retsend.split(",")[1] != "SUCCESS":
-                    lctx.error(retsend)
+                    lctx.error("Error downloading LOGS from " + ip + " : " + retsend)
+		    test_logger.error("Error downloading LOGS from " + ip + " : " + retsend)
+		else:
+		    test_logger.info("Logs download successfull from exec host " + ip)
+
                 try:
                     lctx.debug(
                         "Untar file : " + t2.testobj.TestInputData.exec_results_path + "results.tgz to location : " + t2.testobj.TestInputData.exec_results_path + "/../")
@@ -93,14 +103,17 @@ class Scheduler:
                                      t2.testobj.TestInputData.exec_results_path + "/../")
                 except Exception as e:
                     lctx.error("Error in untar EXEC host results")
+		    test_logger.error("Error in untar EXEC host results")
                     lctx.error(e)
 
                 ptop_ret = ptop.process_top_output(t2.testobj.TestInputData.stats_results_path[ip] + "sar/")
                 lctx.debug(ptop_ret + " : " + t2.testobj.TestInputData.stats_results_path[ip])
+		test_logger.info("Exec host logs extracted and processed succesfully")
 
                 retsend = self.cl.send(ip, self.CPORT,
                                        self.ev.construct("DAYTONA_FINISH_TEST", str(t2.testobj.TestInputData.testid)))
                 lctx.debug(retsend)
+		test_logger.info("Test END successfull on exec host " + ip)
 
                 for s in t.testobj.TestInputData.stathostname.split(','):
                     if len(s.strip()) == 0:
@@ -116,15 +129,21 @@ class Scheduler:
                                                                                str(t2.testobj.TestInputData.testid)))
                         lctx.debug(retsend)
                         if retsend.split(",")[1] != "SUCCESS":
-                            lctx.error(retsend)
-                        
+                            lctx.error("Failed to stop SAR monitor on stat host " + s + " : "  + retsend)
+			    test_logger.error("Failed to stop SAR monitor on stat host " + s + " : "  + retsend)
+			else:
+			    test_logger.info("SAR monitor stopped on stat host " + s)
+			    
                         lctx.info("Sending results.tgz download to :" + s.strip() + ":" + str(p))
                         retsend = self.cl.send(s.strip(), p, self.ev.construct("DAYTONA_FILE_DOWNLOAD",
                                                                                str(t2.testobj.TestInputData.testid)))
                         lctx.debug(retsend)
                         if retsend.split(",")[1] != "SUCCESS":
                             lctx.error("Error downloading STATS from " + s.strip() + ":" + retsend)
-                     
+			    test_logger.error("Error downloading STATS from " + s.strip() + ":" + retsend)
+			else:
+			    test_logger.info("Logs downloaded from stat host " + s)
+ 
                         lctx.debug("Untar file : " + t2.testobj.TestInputData.stats_results_path[
                             s] + "results.tgz to location : " + t2.testobj.TestInputData.stats_results_path[s] + "/../")
                         common.untarfile(t2.testobj.TestInputData.stats_results_path[s] + "/results.tgz",
@@ -132,17 +151,22 @@ class Scheduler:
                 
                         ptop_ret = ptop.process_top_output(t2.testobj.TestInputData.stats_results_path[s] + "sar/")
                         lctx.debug(ptop_ret + " : " + t2.testobj.TestInputData.stats_results_path[s])
+			test_logger.info("Stat host " + s + " logs extracted and processed succesfully")
                 
                         retsend = self.cl.send(s.strip(), p, self.ev.construct("DAYTONA_FINISH_TEST",
                                                                            str(t2.testobj.TestInputData.testid)))
                         lctx.debug(retsend)
+			test_logger.info("Test END successfull on stat host " + s)
                     except Exception as e:
                         lctx.error(e)
+			test_logger.error(e)
                         continue
 
         except Exception as e:
             lctx.error("Error in processing results")
             lctx.error(e)
+	    test_logger.error("Error in processing results")
+	    test_logger.error(e)
             t.updateStatus("collating", "failed")
 
 	if t.testobj.TestInputData.timeout_flag:
@@ -210,7 +234,8 @@ class Scheduler:
                               cfg.smtp_port)
         except:
             lctx.error("Mail send error")
-
+	
+	LOG.removeLogger("test_logger",str(t.testobj.TestInputData.testid))
         return "SUCCESS"
 
 
@@ -225,6 +250,8 @@ class Scheduler:
         time.sleep(6)
 
         track_monitor = []
+	test_logger = LOG.getLogger("test_logger",str(t2.testobj.TestInputData.testid),True,t2.testobj.TestInputData.exec_results_path)
+	test_logger.info("Test setup started")
 
         try:
             if t.testobj.TestInputData.testid != t2.testobj.TestInputData.testid:
@@ -241,6 +268,8 @@ class Scheduler:
                     raise Exception("test trigger error", t2.testobj.TestInputData.testid)
             else:
                 raise Exception("Test Setup Failure : Test -  ", t2.testobj.TestInputData.testid)
+	    
+	    test_logger.info("Test setup complete on exec host " + ip)
 
             retsend = self.cl.send(ip, self.CPORT,
                                    self.ev.construct("DAYTONA_START_MONITOR", str(t2.testobj.TestInputData.testid)))
@@ -253,12 +282,14 @@ class Scheduler:
                 raise Exception("Test monitor start failure : Test -  ", t2.testobj.TestInputData.testid)
 
             track_monitor.append(ip)
+	    test_logger.info("SAR Monitor started on exec host " + ip)
 
             # get statistics hosts
             for s in t.testobj.TestInputData.stathostname.split(','):
                 if len(s.strip()) == 0:
                     break
                 lctx.debug("Start monitor")
+		test_logger.info("Starting test on stat host " + s)
                 lctx.debug(s.strip())
                 p = self.CPORT
 
@@ -268,6 +299,7 @@ class Scheduler:
                     if retsend.split(",")[1] != "ALIVE":
                         raise Exception("Remove host not avaliable - No Heartbeat ", t2.testobj.TestInputData.testid)
                     else:
+			test_logger.info("Hearbeat received from stat host " + s)
                         retsend = self.cl.send(s, p,
                                                self.ev.construct("DAYTONA_HANDSHAKE", self.HOST + "," + str(self.PORT) + "," + str(t2.testobj.TestInputData.testid) + "," + s))
                         lctx.debug(retsend)
@@ -276,11 +308,12 @@ class Scheduler:
                             server.serv.registered_hosts[s] = s
                             addr = socket.gethostbyname(s)
                             server.serv.registered_hosts[addr] = addr
+			    test_logger.info("Handshake successfull with agent on stat host " + s)	
                         else:
                             raise Exception("Unable to handshake with agent on stats host:" + s,
                                             t2.testobj.TestInputData.testid)
 		else:
-                    raise Exception("Remove host not avaliable - No Heartbeat ", t2.testobj.TestInputData.testid)
+                    raise Exception("Stat host " + s +  " not avaliable - No Heartbeat")
 
                 # start stats monitors on req hosts
                 # any host that blocks start monitor blocks the scheduling for the FW
@@ -294,6 +327,8 @@ class Scheduler:
                         raise Exception("test trigger error", t2.testobj.TestInputData.testid)
                 else:
                     raise Exception("Test Setup Failure : Test -  ", t2.testobj.TestInputData.testid)
+		
+		test_logger.info("Test setup complete on stat host " + s)
 
                 retsend = self.cl.send(s.strip(), p,
                                        self.ev.construct("DAYTONA_START_MONITOR", str(t2.testobj.TestInputData.testid)))
@@ -307,6 +342,7 @@ class Scheduler:
                     raise Exception("Test monitor start failure : Test -  ", t2.testobj.TestInputData.testid)
 
                 track_monitor.append(s.strip())
+		test_logger.info("SAR Monitor started on stat host " + s)
 
             # Trigger the start of test to test box
             retsend = self.cl.send(t.testobj.TestInputData.exechostname, self.CPORT,
@@ -318,7 +354,8 @@ class Scheduler:
                     raise Exception("test trigger error", t2.testobj.TestInputData.testid)
 	    else:
                 raise Exception("Failed to start Test : ", t2.testobj.TestInputData.testid)
-
+	    
+	    test_logger.info("Test started on exec host " + ip)
             # Get status from tst box
             retsend = self.cl.send(t.testobj.TestInputData.exechostname, self.CPORT,
                                    self.ev.construct("DAYTONA_GET_STATUS", str(t2.testobj.TestInputData.testid)))
@@ -344,6 +381,7 @@ class Scheduler:
 
         except Exception as e:
 	    lctx.error(e)
+	    test_logger.error(e)
             lctx.error("ERROR : Unknown trigger error : " + str(t.testobj.TestInputData.testid))
             t.updateStatus("setup", "failed")
             lctx.debug(traceback.print_exc())
@@ -356,10 +394,12 @@ class Scheduler:
                 retsend = self.cl.send(ip, self.CPORT,
                                        self.ev.construct("DAYTONA_STOP_MONITOR", str(t2.testobj.TestInputData.testid)))
                 lctx.debug(retsend)
+		test_logger.info("Stopped SAR monitor on exec host " + ip)
 
             retsend = self.cl.send(ip, self.CPORT,
                                    self.ev.construct("DAYTONA_ABORT_TEST", str(t2.testobj.TestInputData.testid)))
             lctx.debug(retsend)
+	    test_logger.info("Test aborted on exec host " + ip)
 
             for s in t.testobj.TestInputData.stathostname.split(','):
                 if len(s.strip()) == 0:
@@ -369,8 +409,11 @@ class Scheduler:
                                            self.ev.construct("DAYTONA_STOP_MONITOR",
                                                              str(t2.testobj.TestInputData.testid)))
                     lctx.debug(retsend)
+		    test_logger.info("Stopped SAR monitor on stat host " + s)
                 retsend = self.cl.send(s.strip(), self.CPORT, self.ev.construct("DAYTONA_CLEANUP_TEST", str(t2.testobj.TestInputData.testid)))
                 lctx.debug(retsend)
+		test_logger.info("Test abort on stat host " + s)
+		LOG.removeLogger("test_logger",str(t2.testobj.TestInputData.testid))
             return "FAILED"
 
         return "SUCCESS"
@@ -405,29 +448,34 @@ class Scheduler:
                 alive = False
 
                 h = tmp_t.testobj.TestInputData.exechostname
+                test_logger = LOG.getLogger("test_logger",str(tmp_t.testobj.TestInputData.testid),True,tmp_t.testobj.TestInputData.exec_results_path)
+		test_logger.info("Test execution starts")
                 try:
                     retsend = self.cl.send(h, self.CPORT, self.ev.construct("DAYTONA_HEARTBEAT", ""))
 
                     if retsend and len(retsend.split(",")) > 2:
                         status = retsend.split(",")[1]
                     else:
-                        raise Exception("Remove host not avaliable - No Heartbeat ", tmp_t.testobj.TestInputData.testid)
+                        raise Exception("Execution host not avaliable - No Heartbeat ", tmp_t.testobj.TestInputData.testid)
 
                     if "ALIVE" == status:
+			test_logger.info("HeartBeat received from execution host " + h)
                         ret = self.cl.send(h, self.CPORT,
-                                           self.ev.construct("DAYTONA_HANDSHAKE", self.HOST + "," + str(self.PORT) + "," + str(tmp_t.testobj.TestInputData.testid) + "," + h))
+                                           self.ev.construct("DAYTONA_HANDSHAKE", "handshake1," + self.HOST + "," + str(self.PORT) + "," + str(tmp_t.testobj.TestInputData.testid) + "," + h))
                         if ret == "SUCCESS":
                             alive = True
+			    test_logger.info("Handshake successful with execution host " + h)
                             lctx.debug("Handshake successful in scheduler, adding ip/hostname to reg hosts")
                             server.serv.registered_hosts[h] = h
                             addr = socket.gethostbyname(h)
                             lctx.debug(addr)
                             server.serv.registered_hosts[addr] = addr
                         else:
-                            raise Exception("Unable to handshake with agent:" + h)
+                            raise Exception("Unable to handshake with agent on executuion host " + h)
 
 		except Exception as e:
                     lctx.error(e)
+		    test_logger.error(e)
                     # pause the dbmon here as we dont want the same test to be picked again after we pop
                     self.dbinstance.mon_thread[0].pause()
                     self.dbinstance.lock.acquire()
@@ -436,6 +484,7 @@ class Scheduler:
                     self.dbinstance.lock.release()
                     lctx.debug("Removed test from map : " + str(t.testobj.TestInputData.testid))
                     self.dbinstance.mon_thread[0].resume()
+		    LOG.removeLogger("test_logger",str(tmp_t.testobj.TestInputData.testid))
                     continue
                     # todo : add host to reg list if handshake successful
 
@@ -464,6 +513,8 @@ class Scheduler:
                         trigger_thread.start()
                     except Exception as e:
                         lctx.error("Trigger error : " + str(t.testobj.TestInputData.testid))
+			test_logger.error("Test setup failed " + str(t.testobj.TestInputData.testid))
+			LOG.removeLogger("test_logger",str(tmp_t.testobj.TestInputData.testid))
 			self.dispatchQ__lock.acquire()
                         del self.dispatch_queue[k]
                         self.dispatchQ__lock.release()
@@ -496,6 +547,7 @@ class Scheduler:
                     serialize_str = t.serialize();
                     t2 = testobj.testDefn()
                     t2.deserialize(serialize_str)
+		    test_logger = LOG.getLogger("test_logger",str(t2.testobj.TestInputData.testid),True,t2.testobj.TestInputData.exec_results_path)
                     if t.testobj.TestInputData.testid != t2.testobj.TestInputData.testid:
                         lctx.error("testobj not same")
                         t.updateStatus("running", "failed")
@@ -508,6 +560,7 @@ class Scheduler:
                                                              str(t2.testobj.TestInputData.testid)))
                         status = ret.split(",")[1]
                         lctx.debug(status)
+			test_logger.info("Test status : " + status)
                     except Exception as e:
                         lctx.debug(e)
                         t.updateStatus("running", "failed")
@@ -567,6 +620,7 @@ class Scheduler:
 
             if error:
                 retsend = None
+		test_logger.error("Bad test status " + status + " - Terminating test")
                 ip = t.testobj.TestInputData.exechostname
                 try:
                     retsend = self.cl.send(ip, self.CPORT, self.ev.construct("DAYTONA_HEARTBEAT", ""))
@@ -579,7 +633,10 @@ class Scheduler:
                                                              str(t.testobj.TestInputData.testid)))
                     retsend = self.cl.send(ip, self.CPORT,
                                            self.ev.construct("DAYTONA_ABORT_TEST", str(t.testobj.TestInputData.testid)))
-                for s in t.testobj.TestInputData.stathostname.split(','):
+		    
+		    test_logger.error("SAR monitor stopped, Test Aborted on exec host " + ip)
+                
+		for s in t.testobj.TestInputData.stathostname.split(','):
                     if len(s.strip()) == 0:
                         break
                     try:
@@ -594,6 +651,7 @@ class Scheduler:
                         retsend = self.cl.send(s.strip(), self.CPORT,
                                                self.ev.construct("DAYTONA_CLEANUP_TEST",
                                                                  str(t.testobj.TestInputData.testid)))
+			test_logger.error("SAR monitor stopped, Test Aborted on stat host " + s)
 
                 self.lock.acquire()
                 for k in self.running_tests:

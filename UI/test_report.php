@@ -502,7 +502,7 @@ try{
         buildLeftPanelGlobal();
 	<?php
           addFrameworkDropdownJS($db, $userId);
-          addTestResults("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds);
+          addTestResults("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds, $origTestData["execution_script_location"]);
           if(array_key_exists("execution",$origTestData)) {
             echo "createLabel('System Metrics')\n";
             addSystemMetrics("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds, "exec");

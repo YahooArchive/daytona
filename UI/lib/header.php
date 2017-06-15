@@ -16,8 +16,7 @@
     <body>
 
     <header class="cd-main-header">
-        <a href="/"><i class="fa fa-bullseye" aria-hidden="true" style="margin-right:10px;vertical-align:top;padding-top:5px" width="50px" height="55px"></i></a>
-        <h2 class="daytona-title">Daytona</h2>
+	<a href="/"><img src="../images/daytona_white_text.png" style="margin-right:10px;vertical-align:top;padding-top:5px" width="250px" height="65px"></img></a>
         <a href="#0" class="cd-nav-trigger"><span></span></a>
         <nav class="cd-nav">
           <ul class="cd-top-nav" id="top-side-nav">

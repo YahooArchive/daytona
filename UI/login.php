@@ -186,9 +186,9 @@ if(isset($_REQUEST["register_user"])) {
   <strong>Registration Completed:</strong> Account has been created. Please verify your account using the link provided in the email
 </div>
 <?php endif; ?>
-<div class="login-cover fa fa-bullseye"></div>
+<div class="login-cover"></div>
 <div class="container login-container">
-  <h2 class="daytona-title">Daytona</h2>
+  <h2 class="daytona-title"><img src="images/daytona_text.png" style="width:60%"></h2>
   <form class="form-horizontal" role="form" method="post" action="login.php">
     <div class="form-group">
       <div class="col-sm-12">

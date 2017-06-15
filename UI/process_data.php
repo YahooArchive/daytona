@@ -753,12 +753,38 @@ function buildTestCompareData($filepaths,$test_ids){
     $file_arr = explode(',',$filepaths);
     $test_id_arr = explode(',',$test_ids);
     $ret_data = array();
-    for($i = 0; $i < sizeof($file_arr);$i++){
+    $file_data = "";
+    $finfo = finfo_open(FILEINFO_MIME);
+    for($i = 0; $i < sizeof($test_id_arr);$i++){
         $file_data = "";
+        $file_exists = file_exists($file_arr[$i]);
+        if (!$file_exists) {
+            $file_data = "File Not Found";
+            if ($i == 0){
+                return $file_data;
+            }else {
+                $ret_data[$test_id_arr[$i]] = $file_data;
+                continue;
+	    }
+        }
         $valid_path = validate_file_path($file_arr[$i]);
         if ($valid_path === false){
-            $error_msg = "Cannot access file or invalid URL";
-            return $error_msg;
+            $file_data = "Cannot access file or invalid URL";
+            if ($i == 0){
+                return $file_data;
+            }else {
+                $ret_data[$test_id_arr[$i]] = $file_data;
+                continue;
+	    }
+        }
+        if (substr(finfo_file($finfo, $file_arr[$i]), 0, 4) !== 'text') {
+            $file_data = "Not a text file - unable to read";
+            if ($i == 0){
+                return $file_data;
+            }else {
+                $ret_data[$test_id_arr[$i]] = $file_data;
+                continue;
+            }
         }
         $fileptr = fopen($file_arr[$i], "r");
         if ($fileptr) {
@@ -767,16 +793,19 @@ function buildTestCompareData($filepaths,$test_ids){
                 $line = str_replace("\t", "\\t", $line);
                 $line = str_replace("\n", "\\n", $line);
                 $line = str_replace('"', '', $line);
-		$line = str_replace("'", "", $line);
+                $line = str_replace("'", "", $line);
+		if (strpos($line,"ERROR") !== false){
+		    $line = "<font color=red>" . $line . "</font>";
+		}
                 $file_data .= $line ;
             }
             fclose($fileptr);
-        }else{
-            $file_data .= "File Not Found" ;
         }
+
         if(strlen($file_data) == 0){
             $file_data = "Empty File";
         }
+
         $ret_data[$test_id_arr[$i]] = $file_data;
     }
     return $ret_data;
