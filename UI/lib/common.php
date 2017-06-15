@@ -128,7 +128,7 @@ function getFrameworkAuxData($db, $frameworkData) {
 }
 
 function getTestById($db, $testId, $full=false) {
-    $query = "SELECT testid, frameworkname, TestInputData.title, TestInputData.purpose, priority, timeout, cc_list, testid, frameworkid, TestInputData.modified, TestInputData.creation_time, start_time, end_time, end_status, end_detail, username FROM TestInputData JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE testid = :testid";
+    $query = "SELECT testid, frameworkname, TestInputData.title, TestInputData.purpose, priority, execution_script_location, timeout, cc_list, testid, frameworkid, TestInputData.modified, TestInputData.creation_time, start_time, end_time, end_status, end_detail, username FROM TestInputData JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE testid = :testid";
     $stmt = $db->prepare($query);
     $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
     $stmt->execute();
@@ -230,7 +230,7 @@ function addFrameworkDropdownJS($db, $userId) {
     }
 }
 
-function addTestResults($path, $hosts, $testid, $compids) {
+function addTestResults($path, $hosts, $testid, $compids, $exec_script) {
     if (count($hosts) > 0 ){
         echo "createLabel('Test Results')\n";
         echo "createTestResultsRoot()\n";
@@ -242,6 +242,7 @@ function addTestResults($path, $hosts, $testid, $compids) {
             echo "  fillTestResults('$testid', '$compids', '" . end($ex_file) . "', '$file', '$key');\n";
         }
     }
+    echo "buildExecScriptLink('$testid', '$compids', '$exec_script');\n" ;
 }
 
 function addSystemMetrics($path, $hosts, $testid, $compids, $label) {

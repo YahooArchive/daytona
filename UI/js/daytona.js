@@ -333,6 +333,16 @@ function createTestResultsRoot() {
   $(navigationUl).append(outputFilesPanel);
 }
 
+function buildExecScriptLink(testid, compids, exec_script) {
+  var navigationUl = $("#navigation-panel");
+  var listItem = $("<li></li>");
+  var filepath = "%EXECHOST,0%/" + exec_script;
+  var href = "output.php?testid=" + testid + "&compids=" + compids + "&filename=" + filepath + "&format=text";
+  var aLink = $("<a></a>").attr("href", href).text("Execution Script");
+  $(listItem).append(aLink);
+  $(navigationUl).append(listItem);
+}
+
 function fillSystemMetricsHost(host,hostid) {
   var navigationUl = $("#navigation-panel");
   var sysMetricsHostPanel = buildTreeRoot(host);

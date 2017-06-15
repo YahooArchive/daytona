@@ -158,6 +158,9 @@ class testDefn():
     def updateStatus(self, curStatus, newStatus):
         lctx = LOG.getLogger("dblog", "DH")
         lctx.debug("setting status from %s to %s" %(curStatus, newStatus))
+	if self.testobj.TestInputData.exec_results_path is not None:
+            test_logger = LOG.getLogger("test_logger", str(self.testobj.TestInputData.testid),True,self.testobj.TestInputData.exec_results_path)
+            test_logger.info("Setting test status from %s to %s" %(curStatus, newStatus))
         update_res = self.db.query("""update TestInputData SET end_status = %s where testid=%s""", (newStatus, self.testobj.TestInputData.testid), False, True);
         self.testobj.TestInputData.end_status = newStatus
         update_res = self.db.query("""update CommonFrameworkSchedulerQueue SET state = %s, message = %s, state_detail = %s where testid = %s""", (newStatus, newStatus, newStatus, self.testobj.TestInputData.testid), False, True)

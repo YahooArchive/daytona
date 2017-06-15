@@ -1,4 +1,4 @@
-# Daytona 
+# <img src="docs/img/daytona_dark_text.png" alt="Daytona" width="250px">
 
 Daytona is an application-agnostic framework for automated performance testing and analysis. Any performance testing script running on command line can be integrated into a Daytona framework for repeatable execution and methodical analysis.
 

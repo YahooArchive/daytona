@@ -159,7 +159,7 @@ Header
   width: 100%;
   height: 70px;
   padding: 0px 0px 0px 10px;
-  background-image: linear-gradient(to top right,#7282fb,#755bf9,#7934f7);
+  background-color: rgba(44, 41, 52, 0.9);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -700,7 +700,7 @@ Sidebar
     right: 1.8em;
   }
   .cd-top-nav .has-children ul {
-    background-color: #6d23f6;
+    background-color: rgba(39, 36, 47, 0.95);
     width: 200px;
     top: 100%;
     right: 0;
@@ -1322,7 +1322,7 @@ div.compare-text-div{
 }
 
 .login-body {
-  background-color: #000;
+  background-color: rgba(44, 41, 52, 1);
 }
 
 .login-cover {
@@ -1332,7 +1332,8 @@ div.compare-text-div{
   width: 100%;
   height: 100vh;
   background-repeat: no-repeat;
-  background-size: cover;
+  background-size: contain;
+  background-image: url("../images/daytona_logo.png");
   text-align: center;
   font-size: 700px !important;
 }

@@ -3,7 +3,6 @@
 import subprocess
 import threading
 import common
-from common import CommunicationError
 import os
 import time
 import shutil
@@ -13,6 +12,7 @@ import testobj
 import client
 import config
 import signal
+import envelope
 from logger import LOG
 
 lctx = None
@@ -241,6 +241,16 @@ def exec_cmd(cmd, daytona_cmd, sync, obj, actionid, current_test):
 def log(self, *args):
     (obj, command, test_serialized, actionID, sync) = (args[0], args[1], args[2], args[3], args[4])
     lctx.debug(args)
+
+
+def scheduler_handshake(current_test):
+    cl = client.TCPClient(LOG.getLogger("clientlog", "Agent"))
+    env = envelope.DaytonaEnvelope()
+    ret = cl.send(current_test.serverip, current_test.serverport, env.construct("DAYTONA_HANDSHAKE", "handshake2"))
+    if ret == "SUCCESS":
+        return True
+    else:
+        return False
 
 
 def startMonitor(self, *args):
