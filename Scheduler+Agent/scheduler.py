@@ -301,7 +301,7 @@ class Scheduler:
                     else:
 			test_logger.info("Hearbeat received from stat host " + s)
                         retsend = self.cl.send(s, p,
-                                               self.ev.construct("DAYTONA_HANDSHAKE", self.HOST + "," + str(self.PORT) + "," + str(t2.testobj.TestInputData.testid) + "," + s))
+                                               self.ev.construct("DAYTONA_HANDSHAKE", "handshake1," + self.HOST + "," + str(self.PORT) + "," + str(t2.testobj.TestInputData.testid) + "," + s))
                         lctx.debug(retsend)
                         if retsend == "SUCCESS":
                             alive = True
