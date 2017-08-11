@@ -47,13 +47,12 @@ class ActionCaller:
         sync = self.conf.actionMap[command.strip()].split(".")[2]
 
         t2 = testobj.testDefn()
-        try:
-            param = int(paramcsv)
-            current_test = action.get_test(param)
+	if command == "DAYTONA_START_TEST":
+            testid = int(paramcsv.split(",")[0])
+            hosttype = paramcsv.split(",")[1]
+            current_test = action.get_test(testid)
             if current_test:
                 t2 = current_test.tobj
-        except Exception as e:
-            pass
 
         m = __import__ (module)
         f = getattr(m,function)
@@ -66,15 +65,14 @@ class ActionCaller:
             else:
                 return "actionID=" + str(actionID) + "," + ret + "," + "SYNC EXEC"
         else:
-            # callback will be called after completion
-            # actionID = uuid.uuid4()
             self.lctx.debug("Executing ASYNC ACTION for " + command.strip() + " : " + self.conf.actionMap[command.strip()] + ":" + str(actionID))
             t1 = common.FuncThread(f, True, self, command, paramcsv, actionID, sync)
-            x = (t1, actionID, t2, time.time())
-            self.lock.acquire()
-            self.async_actions.append(x)
-            self.lctx.debug( "async_actions size :" + str(len(self.async_actions)))
-            self.lock.release()
+            if hosttype == "EXEC":
+                x = (t1, actionID, t2, time.time())
+                self.lock.acquire()
+                self.async_actions.append(x)
+                self.lctx.debug( "async_actions size :" + str(len(self.async_actions)))
+                self.lock.release()
             t1.start()
             self.lctx.debug( "Executing ACTION for " + command.strip() + " : " + self.conf.actionMap[command.strip()] + ":" + str(actionID))
             return "actionID=" + str(actionID) + "," + "SUCCESS," + "ASYNC EXEC"
@@ -135,14 +133,20 @@ class serv:
                     current_test.testid = int(p[3])
                     current_test.serverport = int(p[2])
                     current_test.status = "SETUP"
+		    test_logger = LOG.init_testlogger(current_test,"STAT")
+                    if test_logger:
+                        current_test.agent_log_file = test_logger.handlers[0].baseFilename
+
                     con = action.scheduler_handshake(current_test)
                     if con:
                         action.action_lock.acquire()
                         action.running_tests[int(p[3])] = current_test
                         action.action_lock.release()
                         response = "{}".format("SUCCESS")
+			test_logger.info("Handshake successfull with daytona host : " + current_test.serverip)
                     else:
                         response = "{}".format("ERROR")
+			test_logger.error("Handshake failed with daytona host : " + current_test.serverip)
 
                     self.request.sendall(response)
                     return

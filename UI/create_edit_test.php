@@ -160,7 +160,7 @@ include_once('lib/popup.php');
                                     </td>
                                     <td class='zero-line-height tiny-padding'>
                                         <div class='form-group zero-line-height zero-margin'>
-                                            <input type='text' class='form-control form-input' name='f_cc_list' id='f_cc_list' value="<?php echo $testData ? $testData['cc_list'] : $frameworkData['default_cc_list']; ?>">
+                                            <input type='text' class='form-control form-input' name='f_cc_list' id='f_cc_list' value="<?php echo $testData ? $testData['cc_list'] : null; ?>">
                                         </div>
                                     </td>
                                 </tr>

@@ -82,7 +82,8 @@ switch(getParam("query")) {
         break;
     case "runTest":
         $sql_query = "INSERT INTO CommonFrameworkSchedulerQueue (testid,state,pid) " .
-            "VALUES (:testid,'scheduled',0)";
+            "VALUES (:testid,'scheduled',0);" .
+            "UPDATE TestInputData SET start_time = NULL, end_time = NULL where testid=:testid";
         break;
     case "currentlyRunning":
         $sql_query = "SELECT frameworkid,frameworkname,testid,TestInputData.title,username,state,start_time,state_detail," .

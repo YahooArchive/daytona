@@ -11,6 +11,7 @@ import server
 import config
 import common
 import testobj
+import system_metrics_gather
 from logger import LOG
 
 
@@ -45,9 +46,16 @@ if __name__ == "__main__":
     server_thread.daemon = True
     server_thread.start()
 
-    lctx.info("Server loop running in thread:" + server_thread.name)
-    lctx.info("Server started @ %s:%s" %(ip , port))
+    # Start system metrics gather threads
+    system_metrics_gather.init_sar_iostat_top()
 
+    # Setup test log directory
+    common.createdir(cfg.daytona_agent_root, lctx)
+    log_dir = cfg.daytona_agent_root + "test_logs/"
+    common.createdir(log_dir,lctx)
+
+    lctx.info("Server loop running in thread:" + server_thread.name)
+    lctx.info("Server started @ %s:%s" % (ip, port))
 
     #list of current exec ASYNC jobs
     #print actc.async_actions

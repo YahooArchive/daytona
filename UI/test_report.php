@@ -78,10 +78,10 @@ function formatFilePath($path, $mapping) {
     }
 }
 
-function printRowFields($allTestData, $field, $isTime=false) {
+function printRowFields($allTestData, $field) {
     foreach ($allTestData as $curTestData) {
         if (isset($curTestData[$field])) {
-            $value = $isTime ? convertTime($curTestData[$field]) : $curTestData[$field];
+            $value = $curTestData[$field];
             if(is_array($value)) {
                 $value = implode(",", $value);
             }
@@ -103,13 +103,6 @@ function stateColorClass($status) {
     }
 }
 
-function convertTime($timeStr) {
-    if (! $timeStr) {
-        return 'N/A';
-    }
-    $time = strtotime("$timeStr UTC");
-    return date("m/d/Y g:i:s A", $time);
-}
 include_once('lib/header.php');
 ?>
 <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
@@ -131,8 +124,7 @@ for ($x = 1; $x <=sizeof($s_compids_arr); $x++){
 try{
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $db->beginTransaction();
-    $query = "SELECT frameworkname,TestInputData.title,TestInputData.purpose,exechostname,
-                  stathostname,priority,timeout,cc_list,
+    $query = "SELECT frameworkname,TestInputData.title,TestInputData.purpose,priority,timeout,cc_list,
                   TestInputData.creation_time,modified,start_time,end_time FROM TestInputData
                   JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE testid=:testid";
     $stmt = $db->prepare($query);
@@ -390,19 +382,19 @@ try{
                         <tbody>
                         <tr>
                             <td class="active">Creation Time</td>
-                            <?php printRowFields($allTestData, 'creation_time', true);?>
+                            <?php printRowFields($allTestData, 'creation_time');?>
                         </tr>
                         <tr>
                             <td class="active">Last Modified</td>
-                            <?php printRowFields($allTestData, 'modified', true); ?>
+                            <?php printRowFields($allTestData, 'modified'); ?>
                         </tr>
                         <tr>
                             <td class="active">Start Time</td>
-                            <?php printRowFields($allTestData, 'start_time', true); ?>
+                            <?php printRowFields($allTestData, 'start_time'); ?>
                         </tr>
                         <tr>
                             <td class='active'>End Time</td>
-                            <?php printRowFields($allTestData, 'end_time', true); ?>
+                            <?php printRowFields($allTestData, 'end_time'); ?>
                         </tr>
                         <tr>
                             <td class="active">Current Status</td>
@@ -510,7 +502,11 @@ try{
           if(array_key_exists("statistics",$origTestData)){
             addSystemMetrics("test_data/$frameworkName/$testId/results", $origTestData["statistics"], $testId, $compIds, "stat");
           }
-          addLogs("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds);
+	  $hosts['EXECHOST'] = $origTestData["execution"];
+	  if (array_key_exists("statistics",$origTestData)) {
+            $hosts['STATHOST'] = $origTestData["statistics"];
+          }
+          addLogs("test_data/$frameworkName/$testId/results", $hosts, $testId, $compIds);
         ?>
         loadNavigationBar();
         $('#zoomModal').on('shown.bs.modal', function() {

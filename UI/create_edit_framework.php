@@ -111,7 +111,7 @@ include_once('lib/popup.php');
                                     </tr>
                                     <tr>
                                         <td class="active success" style="vertical-align: middle">
-                                            <a href='#' data-toggle='tooltip' title="Execution script should be in /tmp/ExecScripts/ path on exec host">Execution Script</a>
+                                            <a href='#' data-toggle='tooltip' title="Execution script should be in <daytona_install_dir>/ExecScripts/<folder>/ path on exec host. Enter <folder>/<execution_script>">Execution Script</a>
                                         </td>
                                         <td class="zero-line-height tiny-padding">
                                             <div class="form-group zero-line-height zero-margin">

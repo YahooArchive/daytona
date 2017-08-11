@@ -9,12 +9,23 @@ if [ -z $db_name ] || [ -z $db_user ] || [ -z $db_password ] || [ -z $db_host ] 
   exit 1
 fi
 
-mkdir -p $daytona_install_dir
-cp -r ../../Scheduler+Agent $daytona_install_dir
+sudo mkdir -p $daytona_install_dir
+
+if ! [ -d "$daytona_install_dir" ]; then
+    echo "Not able to create daytona install directory"
+    exit 1
+fi
+
+sudo cp config.sh $daytona_install_dir
+sudo cp uninstall_daytona.sh $daytona_install_dir
+echo 'rm -- "$0"' | sudo tee -a ${daytona_install_dir}/uninstall_daytona.sh > /dev/null
+sudo cp daytona_backup.sh $daytona_install_dir
+sudo cp daytona_restore.sh $daytona_install_dir
+sudo cp ../../util/cron-backup.sh $daytona_install_dir
 
 echo "****** Installing Daytona DB *********"
 echo "**************************************"
-./install_daytona_db.sh 
+./install_daytona_db.sh
 
 echo "****** Installing Daytona UI*********"
 echo "**************************************"
@@ -22,12 +33,12 @@ echo "**************************************"
 
 echo "****** Installing Daytona Scheduler*****"
 echo "****************************************"
-./install_daytona_scheduler.sh
+sudo ./install_daytona_scheduler.sh
 
 echo "****** Installing Daytona Agent ******"
 echo "**************************************"
-./install_daytona_agent.sh
+sudo ./install_daytona_agent.sh
 
 echo "****** Updating IP of sample framework ******"
 echo "*********************************************"
-./fix_sample_framework_ip.sh
+sudo ./fix_sample_framework_ip.sh

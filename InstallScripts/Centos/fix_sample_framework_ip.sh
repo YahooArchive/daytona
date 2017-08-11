@@ -15,6 +15,6 @@ echo "Updating default exechost"
 echo ""
 echo update HostAssociationType set default_value="'"`echo $ip`"'" where frameworkid=51 and name="'"execution"';" >> fix_exec.sql
 
-mysql -u ${db_name} -p${db_password} daytona < ./fix_exec.sql
+mysql -u ${db_user} -p${db_password} ${db_name} < ./fix_exec.sql
 
 sudo rm -rf fix_exec.sql

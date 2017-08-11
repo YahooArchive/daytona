@@ -1,18 +1,23 @@
 #!/bin/bash
 
+if [ "$EUID" -ne 0 ]
+  then echo "Please run as root/sudo"
+  exit
+fi
+
 source config.sh
 
-sudo apt-get remove --purge apache2 ssl-cert -y
-sudo apt-get remove apache2-common -y
-sudo rm -rf /var/www/html/daytona
+apt-get remove --purge apache2 ssl-cert -y
+apt-get remove apache2-common -y
+rm -rf /var/www/html/daytona
 
-sudo apt-get remove --purge libapache2-mod-php7.0 php7.0 php7.0-common php7.0-mcrypt php7.0-zip php7.0-mysqlnd php-common -y
+apt-get remove --purge libapache2-mod-php7.0 php7.0 php7.0-common php7.0-mcrypt php7.0-zip php7.0-mysqlnd php-common -y
 
-sudo apt-get remove --purge mysql-server mysql-client mysql-common -y
+apt-get remove --purge mysql-server mysql-client mysql-common -y
 
-sudo apt-get autoremove -y
-sudo apt-get autoclean -y
-sudo rm -rf /var/lib/mysql /etc/mysql
+apt-get autoremove -y
+apt-get autoclean -y
+rm -rf /var/lib/mysql /etc/mysql
 
 # Kill scheduler and agent
 ps -ef | grep sar | awk '{print $2}' > pidfile
@@ -22,15 +27,16 @@ ps -ef | grep scheduler.py | awk '{print $2}' >> pidfile
 
 for i in `cat pidfile`
 do
-        sudo kill -9 $i
+        kill -9 $i
 done
 
-
-sudo rm -rf /var/www/html/daytona
-sudo rm -rf $daytona_install_dir
-sudo rm -rf $daytona_data_dir 
-sudo rm -rf /tmp/daytona_sarmonitor
-sudo rm -rf /tmp/ExecScripts
-sudo rm -rf /tmp/daytona_root
-
+rm -rf ${daytona_install_dir}/Scheduler+Agent
+rm -rf $daytona_data_dir
+rm -rf /var/www/html/daytona
+rm -rf ${daytona_install_dir}/ExecScripts
+rm -rf ${daytona_install_dir}/daytona_agent_root
 rm -f pidfile
+rm -rf ${daytona_install_dir}/config.sh
+rm -rf ${daytona_install_dir}/daytona_backup.sh
+rm -rf ${daytona_install_dir}/daytona_restore.sh
+rm -rf ${daytona_install_dir}/cron-backup.sh

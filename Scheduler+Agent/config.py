@@ -10,7 +10,8 @@ class CFG:
         self.lctx = lctx
         self.daytona_dh_root = ''
         self.daytona_agent_root = ''
-        self.daytona_mon_path = ''
+	self.execscript_location = ''
+	self.agent_test_logs = ''
         self.DHPORT = 0
         self.CPORT = 0
         self.mysql_user=''
@@ -28,13 +29,15 @@ class CFG:
             for line in ins:
                 ln = line.split(",")
                 self.actionMap[ln[0].strip()] = ln[1].strip() + "." + ln[2].strip() + "." + ln[3].strip()
-        self.lctx.info("Action map loaded")
+	if self.lctx is not None:
+            self.lctx.info("Action map loaded")
 
     def readCFG(self, cfile):
         self.readActionMap("action.map")
         Config = ConfigParser.ConfigParser()
         Config.read(cfile)
-        self.lctx.info(Config.sections())
+        if self.lctx is not None:
+            self.lctx.info(Config.sections())
         self.daytona_dh_root = Config.get('DH', 'dh_root')
         self.DHPORT = int(Config.get('DH', 'port'))
         self.mysql_user=Config.get('DH', 'mysql-user')
@@ -46,6 +49,7 @@ class CFG:
         self.smtp_server=Config.get('DH', 'smtp-server')
         self.smtp_port=int(Config.get('DH', 'smtp-port'))
         self.daytona_agent_root = Config.get('AGENT', 'agent-root')
-        self.daytona_mon_path = Config.get('AGENT', 'mon-path')
+	self.execscript_location = Config.get('AGENT', 'execscript_location')
+	self.agent_test_logs = Config.get('AGENT', 'agent_test_logs_location')
         self.CPORT = int(Config.get('AGENT', 'port'))
 

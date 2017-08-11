@@ -128,7 +128,7 @@ function getFrameworkAuxData($db, $frameworkData) {
 }
 
 function getTestById($db, $testId, $full=false) {
-    $query = "SELECT testid, frameworkname, TestInputData.title, TestInputData.purpose, priority, execution_script_location, timeout, cc_list, testid, frameworkid, TestInputData.modified, TestInputData.creation_time, start_time, end_time, end_status, end_detail, username FROM TestInputData JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE testid = :testid";
+    $query = "SELECT testid, frameworkname, TestInputData.title, TestInputData.purpose, priority, execution_script_location, timeout, cc_list, testid, frameworkid, TestInputData.modified, TestInputData.creation_time, start_time, end_time, end_status, username FROM TestInputData JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE testid = :testid";
     $stmt = $db->prepare($query);
     $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
     $stmt->execute();
@@ -261,26 +261,30 @@ function addSystemMetrics($path, $hosts, $testid, $compids, $label) {
     }
 }
 
+
 function addLogs($path, $hosts, $testid, $compids) {
     if (count($hosts) > 0 ){
         echo "createLabel('Logs')\n";
+        echo "  fillLogsHost('Files');\n";
     }
-    foreach ($hosts as $key=>$host) {
-        $filepath = '%EXECHOST,' . $key . '%/';
-        echo "  fillLogsHost('$host');\n";
-        $files = glob("$path/$host/*[.log|.txt]");
-        foreach ($files as $file) {
-            $ex_file = explode("/", $file);
-            echo "  fillLogs('$testid', '$compids', '" . end($ex_file) . "', '$file', '$filepath');\n";
-        }
-        $filepath = '%EXECHOST,' . $key . '%/application/';
-        $files = glob("$path/$host/application/*[.log|.txt]");
-        foreach ($files as $file) {
-            $ex_file = explode("/", $file);
-            echo "  fillLogs('$testid', '$compids', '" . end($ex_file) . "', '$file', '$filepath');\n";
+    foreach ($hosts as $hosttype=>$hosts_info) {
+        foreach ($hosts_info as $key=>$host) {
+            $filepath = '%'. $hosttype .',' . $key . '%/';
+            $files = glob("$path/$host/*[.log]");
+            foreach ($files as $file) {
+                $ex_file = explode("/", $file);
+                echo "  fillLogs('$testid', '$compids', '" . end($ex_file) . "', '$file', '$filepath');\n";
+            }
+            $filepath = '%'. $hosttype .',' . $key . '%/application/';
+            $files = glob("$path/$host/application/*[.log]");
+            foreach ($files as $file) {
+                $ex_file = explode("/", $file);
+                echo "  fillLogs('$testid', '$compids', '" . end($ex_file) . "', '$file', '$filepath');\n";
+            }
         }
     }
 }
+
 
 function initFramework($db, $full=false) {
     $frameworkName = getParam('framework');
@@ -439,7 +443,8 @@ function returnOk($returnData=array()) {
 }
 
 function validate_file_path($filepath){
-    $base = '/var/www/html/daytona/daytona_root/test_data_DH/';
+    $conf = parse_ini_file('daytona_config.ini');
+    $base = $conf['daytona_data_dir'];
     $real = realpath($filepath);
     if ($real === false || strncmp($real, $base, strlen($base)+1) <= 0){
         return false;

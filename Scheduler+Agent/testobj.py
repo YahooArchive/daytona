@@ -7,7 +7,6 @@
 #  start_time
 #  end_time
 #  end_status
-#  end_detail
 #  exechostname
 #  stathostname
 #  timeout
@@ -17,7 +16,7 @@
 
 #ApplicationFrameworkMetadata
 #  execution_script_location
-#  file_root
+
 from logger import LOG
 import base64
 import cPickle
@@ -30,9 +29,8 @@ class TestInputData():
     start_time = None
     end_time = None
     end_status = None
-    end_detail = None
-    exechostname = None
-    stathostname = None
+    exechostname = ""
+    stathostname = ""
     timeout = None
     exec_results_path = None
     exec_path = None
@@ -40,7 +38,6 @@ class TestInputData():
     stats_results_path = None
     execScriptArgs = []
     execution_script_location = None
-    file_root = None
     email = None
     title = None
     purpose = None
@@ -98,14 +95,13 @@ class testDefn():
         self.db = dbaccess.DBAccess(cfg, LOG.getLogger("dblog", "DH"))
         self.testobj.TestInputData.testid = tid
         query_result = self.db.query("""select testid, frameworkid, start_time,
-                                      end_time, end_status, end_detail,
-                                      exechostname, stathostname, timeout, cc_list, title, purpose, creation_time
+                                      end_time, end_status,
+                                      timeout, cc_list, title, purpose, creation_time
                                       from TestInputData where testid = %s""", (self.testobj.TestInputData.testid, ), False, False);
 
         (self.testobj.TestInputData.testid, self.testobj.TestInputData.frameworkid,
          self.testobj.TestInputData.start_time, self.testobj.TestInputData.end_time,
-         self.testobj.TestInputData.end_status, self.testobj.TestInputData.end_detail,
-         self.testobj.TestInputData.exechostname, self.testobj.TestInputData.stathostname,
+         self.testobj.TestInputData.end_status,
          self.testobj.TestInputData.timeout, self.testobj.TestInputData.email, self.testobj.TestInputData.title,
          self.testobj.TestInputData.purpose, self.testobj.TestInputData.creation_time) = query_result
         lctx.debug(query_result)
@@ -135,8 +131,8 @@ class testDefn():
         self.testobj.TestInputData.execScriptArgs = query_result
         lctx.debug(query_result)
 
-        query_result = self.db.query("""select file_root, execution_script_location, frameworkname from ApplicationFrameworkMetadata where frameworkid = %s""", (self.testobj.TestInputData.frameworkid, ), False, False);
-        (self.testobj.TestInputData.file_root, self.testobj.TestInputData.execution_script_location, self.testobj.TestInputData.frameworkname) = query_result
+        query_result = self.db.query("""select execution_script_location, frameworkname from ApplicationFrameworkMetadata where frameworkid = %s""", (self.testobj.TestInputData.frameworkid, ), False, False);
+        (self.testobj.TestInputData.execution_script_location, self.testobj.TestInputData.frameworkname) = query_result
         lctx.debug(query_result)
 
         query_result = self.db.query(
@@ -159,7 +155,7 @@ class testDefn():
         lctx = LOG.getLogger("dblog", "DH")
         lctx.debug("setting status from %s to %s" %(curStatus, newStatus))
 	if self.testobj.TestInputData.exec_results_path is not None:
-            test_logger = LOG.getLogger("test_logger", str(self.testobj.TestInputData.testid),True,self.testobj.TestInputData.exec_results_path)
+	    test_logger = LOG.gettestlogger(self, "EXEC")
             test_logger.info("Setting test status from %s to %s" %(curStatus, newStatus))
         update_res = self.db.query("""update TestInputData SET end_status = %s where testid=%s""", (newStatus, self.testobj.TestInputData.testid), False, True);
         self.testobj.TestInputData.end_status = newStatus

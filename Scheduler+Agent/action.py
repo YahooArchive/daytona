@@ -13,10 +13,13 @@ import client
 import config
 import signal
 import envelope
+import system_metrics_gather
 from logger import LOG
 
 lctx = None
-EXEC_SCRIPT_DIR = '/tmp/ExecScripts/'
+cfg = config.CFG("DaytonaHost", lctx)
+cfg.readCFG("config.ini")
+EXEC_SCRIPT_DIR = cfg.execscript_location
 
 running_tests = {}
 action_lock = threading.Lock()
@@ -91,37 +94,27 @@ class commandThread(threading.Thread):
 
     def run(self):
         lctx.debug(self.cmd)
-        if self.dcmd == "DAYTONA_START_TEST":
-            ca = self.cmd.split(" ")
-            lctx.debug(ca)
-            p = subprocess.Popen(ca, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.cwd, preexec_fn=os.setsid)
-	    exec_script_lock.acquire()
-            exec_script_pid[self.testid] = p
-            exec_script_lock.release()
-            while True:
-                out = p.stdout.read(1)
-                if out == '' and p.poll() is not None:
-                    break
-                if out != '':
-                    sys.stdout.write(out)
-                    sys.stdout.flush()
-                    if self.sfile is not None:
-                        self.sfile.flush()
-
-            for i in range(0, 15):
-                print "-----------------------------------------------------------------------"
-                time.sleep(1)
+        ca = self.cmd.split(" ")
+        lctx.debug(ca)
+        p = subprocess.Popen(ca, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.cwd, preexec_fn=os.setsid)
+	exec_script_lock.acquire()
+        exec_script_pid[self.testid] = p
+        exec_script_lock.release()
+        while True:
+            out = p.stdout.read(1)
+            if out == '' and p.poll() is not None:
+                break
+            if out != '':
+                sys.stdout.write(out)
+                sys.stdout.flush()
                 if self.sfile is not None:
                     self.sfile.flush()
-        else:
-            ca = self.cmd.split(" ")
-            lctx.debug(ca)
-            p = subprocess.Popen(ca, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            self.stdout, self.stderr = p.communicate()
 
+        self.sfile.flush()
 
 def get_test(testid):
     found = False
+    current_test = None
     action_lock.acquire()
     if testid in running_tests:
         current_test = running_tests[testid]
@@ -253,73 +246,6 @@ def scheduler_handshake(current_test):
         return False
 
 
-def startMonitor(self, *args):
-    (obj, command, params, actionID, sync) = (args[0], args[1], args[2], args[3], args[4])
-
-    testid = int(params)
-    current_test = get_test(testid)
-
-    try:
-        if current_test:
-            lctx.debug("MONITOR ON | " + str(current_test.testid) + " | START")
-            cfg = config.CFG("DaytonaHost", lctx)
-            cfg.readCFG("config.ini")
-            if current_test.tobj.testobj.TestInputData.strace:
-                execline = cfg.daytona_mon_path + "/sar_gather_agent.pl --daemonize --root-dir=" + current_test.statsdir + \
-                           " --strace --strace-proc=" + current_test.tobj.testobj.TestInputData.strace_process + \
-                           " --strace-delay=" + str(current_test.tobj.testobj.TestInputData.strace_delay) + \
-                           " --strace-duration=" + str(current_test.tobj.testobj.TestInputData.strace_duration)
-            else:
-                execline = cfg.daytona_mon_path + "/sar_gather_agent.pl --daemonize --root-dir=" + current_test.statsdir
-
-	    execline = execline + " --perf-delay=" + str(current_test.tobj.testobj.TestInputData.perf_delay) + \
-                       " --perf-duration=" + str(current_test.tobj.testobj.TestInputData.perf_duration)
-            if current_test.tobj.testobj.TestInputData.perf_process:
-                execline += " --perf-proc=" +  current_test.tobj.testobj.TestInputData.perf_process
-
-            lctx.info(execline)
-            exec_cmd(execline, command, sync, obj, actionID, current_test)
-	    lctx.debug("MONITOR ON | " + str(current_test.testid) + " | COMPLETE")
-            return "SUCCESS"
-        else:
-            raise Exception("Invalid Test ID")
-
-    except Exception as e:
-	lctx.error(e)
-        return "ERROR"
-
-
-def stopMonitor(self, *args):
-    (obj, command, params, actionID, sync) = (args[0], args[1], args[2], args[3], args[4])
-    testid = int(params)
-    current_test = get_test(testid)
-
-    try:
-        if current_test:
-            lctx.debug("MONITOR OFF | " + str(current_test.testid) + " | START")
-
-            cfg = config.CFG("DaytonaHost", lctx)
-            cfg.readCFG("config.ini")
-
-            # stop the sar processes
-            execline = cfg.daytona_mon_path + "/sar_gather_agent.pl --shutdown --root-dir=" + current_test.statsdir
-            lctx.info(execline)
-            exec_cmd(execline, command, sync, obj, actionID, current_test)
-
-            # prepare mon results tarball here
-            lctx.debug(current_test.statsdir)
-            lctx.debug("removed monitor temp files from : " + current_test.archivedir)
-            common.make_tarfile(current_test.archivedir + "results.tgz", current_test.resultsdir + "/")
-            lctx.debug("MONITOR OFF | " + str(current_test.testid) + " | COMPLETE")
-            return "SUCCESS"
-        else:
-            raise Exception("Monitor is not running for TESTID : " + str(current_test.testid))
-
-    except Exception as e:
-        lctx.error(e)
-        return "ERROR"
-
-
 def setupTest(self, *args):
     (obj, command, params, actionID, sync) = (args[0], args[1], args[2], args[3], args[4])
     test_serialized = params.split(",")[0]
@@ -328,15 +254,17 @@ def setupTest(self, *args):
     t2 = testobj.testDefn()
     t2.deserialize(test_serialized)
     current_test = get_test(t2.testobj.TestInputData.testid)
+    test_logger = None
 
     try:
         if current_test:
+	    test_logger = LOG.gettestlogger(current_test, "STAT")
             lctx.debug("TEST SETUP | " + str(current_test.testid) + " | START")
+	    test_logger.info("Test setup started")
             current_test.tobj = testobj.testDefn()
             current_test.tobj = t2
             current_test.testid = current_test.tobj.testobj.TestInputData.testid
 
-            lctx.debug("TEST SETUP : " + str(current_test.tobj.testobj.TestInputData.testid))
             cfg = config.CFG("DaytonaHost", lctx)
             cfg.readCFG("config.ini")
 	    dir = cfg.daytona_agent_root + "/" + current_test.tobj.testobj.TestInputData.frameworkname + "/" + str(
@@ -357,13 +285,14 @@ def setupTest(self, *args):
                                       current_test.tobj.testobj.TestInputData.frameworkname + "/" + \
                                       str(current_test.tobj.testobj.TestInputData.testid) + "/"
 
-            common.createdir(cfg.daytona_agent_root, self.lctx)
             if host_type == "EXEC":
                 common.createdir(current_test.execdir, self.lctx)
                 common.createdir(current_test.logdir, self.lctx)
 
             common.createdir(current_test.resultsdir, self.lctx)
             common.createdir(current_test.statsdir, self.lctx)
+
+	    test_logger.info("Test directory created")
 
             # todo : check and validate if exec script is provided in expected format and
             # the file exists in that location
@@ -374,7 +303,7 @@ def setupTest(self, *args):
                 current_test.execscriptfile = current_test.execdir + "/" + execscript
                 lctx.debug(current_test.execscriptfile)
 
-                # check if execution script is present in '/tmp/ExecScripts/' - execute script only if it present at
+                # check if execution script is present in EXEC_SCRIPT_DIR - execute script only if it present at
                 # this location
 
                 execscript_location = EXEC_SCRIPT_DIR + execscript
@@ -383,9 +312,7 @@ def setupTest(self, *args):
 
                 if valid_path:
                     if os.path.isfile(execscript_location):
-			if not os.path.exists(os.path.dirname(current_test.execscriptfile)):
-                            os.makedirs(os.path.dirname(current_test.execscriptfile))
-                        ret = copyfile(execscript_location, current_test.execscriptfile)
+			ret = shutil.copytree(os.path.dirname(execscript_location), os.path.dirname(current_test.execscriptfile))
                     else:
                         raise Exception(
                             "Execution script not found at Daytona Execution Script Location : " + EXEC_SCRIPT_DIR)
@@ -394,21 +321,19 @@ def setupTest(self, *args):
                         "Access Denied : Use Daytona Execution Script Location '" + EXEC_SCRIPT_DIR + "' for executing "
                                                                                                       "exec scripts")
                 os.chmod(current_test.execscriptfile, 0744)
+		test_logger.info("Execution script copied successfully")
 
             save_test(current_test.testid, current_test)
+	    test_logger.info("Test setup complete")
             lctx.debug("TEST SETUP | " + str(current_test.testid) + " | COMPLETE")
             return "SUCCESS"
         else:
             raise Exception("Invalid Test ID")
 
-    except shutil.Error as err:
-        if current_test:
-            lctx.error("error copying file : " + str(execscript) + " to " + str(current_test.execscriptfile))
-        lctx.error(err)
-        return "ERROR"
-
     except Exception as e:
         lctx.error(e)
+	if test_logger:
+            test_logger.error(e)
         return "ERROR"
 
     # create dirs
@@ -421,26 +346,53 @@ def setupTest(self, *args):
 
 def startTest(self, *args):
     (obj, command, params, actionID, sync) = (args[0], args[1], args[2], args[3], args[4])
-    testid = int(params)
+    testid = int(params.split(",")[0])
+    host_type = params.split(",")[1]
     current_test = get_test(testid)
+    strace_config = None
+    perf_config = dict()
+    test_logger = None
 
     try:
         if current_test:
+	    test_logger = LOG.gettestlogger(current_test, "STAT")
             lctx.debug("TESTSTART | " + str(current_test.testid) + " | START")
+	    test_logger.info("Starting test")
             current_test.status = "RUNNING"
             current_test.actionID = actionID
             save_test(current_test.testid, current_test)
 
-            # Copied execscript
-            execscript = current_test.execscriptfile
-            args = ""
-            for a in current_test.tobj.testobj.TestInputData.execScriptArgs:
-                args = args + " \"" + a[3] + "\""
-            execline = execscript + args
-            lctx.debug("Execution line:" + execline)
+            if current_test.tobj.testobj.TestInputData.strace:
+                strace_config = dict()
+                strace_config["delay"] = str(current_test.tobj.testobj.TestInputData.strace_delay)
+                strace_config["duration"] = str(current_test.tobj.testobj.TestInputData.strace_duration)
+                strace_config["process"] = current_test.tobj.testobj.TestInputData.strace_process
 
-            # execute the exec script here
-            exec_cmd(execline, command, sync, obj, actionID, current_test)
+            perf_config["delay"] = str(current_test.tobj.testobj.TestInputData.perf_delay)
+            perf_config["duration"] = str(current_test.tobj.testobj.TestInputData.perf_duration)
+            if current_test.tobj.testobj.TestInputData.perf_process:
+                perf_config["process"] = current_test.tobj.testobj.TestInputData.perf_process
+
+	    test_logger.info("Configuring perf profiler - " + str(perf_config))
+	    if strace_config is not None:
+	        test_logger.info("Configuring strace profiler - " + str(strace_config))
+
+            system_metrics_gather.perf_strace_gather(current_test.testid, perf_config, strace_config)
+	    test_logger.info("Profiler started")
+
+            if host_type == "EXEC":
+                # Copied execscript
+                execscript = current_test.execscriptfile
+                args = ""
+                for a in current_test.tobj.testobj.TestInputData.execScriptArgs:
+                    args = args + " \"" + a[3] + "\""
+                execline = execscript + args
+                lctx.debug("Execution line:" + execline)
+		test_logger.info("Execution script started")
+
+                # execute the exec script here
+                exec_cmd(execline, command, sync, obj, actionID, current_test)
+
             lctx.debug("TESTSTART | " + str(current_test.testid) + " | COMPLETE")
             return "SUCCESS"
         else:
@@ -448,6 +400,31 @@ def startTest(self, *args):
 
     except Exception as e:
         lctx.error(e)
+	if test_logger:
+            test_logger.error(e)
+        return "ERROR"
+
+
+def stopTest(self, *args):
+    (obj, command, params, actionID, sync) = (args[0], args[1], args[2], args[3], args[4])
+    testid = int(params)
+    current_test = get_test(testid)
+    test_logger = None
+
+    try:
+        if current_test:
+	    test_logger = LOG.gettestlogger(current_test, "STAT")
+            current_test.status = "TESTEND"
+            save_test(current_test.testid, current_test)
+	    test_logger.info("Test stop")
+            return "SUCCESS"
+        else:
+            raise Exception("Test not running : " + str(current_test.testid))
+
+    except Exception as e:
+        lctx.error(e)
+	if test_logger:
+            test_logger.error(e)
         return "ERROR"
 
 
@@ -455,10 +432,14 @@ def cleanup(self, *args):
     (obj, command, params, actionID, sync) = (args[0], args[1], args[2], args[3], args[4])
     testid = int(params)
     current_test = get_test(testid)
-
+    test_logger = None
     try:
         if current_test:
+	    test_logger = LOG.gettestlogger(current_test, "STAT")
             lctx.debug("CLEANUP | " + str(current_test.testid) + " | START")
+	    test_logger.info("Test cleanup")
+	    downloadTestLogs(testid)
+	    LOG.removeLogger(current_test.tobj)
             shutil.rmtree(current_test.resultsdir, ignore_errors=True)
 	    delete_test(testid)
             lctx.debug("CLEANUP | " + str(current_test.testid) + " | COMPLETE")
@@ -468,6 +449,8 @@ def cleanup(self, *args):
 
     except Exception as e:
         lctx.error(e)
+	if test_logger:
+            test_logger.error(e)
         return "ERROR"
 
 
@@ -480,20 +463,23 @@ def abortTest(self, *args):
     (t, aid, tst, ts) = (None, None, None, None)
 
     lctx.debug(args)
-    lctx.debug(obj)
-    lctx.debug(obj.async_actions)
+
+    abort_action = False
 
     for tp in obj.async_actions:
         (t, aid, tst, ts) = tp
         if tst.testobj.TestInputData.testid == t2.testobj.TestInputData.testid:
-            lctx.debug("Found ASYNC action pending for this this test")
-            (t, aid, tst, ts) = obj.async_actions[0]
+            lctx.debug("Found ASYNC action pending for this test, Aborting it")
+            abort_action = True
             break
 
-    if t is not None:
+    if abort_action:
         t.stop()
         t.join()
-    lctx.debug("Stopped ASYNC action pending for this this test")
+        lctx.debug("Stopped ASYNC action pending for this test : " + str(tst.testobj.TestInputData.testid))
+    else:
+        lctx.debug("No ASYNC action pending for this test : " + str(t2.testobj.TestInputData.testid))
+
     cleanup(self, self, command, params, actionID, sync)
     lctx.debug(command + "[" + str(actionID) + "]")
     return "SUCCESS"
@@ -515,7 +501,9 @@ def getStatus(self, *args):
     testid = int(params)
     current_test = get_test(testid)
     if current_test:
+	test_logger = LOG.gettestlogger(current_test, "STAT")
         lctx.debug(str(current_test.testid) + ":" + current_test.status)
+	test_logger.info("Test Status : " + current_test.status)
         return current_test.status
     else:
         return "TESTNA"
@@ -525,12 +513,17 @@ def fileDownload(self, *args):
     cl = client.TCPClient(LOG.getLogger("clientlog", "Agent"))
     testid = int(args[2])
     current_test = get_test(testid)
-
+    test_logger = None
     try:
         if current_test:
+	    test_logger = LOG.gettestlogger(current_test, "STAT")
             lctx.debug("FILE DOWNLOAD | " + str(current_test.testid) + " | START")
+	    lctx.debug("Preparing TAR file of system metric folder")
+	    test_logger.info("Preparing TAR file of system metric folder")
+            common.make_tarfile(current_test.archivedir + "results.tgz", current_test.resultsdir + "/")
             dest = current_test.tobj.testobj.TestInputData.stats_results_path[current_test.stathostip]
             download_file = current_test.archivedir + "results.tgz"
+	    test_logger.info("Sending TAR file to daytona host")
             cl.sendFile(current_test.serverip, current_test.serverport, download_file, dest.strip())
             lctx.debug("FILE DOWNLOAD | " + str(current_test.testid) + " | COMPLETE")
             return "SUCCESS"
@@ -539,5 +532,30 @@ def fileDownload(self, *args):
 
     except Exception as e:
         lctx.error(e)
+	if test_logger:
+	    test_logger.error(e)
+        return "ERROR"
+
+
+def downloadTestLogs(testid):
+    cl = client.TCPClient(LOG.getLogger("clientlog", "Agent"))
+    current_test = get_test(testid)
+    test_logger = None
+    try:
+        if current_test:
+	    test_logger = LOG.gettestlogger(current_test, "STAT")
+	    test_logger.info("Sending test log to daytona host")
+            dest = current_test.tobj.testobj.TestInputData.stats_results_path[current_test.stathostip]
+            download_file = current_test.agent_log_file
+            cl.sendFile(current_test.serverip, current_test.serverport, download_file, dest.strip())
+	    test_logger.info("Test log file transfer complete")
+            return "SUCCESS"
+        else:
+            raise Exception("Invalid Test ID")
+
+    except Exception as e:
+        lctx.error(e)
+	if test_logger:
+            test_logger.error(e)
         return "ERROR"
 

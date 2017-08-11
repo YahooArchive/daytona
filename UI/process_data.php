@@ -46,6 +46,7 @@ function verifyPltContentForGraph($file){
                     $col = str_replace("\r\n",'', $line_arr[$i]);
                     $col = str_replace("\n",'', $col);
 		    $col = str_replace('"','', $col);
+		    $col = str_replace('%','', $col);
                     if(!is_numeric($col)){
                         $header_validity[$column_name[$i]] = 0;
                     }
@@ -378,10 +379,122 @@ function buildTestReportGraph($div_id, $file_paths, $s_compids_str, $title, $gra
 function buildOutputGraphView($file_paths, $s_compids_str, $act_file){
     if ((strpos($file_paths, 'cpu_usage') !== false) or (strpos($file_paths, 'memory_usage') !== false)) {
         buildGraphFilters($file_paths, $s_compids_str, $act_file);
+    }elseif ((strpos($file_paths, 'docker_cpu') !== false) or (strpos($file_paths, 'docker_memory') !== false)){
+        buildSingleGraphView($file_paths,$s_compids_str,$act_file);
     }else{
         buildColumnGraphView($file_paths, $s_compids_str, $act_file);
     }
 }
+
+
+function buildSingleGraphView($file_paths, $s_compids_str, $act_file){
+
+    global $div_id;
+    global $header_validity;
+    $div_id = 1;
+    $file_arr = explode(',', $file_paths);
+    $testid_arr = explode(',', $s_compids_str);
+
+    $counter = 0;
+    foreach ($file_arr as $file){
+        $title = $act_file . " : " . $testid_arr[$counter];
+        $counter++;
+        $error = verifyPltContentForGraph($file);
+        if ($error == 1){
+            $error_msg = "Cannot parse time format - Invalid time format";
+            $error_type = 2;
+            echo "  <script> buildGraphErrorView('$error_msg','$div_id','$title','$error_type'); </script>\n";
+            $div_id++;
+            continue;
+        }else if ($error == 2){
+            $error_msg = "Not able to read file";
+            $error_type = 2;
+            echo "  <script> buildGraphErrorView('$error_msg','$div_id','$title','$error_type'); </script>\n";
+            $div_id++;
+            continue;
+        }else if ($error == 3){
+            $error_msg = "Cannot access file or invalid URL";
+            $error_type = 2;
+            echo "  <script> buildGraphErrorView('$error_msg','$div_id','$title','$error_type'); </script>\n";
+            $div_id++;
+            continue;
+        }
+        $process_header = 1;
+        $time_offset = 1;
+        $graph_data = array();
+        $column_name = array();
+        $handle = fopen($file, "r");
+
+        while (($line = fgets($handle)) !== false) {
+            $line_arr = explode(',', $line);
+            if($process_header){
+                foreach ($line_arr as $col) {
+                    $col = str_replace("\n",'', $col);
+		    $col = str_replace("\r",'', $col);
+                    $temp_array = array();
+                    $temp_array[] = $col;
+                    $graph_data[] = $temp_array;
+                    $column_name[] = $col;
+                }
+                $process_header = 0;
+                continue;
+            }
+            if ($time_offset && !$process_header){
+                $offset_datetime = new DateTime($line_arr[0]);
+                $time_offset = 0;
+            }
+            $current_datetime = new DateTime($line_arr[0]);
+            $current_datetime->add(new DateInterval('P1D'));
+            $interval = date_diff($current_datetime,$offset_datetime);
+            $interval_string = $interval->format("%D:%H:%I:%S");
+            $graph_data[0][] = $interval_string;
+            for ($i = 1; $i < sizeof($line_arr); $i++){
+                $data = str_replace("\n",'', $line_arr[$i]);
+		$data = str_replace("\r",'', $data);
+		$data = str_replace("%",'', $data);
+                $graph_data[$i][] = $data;
+            }
+        }
+        fclose($handle);
+
+        $metrics_array = array();
+        $count = 0;
+        foreach ($graph_data as $dataset){
+            if (strcasecmp($dataset[0], "Time") == 0){
+                $count++;
+                continue;
+            }
+            if (!$header_validity[$dataset[0]]){
+                array_splice($graph_data,$count,1);
+                $main_key = $dataset[0];
+                $metrics_array[$main_key] = array();
+                $metrics_array[$main_key]['max'] = 'NaN';
+                $metrics_array[$main_key]['min'] = 'NaN';
+                $metrics_array[$main_key]['avg'] = 'NaN';
+                continue;
+            }
+            $main_key = $dataset[0];
+            $metrics_array[$main_key] = array();
+            array_shift($dataset);
+            if(!empty($dataset)){
+                $metrics_array[$main_key]['max'] = max($dataset);
+                $metrics_array[$main_key]['min'] = min($dataset);
+                $metrics_array[$main_key]['avg'] = array_sum($dataset) / count($dataset);
+            }
+            $count++;
+        }
+
+        array_shift($column_name);
+        $column_json = json_encode($column_name);
+        $graph_data_json = json_encode($graph_data);
+        $metric_data = json_encode($metrics_array);
+        $x_value = 'Time';
+        $xs_json = "{}";
+        echo "    <script>buildOutputPageGraphView('$graph_data_json', '$column_json', '$metric_data', '$x_value' ,'$xs_json', '$title','$div_id');</script>\n";
+        $div_id++;
+    }
+}
+
 
 function buildGraphFilters($file_paths, $s_compids_str, $act_file){
     global $div_id;
@@ -484,7 +597,7 @@ function buildGraphFilters($file_paths, $s_compids_str, $act_file){
     }
 }
 
-function buildSingleGraphView($file, $proc_list){
+function buildGraphDataForFilteredColumns($file, $column_list){
     global $header_validity;
     $process_header = 1;
     $time_offset = 1;
@@ -513,7 +626,7 @@ function buildSingleGraphView($file, $proc_list){
             $column_name[] = $col;
 	    for($x = 0; $x < count($line_arr); $x++) {
                 $col = str_replace("\r\n",'', $line_arr[$x]);
-                if (in_array($col, $proc_list)){
+                if (in_array($col, $column_list)){
                     $temp_array = array();
                     $temp_array[] = $col;
                     $graph_data[] = $temp_array;
@@ -622,6 +735,7 @@ function buildColumnGraphView($file_paths, $s_compids_str, $act_file){
                 $xaxis_data[$testid_arr[$count]] = array();
                 for($i = 1;$i < sizeof($line_arr);$i++){
                     $data = str_replace("\n",'', $line_arr[$i]);
+		    $data = str_replace("\r",'', $data);
 		    $data = str_replace('"','', $data);
                     $temp_array = array();
                     $temp_array[$testid_arr[$count]] = array();
@@ -642,6 +756,8 @@ function buildColumnGraphView($file_paths, $s_compids_str, $act_file){
             $xaxis_data[$testid_arr[$count]][] = $interval_string;
             for ($i = 1; $i < sizeof($line_arr); $i++) {
                 $data = str_replace("\n", '', $line_arr[$i]);
+		$data = str_replace("\r",'', $data);
+		$data = str_replace('%','', $data);
                 $column_data[$column_map[$i - 1]][$testid_arr[$count]][] = $data;
             }
         }
@@ -677,6 +793,7 @@ function buildColumnGraphView($file_paths, $s_compids_str, $act_file){
                         for($i = 1;$i < sizeof($line_arr);$i++){
                             $data = str_replace("\n",'', $line_arr[$i]);
 			    $data = str_replace('"','', $data);
+			    $data = str_replace("\r",'', $data);
                             if (array_key_exists($data,$column_data)){
                                 $column_data[$data][$testid_arr[$count]] = array();
                             }
@@ -696,6 +813,8 @@ function buildColumnGraphView($file_paths, $s_compids_str, $act_file){
                     $xaxis_data[$testid_arr[$count]][] = $interval_string;
                     for ($i = 1; $i < sizeof($line_arr); $i++) {
                         $data = str_replace("\n", '', $line_arr[$i]);
+			$data = str_replace("\r",'', $data);
+			$data = str_replace('%','', $data);
                         if (array_key_exists($column_map[$i - 1],$column_data)){
                             $column_data[$column_map[$i - 1]][$testid_arr[$count]][] = $data;
                         }
@@ -810,3 +929,4 @@ function buildTestCompareData($filepaths,$test_ids){
     }
     return $ret_data;
 }
+
