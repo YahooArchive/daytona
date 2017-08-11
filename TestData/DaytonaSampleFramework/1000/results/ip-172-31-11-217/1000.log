@@ -1,0 +1,40 @@
+2017-08-03 18:33 INFO   Test execution starts                                                                               
+2017-08-03 18:33 INFO   HeartBeat received from execution host ip-172-31-11-217                                             
+2017-08-03 18:33 INFO   Handshake successful with execution host ip-172-31-11-217                                           
+2017-08-03 18:33 INFO   Setting test status from waiting to setup                                                           
+2017-08-03 18:33 INFO   Test setup started                                                                                  
+2017-08-03 18:33 INFO   Test setup complete on exec host ip-172-31-11-217                                                   
+2017-08-03 18:33 INFO   Test started on exec host ip-172-31-11-217                                                          
+2017-08-03 18:33 INFO   Setting test status from setup to running                                                           
+2017-08-03 18:33 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:33 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:33 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:33 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:33 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:33 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:33 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:33 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:33 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:33 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:33 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:33 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:33 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:33 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:33 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:33 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:34 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:34 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:34 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:34 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:34 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:34 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:34 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:34 INFO   Test status : RUNNING                                                                               
+2017-08-03 18:34 INFO   Test status : TESTEND                                                                               
+2017-08-03 18:34 INFO   Setting test status from running to completed                                                       
+2017-08-03 18:34 INFO   Test execution completes, preocessing test results                                                  
+2017-08-03 18:34 INFO   Setting test status from completed to collating                                                     
+2017-08-03 18:34 INFO   Logs download successfull from exec host ip-172-31-11-217                                           
+2017-08-03 18:34 INFO   Exec host logs extracted and processed succesfully                                                  
+2017-08-03 18:34 INFO   Test END successfull on exec host ip-172-31-11-217                                                  
+2017-08-03 18:34 INFO   Setting test status from collating to finished clean                                                

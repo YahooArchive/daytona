@@ -1,0 +1,41 @@
+2017-08-03 18:35 INFO   Handshake successfull with daytona host : 172.31.11.217                                             
+2017-08-03 18:36 INFO   Test setup started                                                                                  
+2017-08-03 18:36 INFO   Test directory created                                                                              
+2017-08-03 18:36 INFO   Execution script copied successfully                                                                
+2017-08-03 18:36 INFO   Test setup complete                                                                                 
+2017-08-03 18:36 INFO   Starting test                                                                                       
+2017-08-03 18:36 INFO   Configuring perf profiler - {'delay': '10', 'duration': '15', 'process': u'mysql'}                  
+2017-08-03 18:36 INFO   Configuring strace profiler - {'delay': '12', 'duration': '20', 'process': u'mysql'}                
+2017-08-03 18:36 INFO   Profiler started                                                                                    
+2017-08-03 18:36 INFO   Execution script started                                                                            
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : RUNNING                                                                               
+2017-08-03 18:36 INFO   Test Status : TESTEND                                                                               
+2017-08-03 18:36 INFO   Preparing TAR file of system metric folder                                                          
+2017-08-03 18:36 INFO   Sending TAR file to daytona host                                                                    
+2017-08-03 18:36 INFO   Test cleanup                                                                                        
+2017-08-03 18:36 INFO   Sending test log to daytona host                                                                    

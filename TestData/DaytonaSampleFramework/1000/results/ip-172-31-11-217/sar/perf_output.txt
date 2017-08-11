@@ -1,0 +1,13 @@
+# started on Thu Aug  3 18:33:37 2017
+
+
+ Performance counter stats for 'system wide':
+
+   <not supported>      cycles                   
+   <not supported>      instructions             
+   <not supported>      LLC-load-misses          
+   <not supported>      LLC-prefetch-misses      
+   <not supported>      LLC-store-misses         
+
+      10.000722317 seconds time elapsed
+
