@@ -1,0 +1,71 @@
+NAME                CONTAINER           CPU %               MEM % 
+2017-08-03T18:36:05Z
+ubuntu4-linux       e75c9478be8b        0.06%               0.01%
+ubuntu3-linux       1d8b29c45957        0.05%               0.00%
+ubuntu-linux        1d1ee2fe7033        0.04%               0.00%
+ubuntu1-linux       58e620ef438e        0.00%               0.00%
+ubuntu2-linux       0e232d47c01e        0.05%               0.01%
+
+2017-08-03T18:36:10Z
+ubuntu4-linux       e75c9478be8b        0.06%               0.01%
+ubuntu3-linux       1d8b29c45957        0.06%               0.00%
+ubuntu-linux        1d1ee2fe7033        0.05%               0.00%
+ubuntu1-linux       58e620ef438e        0.00%               0.00%
+ubuntu2-linux       0e232d47c01e        0.05%               0.01%
+
+2017-08-03T18:36:15Z
+ubuntu4-linux       e75c9478be8b        0.05%               0.01%
+ubuntu3-linux       1d8b29c45957        0.07%               0.00%
+ubuntu-linux        1d1ee2fe7033        0.05%               0.00%
+ubuntu1-linux       58e620ef438e        0.00%               0.00%
+ubuntu2-linux       0e232d47c01e        0.05%               0.01%
+
+2017-08-03T18:36:20Z
+ubuntu4-linux       e75c9478be8b        0.06%               0.01%
+ubuntu3-linux       1d8b29c45957        0.04%               0.00%
+ubuntu-linux        1d1ee2fe7033        0.04%               0.00%
+ubuntu1-linux       58e620ef438e        0.00%               0.00%
+ubuntu2-linux       0e232d47c01e        0.04%               0.01%
+
+2017-08-03T18:36:25Z
+ubuntu4-linux       e75c9478be8b        0.06%               0.01%
+ubuntu3-linux       1d8b29c45957        0.05%               0.00%
+ubuntu-linux        1d1ee2fe7033        0.05%               0.00%
+ubuntu1-linux       58e620ef438e        0.00%               0.00%
+ubuntu2-linux       0e232d47c01e        0.05%               0.01%
+
+2017-08-03T18:36:30Z
+ubuntu4-linux       e75c9478be8b        0.07%               0.01%
+ubuntu3-linux       1d8b29c45957        0.05%               0.00%
+ubuntu-linux        1d1ee2fe7033        0.05%               0.00%
+ubuntu1-linux       58e620ef438e        0.00%               0.00%
+ubuntu2-linux       0e232d47c01e        0.05%               0.01%
+
+2017-08-03T18:36:35Z
+ubuntu4-linux       e75c9478be8b        0.06%               0.01%
+ubuntu3-linux       1d8b29c45957        0.05%               0.00%
+ubuntu-linux        1d1ee2fe7033        0.05%               0.00%
+ubuntu1-linux       58e620ef438e        0.00%               0.00%
+ubuntu2-linux       0e232d47c01e        0.04%               0.01%
+
+2017-08-03T18:36:40Z
+ubuntu4-linux       e75c9478be8b        0.06%               0.01%
+ubuntu3-linux       1d8b29c45957        0.04%               0.00%
+ubuntu-linux        1d1ee2fe7033        0.04%               0.00%
+ubuntu1-linux       58e620ef438e        0.00%               0.00%
+ubuntu2-linux       0e232d47c01e        0.04%               0.01%
+
+2017-08-03T18:36:45Z
+ubuntu4-linux       e75c9478be8b        0.06%               0.01%
+ubuntu3-linux       1d8b29c45957        0.05%               0.00%
+ubuntu-linux        1d1ee2fe7033        0.05%               0.00%
+ubuntu1-linux       58e620ef438e        0.00%               0.00%
+ubuntu2-linux       0e232d47c01e        0.05%               0.01%
+
+2017-08-03T18:36:50Z
+ubuntu4-linux       e75c9478be8b        0.07%               0.01%
+ubuntu3-linux       1d8b29c45957        0.05%               0.00%
+ubuntu-linux        1d1ee2fe7033        0.04%               0.00%
+ubuntu1-linux       58e620ef438e        0.00%               0.00%
+ubuntu2-linux       0e232d47c01e        0.06%               0.01%
+

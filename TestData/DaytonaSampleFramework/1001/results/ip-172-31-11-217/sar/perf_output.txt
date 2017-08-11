@@ -1,0 +1,23 @@
+# started on Thu Aug  3 18:36:13 2017
+
+
+ Performance counter stats for 'system wide':
+
+   <not supported>      cycles                   
+   <not supported>      instructions             
+   <not supported>      LLC-load-misses          
+   <not supported>      LLC-prefetch-misses      
+   <not supported>      LLC-store-misses         
+
+      15.000747804 seconds time elapsed
+
+# started on Thu Aug  3 18:36:28 2017
+
+
+ Performance counter stats for process id '19414':
+
+   <not supported>      cycles:u                 
+   <not supported>      instructions:u           
+
+      15.000698807 seconds time elapsed
+
