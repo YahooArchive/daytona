@@ -12,18 +12,18 @@ db_name=daytona
 db_user=daytona
 db_host=localhost
 
-#### To be filled in by admin before installation
+# To be filled in by admin before installation
 db_password=
 db_root_pass=
 
-# Daytona Installation - Recommendation, Don't change below directories path
-daytona_install_dir=$HOME/daytona_prod
-daytona_data_dir=/var/www/html/daytona/daytona_root/test_data_DH
+# Daytona Installation
+daytona_install_dir=
+daytona_data_dir=${daytona_install_dir}/test_data_DH
 
-#### UI credentails to be filled by user before installation
+# UI credentails to be filled by user before installation
 ui_admin_pass=
 
-#### SMTP Server Info to be filled by admin before installation
+# SMTP Server Info to be filled by admin before installation
 # SMTP server details depends on your org's IT policy
 # You can run a a SMTP server on localhost if it's not blocked from sending email 
 # Please contact your IT department and obtain functional SMTP server info

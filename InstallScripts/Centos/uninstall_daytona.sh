@@ -1,21 +1,26 @@
 #!/bin/bash
 
+if [ "$EUID" -ne 0 ]
+  then echo "Please run as root/sudo"
+  exit
+fi
+
 source config.sh
 
 echo -e "Stopping and removing  Apache2"
-sudo systemctl stop httpd.service
+systemctl stop httpd.service
 
-sudo yum remove httpd httpd-tools -y
-sudo rm -rf /var/www/html/daytona
+yum remove httpd httpd-tools -y
+rm -rf /var/www/html/daytona
 
 echo -e "\n Removing PHP & Requirements "
-sudo yum remove php70w php70w-mysql php70w-cli php70w-common php70w-pdo -y
+yum remove php70w php70w-mysql php70w-cli php70w-common php70w-pdo -y
 
 echo -e "\n Stopping and Removing MySQL"
-sudo systemctl stop mysqld.service
-sudo yum remove mysql-server -y
+systemctl stop mysqld.service
+yum remove mysql-server -y
 
-sudo rm -rf /var/lib/mysql /var/lib/php /var/log/mysqld.log
+rm -rf /var/lib/mysql /var/lib/php /var/log/mysqld.log
 
 # Kill scheduler and agent
 ps -ef | grep sar | awk '{print $2}' > pidfile
@@ -28,11 +33,13 @@ do
         sudo kill -9 $i
 done
 
-sudo rm -rf $daytona_install_dir
-sudo rm -rf $daytona_data_dir 
-sudo rm -rf /var/www/html/daytona
-sudo rm -rf /tmp/daytona_sarmonitor
-sudo rm -rf /tmp/ExecScripts
-sudo rm -rf /tmp/daytona_root
-
+rm -rf ${daytona_install_dir}/Scheduler+Agent
+rm -rf $daytona_data_dir
+rm -rf /var/www/html/daytona
+rm -rf ${daytona_install_dir}/ExecScripts
+rm -rf ${daytona_install_dir}/daytona_agent_root
 rm -f pidfile
+rm -rf ${daytona_install_dir}/config.sh
+rm -rf ${daytona_install_dir}/daytona_backup.sh
+rm -rf ${daytona_install_dir}/daytona_restore.sh
+rm -rf ${daytona_install_dir}/cron-backup.sh

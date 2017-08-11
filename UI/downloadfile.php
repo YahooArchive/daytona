@@ -42,8 +42,7 @@ if ($userId){
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $db->beginTransaction();
 
-        $query = "SELECT frameworkname,TestInputData.title,TestInputData.purpose,exechostname,
-                  stathostname,priority,timeout,cc_list,
+        $query = "SELECT frameworkname,TestInputData.title,TestInputData.purpose,priority,timeout,cc_list,
                   TestInputData.creation_time,modified,start_time,end_time FROM TestInputData
                   JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE testid=:testid";
         $stmt = $db->prepare($query);
@@ -59,7 +58,6 @@ if ($userId){
         }
         $stmt->execute();
         $test_hosts_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-	error_log(print_r($test_hosts_result,true));
         foreach ($test_hosts_result as $row){
             if(!isset($test_info_data[$row["testid"]][$row["name"]])) {
                 $test_info_data[$row["testid"]][$row["name"]] = array();

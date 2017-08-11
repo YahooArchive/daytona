@@ -45,10 +45,10 @@ echo dbname = '"'${db_name}'"' | sudo tee -a $daytona_ui_config > /dev/null
 echo username = '"'${db_user}'"' | sudo tee -a $daytona_ui_config > /dev/null
 echo servername = '"'${db_host}'"' | sudo tee -a $daytona_ui_config > /dev/null
 echo password = '"'${db_password}'"' | sudo tee -a $daytona_ui_config > /dev/null
+echo daytona_data_dir = '"'${daytona_data_dir}'"' | sudo tee -a $daytona_ui_config > /dev/null
 
 # Create daytona data directory
 sudo mkdir -p $daytona_data_dir 
-sudo chmod -R 777 /var/www/html/daytona
 
 # Create link to daytona_root directory
 sudo ln -s $daytona_data_dir /var/www/html/daytona/test_data
@@ -58,7 +58,7 @@ sudo cp -r ../../TestData/* $daytona_data_dir
 
 echo -e "Permissions for /var/www/html/daytona...\n"
 sudo chown -R www-data:www-data /var/www/html/daytona
-sudo chmod -R 777 /var/www/html/daytona
+sudo chmod -R 777 $daytona_data_dir
 
 echo -e "Changing Apache2 configuration files for Daytona Application...\n"
 sudo sed -i.bak '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
@@ -79,10 +79,11 @@ admin_pass=`php pass_generate.php $ui_admin_pass`
 
 echo update LoginAuthentication set password="'"`echo $admin_pass`"'" where username="'"admin"';" >> fix_exec.sql
 
-mysql -u ${db_name} -p${db_password} daytona < ./fix_exec.sql
+mysql -u ${db_user} -p${db_password} ${db_name} < ./fix_exec.sql
 
 sudo rm -rf pass_generate.php
 sudo rm -rf fix_exec.sql
 
 echo -e "Restarting Apache...\n"
 sudo service apache2 restart
+

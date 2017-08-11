@@ -40,14 +40,6 @@ if ($compIds) {
     }
 }
 
-function convertTime($timeStr) {
-    if (! $timeStr) {
-        return 'N/A';
-    }
-    $time = strtotime("$timeStr UTC");
-    return date("m/d/Y g:i:s A", $time);
-}
-
 function stateColorClass($status) {
     switch($status) {
         case 'finished clean':
@@ -59,10 +51,10 @@ function stateColorClass($status) {
     }
 }
 
-function printRowFields($allTestData, $field, $isTime=false) {
+function printRowFields($allTestData, $field) {
     foreach ($allTestData as $curTestData) {
         if (isset($curTestData[$field])) {
-            $value = $isTime ? convertTime($curTestData[$field]) : $curTestData[$field];
+            $value = $curTestData[$field];
             if(is_array($value)) {
                 $value = implode(",", $value);
             }
@@ -179,19 +171,19 @@ include_once('lib/header.php');
                         <tbody>
                         <tr>
                             <td class="active">Creation Time</td>
-                            <?php printRowFields($allTestData, 'creation_time', true); ?>
+                            <?php printRowFields($allTestData, 'creation_time'); ?>
                         </tr>
                         <tr>
                             <td class="active">Last Modified</td>
-                            <?php printRowFields($allTestData, 'modified', true); ?>
+                            <?php printRowFields($allTestData, 'modified'); ?>
                         </tr>
                         <tr>
                             <td class="active">Start Time</td>
-                            <?php printRowFields($allTestData, 'start_time', true); ?>
+                            <?php printRowFields($allTestData, 'start_time'); ?>
                         </tr>
                         <tr>
                             <td class='active'>End Time</td>
-                            <?php printRowFields($allTestData, 'end_time', true); ?>
+                            <?php printRowFields($allTestData, 'end_time'); ?>
                         </tr>
                         <tr>
                             <td class="active">Current Status</td>
@@ -325,7 +317,11 @@ include_once('lib/header.php');
         if(array_key_exists("statistics",$origTestData)){
             addSystemMetrics("test_data/$frameworkName/$testId/results", $origTestData["statistics"], $testId, $compIds, "stat");
         }
-        addLogs("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds);
+	$hosts['EXECHOST'] = $origTestData["execution"];
+	if (array_key_exists("statistics",$origTestData)) {
+            $hosts['STATHOST'] = $origTestData["statistics"];
+        }
+        addLogs("test_data/$frameworkName/$testId/results", $hosts, $testId, $compIds);
         ?>
         loadNavigationBar();
     });

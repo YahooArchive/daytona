@@ -13,6 +13,10 @@ function save_framework($db) {
     $isNewFramework = $frameworkId  ? false : true;
     $frameworkName = getParam('f_frameworkname', 'POST');
     if ($isNewFramework) {
+	// Check if there are spaces in framework name
+        if (preg_match('/\s/',$frameworkName)){
+            returnError("Spaces are not allowed in framework name. Remove spaces");
+        }
         // Check if framework name is unique
         $testFramework = getFrameworkByName($db, $frameworkName);
         if ($testFramework) {
@@ -26,6 +30,12 @@ function save_framework($db) {
         if (!$userIsAdmin && $userId != $frameworkData['frameworkowner']) {
             returnError("You are not the framework owner (" . $frameworkData['frameworkowner'] . ")");
         }
+    }
+    // Check if 'execution_script_location' is in valid format.
+    $exec_script_location = getParam('f_execution_script_location', 'POST');
+    $exec_script_location_dir = dirname($exec_script_location);
+    if (($exec_script_location_dir == "/") || ($exec_script_location_dir == ".")){
+        returnError("Execution script should contain <folder_name>/<script_name>");
     }
 
     // TODO: Check for other errors? The form has 'required' inputs as well as
@@ -290,12 +300,10 @@ function save_test($db,$state='new') {
     // 4) Insert every host (exec/stat/reserved) individually
 
     if ($isNewTest) {
-        $query = "INSERT INTO TestInputData ( cc_list, cpu_profiling, creation_time, frameworkid, modified, priority, profile_duration, profile_start, profilehostname, purpose, timeout, title, username, end_status) VALUES (:cc_list, 0, NOW(), :frameworkid, NOW(), :priority, :profile_duration, :profile_start, :profilehostname, :purpose, :timeout, :title, :username, '$state') ";
+	$query = "INSERT INTO TestInputData ( cc_list, start_time, end_time, creation_time, frameworkid, modified, priority, purpose, timeout, title, username, end_status) VALUES (:cc_list, NULL, NULL, NOW(), :frameworkid, NOW(), :priority, :purpose, :timeout, :title, :username, '$state') ";
     } else {
-        $query = "UPDATE TestInputData SET cc_list = :cc_list, cpu_profiling = 0, modified = NOW(), priority = :priority, profile_duration = :profile_duration, profile_start = :profile_start, profilehostname = :profilehostname, purpose = :purpose, timeout = :timeout, title = :title, end_status = '$state'  WHERE testid = :testid";
+	$query = "UPDATE TestInputData SET cc_list = :cc_list, start_time = NULL, end_time = NULL, modified = NOW(), priority = :priority, purpose = :purpose, timeout = :timeout, title = :title, end_status = '$state'  WHERE testid = :testid";
     }
-
-    // TODO: Figure out what to do with 'cpu_profiling'
 
     // TODO: Look into eliminating try-catch
     // Rationale: http://stackoverflow.com/questions/272203/pdo-try-catch-usage-in-functions/273090#273090
@@ -310,9 +318,6 @@ function save_test($db,$state='new') {
         // For more details: http://wiki.hashphp.org/PDO_Tutorial_for_MySQL_Developers
         $stmt->bindValue(':cc_list', getParam('f_cc_list', 'POST'), PDO::PARAM_STR);
         $stmt->bindValue(':priority', getParam('f_priority', 'POST'), PDO::PARAM_INT);
-        $stmt->bindValue(':profile_duration', getParam('f_profile_duration', 'POST'), PDO::PARAM_INT);
-        $stmt->bindValue(':profile_start', getParam('f_profile_start', 'POST'), PDO::PARAM_INT);
-        $stmt->bindValue(':profilehostname', getParam('f_profilehostname', 'POST'), PDO::PARAM_STR);
         $stmt->bindValue(':purpose', getParam('f_purpose', 'POST'), PDO::PARAM_STR);
         $stmt->bindValue(':timeout', getParam('f_timeout', 'POST') ?: 0, PDO::PARAM_INT);
         $stmt->bindValue(':title', getParam('f_title', 'POST'), PDO::PARAM_STR);
@@ -364,12 +369,6 @@ function save_test($db,$state='new') {
             }
             $hostsArray = explode(',', $hosts);
             foreach ($hostsArray as $host) {
-                // TODO: Look into what CommonHardwareMetadata is actually used for
-                // We still need it because we can't insert into HostAssociation w/o it
-                $query = "INSERT INTO CommonHardwareMetadata ( hostname, added, updated ) VALUES ( :hostname, NOW(), NOW() ) ON DUPLICATE KEY UPDATE updated=NOW()";
-                $stmt = $db->prepare($query);
-                $stmt->bindValue(':hostname', $host, PDO::PARAM_STR);
-                $stmt->execute();
 
                 // Insert
                 $query = "INSERT INTO HostAssociation ( hostassociationtypeid, testid, hostname ) SELECT hostassociationtypeid, :testid, :hostname FROM HostAssociationType WHERE frameworkid = :frameworkid AND name = :host_type";

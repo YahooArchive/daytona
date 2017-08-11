@@ -83,8 +83,8 @@ class dbCliHandle():
 
                 # Adding test data in TestInput table
                 query_res = self.db.query(
-                    """INSERT INTO TestInputData(cc_list, creation_time, frameworkid, modified, priority, profile_duration, profile_start, profilehostname, purpose, timeout, title, username, end_status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) """,
-                    (cc, tstr, frameworkid, tstr, priority, None, None, None, purpose, timeout, title, username, state),
+                    """INSERT INTO TestInputData(cc_list, creation_time, frameworkid, modified, priority, purpose, timeout, title, username, end_status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) """,
+                    (cc, tstr, frameworkid, tstr, priority, purpose, timeout, title, username, state),
                     False, False, True)
                 if query_res:
                     testid = query_res
@@ -105,8 +105,6 @@ class dbCliHandle():
                                               (testid,), False, False)
 
                     # Adding execution host in HostAssociation
-                    query_res = self.db.query("""INSERT INTO CommonHardwareMetadata(hostname, added, updated) VALUES(%s, %s, %s ) ON DUPLICATE KEY UPDATE updated = %s""",
-                                              (exec_host, tstr, tstr, tstr), False, False)
 
                     query_res = self.db.query(
                         """INSERT INTO HostAssociation (hostassociationtypeid, testid, hostname) SELECT hostassociationtypeid, %s, %s FROM HostAssociationType WHERE frameworkid = %s AND name = %s""",
@@ -119,9 +117,6 @@ class dbCliHandle():
                     stat_hosts_arr = stat_hosts.split(",")
                     if len(stat_hosts_arr) > 0:
                         for host in stat_hosts_arr:
-                            query_res = self.db.query(
-                                """INSERT INTO CommonHardwareMetadata(hostname, added, updated) VALUES(%s, %s, %s ) ON DUPLICATE KEY UPDATE updated = %s""",
-                                (host, tstr, tstr, tstr), False, False)
                             query_res = self.db.query(
                                 """INSERT INTO HostAssociation (hostassociationtypeid, testid, hostname) SELECT hostassociationtypeid, %s, %s FROM HostAssociationType WHERE frameworkid = %s AND name = %s""",
                                 (testid, host, frameworkid, 'statistics'), False, False, True)
@@ -219,7 +214,7 @@ class dbCliHandle():
         test_details = {}
         try:
             query_res = self.db.query(
-                """SELECT testid, frameworkname, TestInputData.title, TestInputData.purpose, priority, timeout, cc_list, testid, frameworkid, TestInputData.modified, TestInputData.creation_time, start_time, end_time, end_status, end_detail, username FROM TestInputData JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE testid = %s""",
+                """SELECT testid, frameworkname, TestInputData.title, TestInputData.purpose, priority, timeout, cc_list, testid, frameworkid, TestInputData.modified, TestInputData.creation_time, start_time, end_time, end_status, username FROM TestInputData JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE testid = %s""",
                 (testid,), False, False)
             if not query_res:
                 raise Exception("Error|Test ID is not valid")
@@ -238,8 +233,7 @@ class dbCliHandle():
             test_details['start'] = query_res[11]
             test_details['end'] = query_res[12]
             test_details['status'] = query_res[13]
-            test_details['status_detail'] = query_res[14]
-            test_details['user'] = query_res[15]
+            test_details['user'] = query_res[14]
 
             query_res = self.db.query(
                 """SELECT name, hostname FROM HostAssociation JOIN HostAssociationType USING(hostassociationtypeid) WHERE testid = %s""",
@@ -310,7 +304,7 @@ class dbCliHandle():
 
                 # Updating test data in TestInput table
                 query_res = self.db.query(
-                    """UPDATE TestInputData SET cc_list = %s, cpu_profiling = 0, modified = %s, priority = %s, purpose = %s, timeout = %s, title = %s, end_status = %s  WHERE testid = %s """,
+                    """UPDATE TestInputData SET cc_list = %s, modified = %s, priority = %s, purpose = %s, timeout = %s, title = %s, end_status = %s  WHERE testid = %s """,
                     (cc, tstr, priority, purpose, timeout, title, state, testid), False, False, False, True)
                 if query_res > 0:
                     # Updating all test arguments in TestArgs
@@ -327,8 +321,6 @@ class dbCliHandle():
                                               (testid,), False, False)
 
                     # Adding execution host in HostAssociation
-                    query_res = self.db.query("""INSERT INTO CommonHardwareMetadata(hostname, added, updated) VALUES(%s, %s, %s ) ON DUPLICATE KEY UPDATE updated = %s""",
-                                              (exec_host, tstr, tstr, tstr), False, True)
 
                     query_res = self.db.query(
                         """INSERT INTO HostAssociation (hostassociationtypeid, testid, hostname) SELECT hostassociationtypeid, %s, %s FROM HostAssociationType WHERE frameworkid = %s AND name = %s""",
@@ -341,9 +333,6 @@ class dbCliHandle():
                     stat_hosts_arr = stat_hosts.split(",")
                     if len(stat_hosts_arr) > 0:
                         for host in stat_hosts_arr:
-                            query_res = self.db.query(
-                                """INSERT INTO CommonHardwareMetadata(hostname, added, updated) VALUES(%s, %s, %s ) ON DUPLICATE KEY UPDATE updated = %s""",
-                                (host, tstr, tstr, tstr), False, True)
                             query_res = self.db.query(
                                 """INSERT INTO HostAssociation (hostassociationtypeid, testid, hostname) SELECT hostassociationtypeid, %s, %s FROM HostAssociationType WHERE frameworkid = %s AND name = %s""",
                                 (testid, host, frameworkid, 'statistics'), False, False, True)
@@ -371,3 +360,4 @@ class dbCliHandle():
                 return "Error|User authentication failed with HTTP error code : " + str(res.status_code)
         else:
             return "SUCCESS"
+

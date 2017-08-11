@@ -10,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST'){
     $file = getParam('file', 'POST');
     $div_id = getParam('div_id', 'POST');
     $proc_list = getParam('proc_list' . $div_id , 'POST');
-    $response_json = buildSingleGraphView($file, $proc_list);
+    $response_json = buildGraphDataForFilteredColumns($file, $proc_list);
     echo $response_json;
     return;
 }
@@ -19,6 +19,7 @@ $allTestData = array();
 $testId = getParam('testid');
 $filename = getParam('filename');
 $outputFormat = getParam('format');
+$extension = pathinfo($filename, PATHINFO_EXTENSION);
 
 if (!$testId) {
     diePrint("No test ID passed in");
@@ -42,6 +43,11 @@ $frameworkName = $origTestData['frameworkname'];
 $allTestData[] = $origTestData;
 
 $compIds = getParam('compids');
+$compIds_orig = $compIds;
+if (!strcmp($extension, "log")){
+    $compIds = '';
+}
+
 if ($compIds && !preg_match('/^\d+(,\d+)*$/', $compIds)) {
     diePrint("compids is not valid.");
 }
@@ -59,13 +65,11 @@ if ($compIds) {
 }
 $resultsData = getTestResults($db, $testId);
 
-$s_compids_orig = "";
 $s_compids_str = "";
 $s_compids = array();
-if (!empty($_GET["compids"])) {
+if (!empty($compIds)) {
     $s_compids = explode(",", getParam("compids"));
-    $s_compids_orig = getParam("compids");
-    $s_compids_str = $s_compids_orig;
+    $s_compids_str = getParam("compids");
 }
 $s_testid = "none";
 if (isset($_GET["testid"])) {
@@ -98,8 +102,6 @@ function formatFilePath($path, $mapping)
     }
 }
 
-$extension = pathinfo($filename, PATHINFO_EXTENSION);
-
 $pageTitle = "Test Report ($testId)";
 
 $s_compids_arr = explode(",",$s_compids_str);
@@ -114,8 +116,7 @@ for ($x = 1; $x <=sizeof($s_compids_arr); $x++){
 try{
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $db->beginTransaction();
-    $query = "SELECT frameworkname,TestInputData.title,TestInputData.purpose,exechostname,
-                  stathostname,priority,timeout,cc_list,
+    $query = "SELECT frameworkname,TestInputData.title,TestInputData.purpose,priority,timeout,cc_list,
                   TestInputData.creation_time,modified,start_time,end_time FROM TestInputData
                   JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE testid=:testid";
     $stmt = $db->prepare($query);
@@ -173,7 +174,11 @@ include_once('lib/header.php');
 <div class="content-wrapper" id="page-content">
     <div id="main-panel-alt-top">
         <?php
-        echo "  <div class='col-md-9' id='action-buttons-div-left'>\n";
+	if (!strcmp($extension, "log")){
+	    echo "  <div class='col-md-9' id='action-buttons-div-left' style='display:none'>\n";
+	}else{
+	    echo "  <div class='col-md-9' id='action-buttons-div-left'>\n";
+	}
         echo "    <form class='zero-margin form-inline' role='form' onSubmit='return checkTestCount()'>\n";
         echo "      <div class='input-group' style='z-index:0'>\n";
         echo "        <input type='text' class='form-control h-30' id='compids' name='compids' value='$compIds' placeholder='Example: 100,102,105'>\n";
@@ -188,8 +193,12 @@ include_once('lib/header.php');
         echo "      </div>\n";
         echo "    </form>\n";
         echo "  </div>\n";
+	if (!strcmp($extension, "log")){
+	    echo "<div class='col-md-3 col-xs-12 action-buttons-alt' id='action-buttons-div' style='display:none'>\n";
+	}else{
+	    echo "<div class='col-md-3 col-xs-12 action-buttons-alt' id='action-buttons-div'>\n";
+        }
         ?>
-        <div class="col-md-3 col-xs-12 action-buttons-alt" id="action-buttons-div">
             <select class="form-control" onchange="switchFileViewerFormat(this)">
                 <option <?php echo $outputFormat == "graph" ? "selected" : ""; ?>>Graph</option>
                 <option <?php echo $outputFormat == "table" ? "selected" : ""; ?>>Table</option>
@@ -323,20 +332,24 @@ include_once('lib/header.php');
         buildUserAccountMenu('<?php echo $userId; ?>');
         buildLeftPanel();
         buildLeftPanelTest(<?php echo $frameworkId; ?>, '<?php echo $userId; ?>');
-        buildLeftPanelViews('<?php echo $testId; ?>', '<?php echo $compIds; ?>');
+        buildLeftPanelViews('<?php echo $testId; ?>', '<?php echo $compIds_orig; ?>');
         buildLeftPanelFramework('<?php echo $frameworkName; ?>', <?php echo $frameworkId; ?>);
         buildLeftPanelGlobal();
         <?php
         addFrameworkDropdownJS($db, $userId);
-        addTestResults("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds, $origTestData["execution_script_location"]);
+        addTestResults("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds_orig, $origTestData["execution_script_location"]);
         if(array_key_exists("execution",$origTestData)) {
             echo "createLabel('System Metrics')\n";
-            addSystemMetrics("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds, "exec");
+            addSystemMetrics("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds_orig, "exec");
         }
         if(array_key_exists("statistics",$origTestData)){
-            addSystemMetrics("test_data/$frameworkName/$testId/results", $origTestData["statistics"], $testId, $compIds, "stat");
+            addSystemMetrics("test_data/$frameworkName/$testId/results", $origTestData["statistics"], $testId, $compIds_orig, "stat");
         }
-        addLogs("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds);
+	$hosts['EXECHOST'] = $origTestData["execution"];
+	if (array_key_exists("statistics",$origTestData)) {
+            $hosts['STATHOST'] = $origTestData["statistics"];
+        }
+        addLogs("test_data/$frameworkName/$testId/results", $hosts, $testId, $compIds_orig);
         ?>
         loadNavigationBar();
         flushAllCharts();

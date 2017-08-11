@@ -1,6 +1,5 @@
 DAYTONA_SETUP_TEST,action,setupTest,T,to start a test,E
-DAYTONA_START_MONITOR,action,startMonitor,T,to start a test,E
-DAYTONA_STOP_MONITOR,action,stopMonitor,T,to start a test,E
+DAYTONA_STOP_TEST,action,stopTest,T,to stop a test,E
 DAYTONA_START_TEST,action,startTest,F,to start a test,E
 DAYTONA_ABORT_TEST,action,abortTest,T,to end a test,E
 DAYTONA_CLEANUP_TEST,action,cleanup,T,to end a test,E
