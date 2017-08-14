@@ -83,7 +83,7 @@ if ($userId){
     if (sizeof($file_paths) > 0){
         $file_name = basename($filename);
         $zipname = $file_name . "-" . str_replace(",","-",$testids) . ".zip";
-        $zippath = "/tmp/" . $zipname;
+	$zippath = sys_get_temp_dir() . "/" . $zipname;
         $zip = new ZipArchive;
         $zip->open($zippath, ZipArchive::CREATE);
         $counter = 0;

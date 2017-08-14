@@ -8,14 +8,14 @@ require('lib/auth.php');
 $allTestData = array();
 $testId = getParam('testid');
 if (!$testId) {
-    diePrint("No test ID passed in");
+    diePrint("No test ID passed in", "Error");
 }
 if (!is_numeric($testId)) {
-    diePrint("testid is not valid.");
+    diePrint("testid is not valid.", "Error");
 }
 $origTestData = getTestById($db, $testId, true);
 if (!$origTestData) {
-    diePrint("Could not find test ID: $testId");
+    diePrint("Could not find test ID: $testId", "Error");
 }
 $frameworkId = $origTestData['frameworkid'];
 $frameworkData = getFrameworkById($db, $frameworkId, true);
@@ -25,16 +25,16 @@ $testRunning = checkTestRunning($db, $testId);
 
 $compIds = getParam('compids');
 if ($compIds && ! preg_match('/^\d+(,\d+)*$/', $compIds)) {
-    diePrint("compids is not valid.");
+    diePrint("compids is not valid.", "Error");
 }
 if ($compIds) {
     foreach (explode(',', $compIds) as $compId) {
         $testData = getTestById($db, $compId, true);
         if (!$testData) {
-            diePrint("Could not find compare test ID: $compId");
+            diePrint("Could not find compare test ID: $compId", "Error");
         }
         if ($testData['frameworkname'] != $frameworkName) {
-            diePrint("Cannot compare test IDs from different frameworks.");
+            diePrint("Cannot compare test IDs from different frameworks.", "Error");
         }
         $allTestData[] = $testData;
     }
@@ -86,14 +86,17 @@ include_once('lib/header.php');
         </div>
         <div class="col-md-6 action-buttons-alt" id="action-buttons-div">
             <?php
+            $disable_run = "";
             $ownerAuthDisable = $origTestData["username"] == $userId ||
             $userIsAdmin ? "" : "disabled";
-	    $testRunning = $testRunning ? "disabled" : "";
+            $testRunning = $testRunning ? "disabled" : "";
             $disable = "";
             if ($testRunning === "disabled"){
                 $disable = "disabled";
             }elseif ($ownerAuthDisable === "disabled"){
                 $disable = "disabled";
+            }elseif ($origTestData["end_status"] === "imported") {
+                $disable_run = "disabled";
             }
             echo "    <button onclick=\"window.location='create_edit_test.php?action=edit&testid=$testId'\" class=\"btn btn-default btn-action\" $disable>\n";
             ?>
@@ -104,7 +107,7 @@ include_once('lib/header.php');
             ?>
             Clone
             </a>
-            <button type="button" class="btn btn-success btn-action" <?php echo "onclick='runTest($testId)' $disable"; ?>>
+            <button type="button" class="btn btn-success btn-action" <?php echo "onclick='runTest($testId)' $disable $disable_run"; ?>>
                 Run
             </button>
         </div>
@@ -127,7 +130,7 @@ include_once('lib/header.php');
                             <td class="active">Title</td>
                             <?php printRowFields($allTestData, 'title'); ?>
                         </tr>
-			<tr>
+                        <tr>
                             <td class="active">Owner</td>
                             <?php printRowFields($allTestData, 'username'); ?>
                         </tr>
@@ -224,7 +227,11 @@ include_once('lib/header.php');
                             }
                             foreach ($allTestData as $curTestData) {
                                 echo "            <td class='test-data-td'>";
-                                echo $curTestData['arguments'][$frameworkArg['framework_arg_id']]['value'];
+                                if (array_key_exists($frameworkArg['framework_arg_id'],$curTestData['arguments'])){
+                                    echo $curTestData['arguments'][$frameworkArg['framework_arg_id']]['value'];
+                                }else{
+                                    echo "";
+                                }
                                 echo "</td>\n";
                             }
                             echo "          </tr>\n";
@@ -234,43 +241,82 @@ include_once('lib/header.php');
                     </table>
                 </div>
             </div>
-        </div>
-        <div class="panel panel-info panel-sub-main">
-            <div class="panel-heading">
-                Strace Configuration
-            </div>
-            <div class="panel-body" id='zero-padding'>
-                <?php
-                if ($allTestData[0]['strace']){
-                    echo "<table class='table table-hover form-table'>";
-                    echo "<tbody>";
-                    echo "<tr>";
-                    echo "<td class=\"active\">Delay</td>";
-                    printRowFields($allTestData, 'strace_delay');
-                    echo "</tr>";
-                    echo "<tr>";
-                    echo "<td class=\"active\">Duration</td>";
-                    printRowFields($allTestData, 'strace_duration');
-                    echo "</tr>";
-		    echo "<tr>";
-                    echo "<td class=\"active\">Process Name</td>";
-                    printRowFields($allTestData, 'strace_process');
-                    echo "</tr>";
-                    echo "</tbody>";
-                    echo "</table>";
-                }else{
-                    echo "<h5 class='padding-left'>No STRACE configuration available</h5>";
+            <?php
+            $print_imported_args = false;
+            foreach ($allTestData as $curTestData) {
+                if (array_key_exists("imported_test_arg", $curTestData)) {
+                    $print_imported_args = true;
                 }
-                ?>
+            }
+            if ($print_imported_args) {
+                echo "    <div class='panel panel-info panel-sub-main'>\n";
+                echo "        <div class='panel-heading'>Imported Test Arguments</div>\n";
+                echo "        <div class='panel-body' id='zero-padding'>\n";
+                echo "            <table class='table table-hover' id='result-table'>\n";
+                echo "                <tbody>\n";
+                for ($i = 0; $i < count($allTestData); $i++) {
+                    $curTestData = $allTestData[$i];
+                    if (array_key_exists("imported_test_arg",$curTestData)) {
+                        foreach ($curTestData['imported_test_arg'] as $row){
+                            echo "          <tr>\n";
+                            echo "            <td class=\"active\">$row[arg_name]</td>\n";
+                            for ($j = 0; $j < count($allTestData); $j++) {
+                                if ($i == $j) {
+                                    echo "            <td class='test-data-td'>$row[arg_value]</td>\n";
+                                }else {
+                                    echo "            <td class='test-data-td'></td>\n";
+                                }
+                            }
+                        }
+
+
+                    }else {
+                        continue;
+                    }
+                }
+                echo "                </tbody>\n";
+                echo "            </table>\n";
+                echo "        </div>\n";
+                echo "    </div>\n";
+            }
+            ?>
+
+            <div class="panel panel-info panel-sub-main">
+                <div class="panel-heading">
+                    Strace Configuration
+                </div>
+                <div class="panel-body" id='zero-padding'>
+                    <?php
+                    if ($allTestData[0]['strace']){
+                        echo "<table class='table table-hover form-table'>";
+                        echo "<tbody>";
+                        echo "<tr>";
+                        echo "<td class=\"active\">Delay</td>";
+                        printRowFields($allTestData, 'strace_delay');
+                        echo "</tr>";
+                        echo "<tr>";
+                        echo "<td class=\"active\">Duration</td>";
+                        printRowFields($allTestData, 'strace_duration');
+                        echo "</tr>";
+                        echo "<tr>";
+                        echo "<td class=\"active\">Process Name</td>";
+                        printRowFields($allTestData, 'strace_process');
+                        echo "</tr>";
+                        echo "</tbody>";
+                        echo "</table>";
+                    }else{
+                        echo "<h5 class='padding-left'>No STRACE configuration available</h5>";
+                    }
+                    ?>
+                </div>
             </div>
-        </div>
-        <div class="panel panel-info panel-sub-main">
-            <div class="panel-heading">
-                PERF Configuration
-            </div>
-            <div class="panel-body" id='zero-padding'>
-                <table class='table table-hover form-table'>
-                    <tbody>
+            <div class="panel panel-info panel-sub-main">
+                <div class="panel-heading">
+                    PERF Configuration
+                </div>
+                <div class="panel-body" id='zero-padding'>
+                    <table class='table table-hover form-table'>
+                        <tbody>
                         <tr>
                             <td class="active">Delay</td>
                             <?php printRowFields($allTestData, 'perf_delay'); ?>
@@ -280,15 +326,16 @@ include_once('lib/header.php');
                             <?php printRowFields($allTestData, 'perf_duration'); ?>
                         </tr>
                         <?php
-                            if ($allTestData[0]['perf_process']){
-                                echo "<tr>";
-                                echo "<td class=\"active\">Process Name</td>";
-                                printRowFields($allTestData, 'perf_process');
-                                echo "</tr>";
-                            }
+                        if ($allTestData[0]['perf_process']){
+                            echo "<tr>";
+                            echo "<td class=\"active\">Process Name</td>";
+                            printRowFields($allTestData, 'perf_process');
+                            echo "</tr>";
+                        }
                         ?>
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -317,8 +364,8 @@ include_once('lib/header.php');
         if(array_key_exists("statistics",$origTestData)){
             addSystemMetrics("test_data/$frameworkName/$testId/results", $origTestData["statistics"], $testId, $compIds, "stat");
         }
-	$hosts['EXECHOST'] = $origTestData["execution"];
-	if (array_key_exists("statistics",$origTestData)) {
+        $hosts['EXECHOST'] = $origTestData["execution"];
+        if (array_key_exists("statistics",$origTestData)) {
             $hosts['STATHOST'] = $origTestData["statistics"];
         }
         addLogs("test_data/$frameworkName/$testId/results", $hosts, $testId, $compIds);
@@ -327,3 +374,4 @@ include_once('lib/header.php');
     });
 </script>
 <?php include_once('lib/footer.php'); ?>
+

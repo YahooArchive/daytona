@@ -848,10 +848,6 @@ div#div-content{
   color: #CC0000;
 }
 
-#zero-padding {
-  padding: 0px;
-}
-
 .test-data-td {
   text-align: left;
 }
@@ -973,22 +969,6 @@ div#search-div{
 
 #no-border-li{
   bottom-border: none;
-}
-
-.zero-margin {
-  margin: 0 !important;
-}
-
-.zero-padding {
-  padding: 0px; 
-}
-
-.tiny-padding {
-  padding: 3px !important;
-} 
-  
-.small-padding {
-  padding: 5px;
 }
   
 .admin-alert {

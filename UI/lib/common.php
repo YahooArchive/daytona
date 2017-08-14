@@ -151,6 +151,24 @@ function getTestById($db, $testId, $full=false) {
         array_push($testData[$row['name']], $row['hostname']);
     }
 
+    // Fetch imported test argument, if any
+    $query = "SELECT * FROM ImportedTestArgs WHERE testid=:testid";
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
+    $stmt->execute();
+
+    $old_testArgs = Array();
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $temp_arr = Array();
+        $temp_arr['arg_name'] = $row['arg_name'];
+        $temp_arr['arg_value'] = $row['arg_value'];
+        array_push($old_testArgs,$temp_arr);
+    }
+
+    if (count($old_testArgs) > 0) {
+        $testData['imported_test_arg'] = $old_testArgs;
+    }
+
     $query = "SELECT argument_value, framework_arg_id, widget_type FROM TestArgs JOIN ApplicationFrameworkArgs USING(framework_arg_id) WHERE testid = :testid ORDER BY testargid";
     $stmt = $db->prepare($query);
     $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);

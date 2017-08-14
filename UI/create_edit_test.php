@@ -213,7 +213,7 @@ include_once('lib/popup.php');
                                             case 'text':
                                                 echo "                <div class=\"form-group zero-line-height zero-margin\">\n";
                                                 echo "                  <input type='text' class='form-control form-input' name=\"f_arg_$argId\" id=\"f_arg_$argId\" value=\"";
-                                                if ($testData) {
+                                                if (array_key_exists($argId, $testData['arguments'])) {
                                                     echo $testData['arguments'][$argId]['value'];
                                                 } else {
                                                     echo $row['argument_default'];
@@ -226,7 +226,11 @@ include_once('lib/popup.php');
                                                     . "id=\"f_arg_$argId\" name=\"f_arg_$argId\" autocomplete=\"off\" required>\n";
 
                                                 $options = explode(',', $row['argument_values']);
-                                                $selected = $testData ? $testData['arguments'][$argId]['value'] : $row['argument_default'];
+						if (array_key_exists($argId, $testData['arguments'])) {
+                                                    $selected = $testData['arguments'][$argId]['value'];
+                                                }else {
+                                                    $selected = $row['argument_default'];
+                                                }
                                                 foreach($options as $opt) {
                                                     echo "                  <option value=\"$opt\""
                                                         . ($selected == $opt ? 'selected' : '')
