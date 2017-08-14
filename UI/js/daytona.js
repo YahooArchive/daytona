@@ -136,6 +136,12 @@ function buildUserAccountMenu(userId){
   $(userAccountSettingsLink).prepend(SettingsIcon);
   $(userAccountSettingsLi).append(userAccountSettingsLink);
   $(userAccountUl).append(userAccountSettingsLi);
+  var ImportExportLi = $("<li></li>");
+  var ImportExportLink = $("<a></a>").text(" Import/Export").attr("href", "/importexport.php");
+  var ImportExportIcon = $("<i></i>").addClass("fa fa-file-archive-o");
+  $(ImportExportLink).prepend(ImportExportIcon);
+  $(ImportExportLi).append(ImportExportLink);
+  $(userAccountUl).append(ImportExportLi);
   var userAccountLogoutLi = $("<li></li>");
   var userAccountLogoutLink = $("<a></a>").text(" Logout").attr("href", "/login.php?logout=1")
   var logoutIcon = $("<i></i>").addClass("fa fa-sign-out");

@@ -273,6 +273,7 @@ function save_test($db,$state='new') {
     $isNewTest = $testId ? false : true;
 
     // Validate test exists if updating
+    $imported_test = false;
     if ($testId) {
         $testData = getTestById($db, $testId);
         if (!$testData) {
@@ -280,6 +281,9 @@ function save_test($db,$state='new') {
         }
         if (!$userIsAdmin && $testData['username'] != $userId) {
             returnError("You are not the test owner (" . $testData['username'] . ")");
+	}
+        if ($testData['end_status'] === "imported") {
+            $imported_test = true;
         }
     }
 
@@ -338,11 +342,17 @@ function save_test($db,$state='new') {
             returnError("No test ID generated.");
         }
 
+	// Delete all imported test arguments associated with this testid, if any
+        $query = "DELETE FROM ImportedTestArgs WHERE testid = :testid";
+        $stmt = $db->prepare($query);
+        $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
+        $stmt->execute();
+
         // Insert arguments
         foreach ($argRows as $arg) {
             $argId = $arg['framework_arg_id'];
             $argValue = getParam("f_arg_$argId", 'POST');
-            if ($isNewTest) {
+            if ($isNewTest or $imported_test) {
                 $query = "INSERT INTO TestArgs ( argument_value, framework_arg_id, testid ) VALUES ( :argument_value, :framework_arg_id, :testid )";
             } else {
                 $query = "UPDATE TestArgs set argument_value = :argument_value WHERE framework_arg_id = :framework_arg_id AND testid = :testid";

@@ -119,7 +119,7 @@
 }
 
 .zero-padding {
-  padding: 0px;~
+  padding: 0px;
 }
 
 .tiny-padding {
@@ -128,6 +128,14 @@
 
 .small-padding {
   padding: 5px; 
+}
+
+.medium-padding {
+  padding: 7px !important;
+}
+
+.large-padding {
+  padding: 10px !important;
 }
 
 .float-left {
@@ -326,3 +334,31 @@ table.table.table-hover.form-table {
 .tooltip {
         overflow-wrap: break-word;
 }
+
+.div-tab{
+  text-align: left;
+  padding-left: 10px;
+}
+
+.nav-tabs>li {
+  margin-bottom:-3px;
+}
+
+.nav-tabs>li>a {
+  padding: 0px;
+}
+
+#import-export-panel{
+  margin: 7px 10px 7px 10px !important;
+}
+
+.nav-tabs>li.active>a, .nav-tabs>li.active>a:focus, .nav-tabs>li.active>a:hover {
+  border: 2px solid #bce8f1;
+  border-bottom-color: transparent;
+}
+
+.tab-content{
+  margin: 0px 0px 0px 10px;
+  border: 2px solid #bce8f1
+}
+
