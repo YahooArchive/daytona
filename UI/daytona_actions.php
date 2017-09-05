@@ -242,6 +242,9 @@ function delete_framework($db) {
         $stmt->bindValue(':frameworkid', $frameworkId, PDO::PARAM_INT);
         $stmt->execute();
 
+	$framework_test_logs_path = "test_data/" . $frameworkData['frameworkname'];
+        recursive_rmdir($framework_test_logs_path);
+
         $db->commit();
     } catch(PDOException $e) {
         // All updates will be discarded if there are any fatal errors
@@ -549,6 +552,9 @@ function delete_test($db) {
         $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
         $stmt->execute();
 
+	$test_logs_path = "test_data/" . $frameworkData['frameworkname'] . "/" . $testId;
+        recursive_rmdir($test_logs_path);
+
         $db->commit();
     } catch(PDOException $e) {
         // All updates will be discarded if there are any fatal errors
@@ -589,17 +595,21 @@ function delete_tests($db) {
         if (!$userIsAdmin && $userId != $testData['username']) {
             returnError("You are not the test owner for test: $testId");
         }
+
+	$test_logs_path = "test_data/" . $frameworkData['frameworkname'] . "/" . $testId;
+        recursive_rmdir($test_logs_path);
     }
 
     try {
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $db->beginTransaction();
-        $query = "DELETE FROM TestInputData WHERE FIND_IN_SET(testid, :array)";
 
+	$query = "DELETE FROM TestInputData WHERE testid = :testid";
         $stmt = $db->prepare($query);
-        $stmt->bindParam(':array', implode(',', $testIds));
-        $stmt->execute();
-
+        foreach ($testIds as $testId) {
+            $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
+            $stmt->execute();
+        }
         $db->commit();
     } catch(PDOException $e) {
         // All updates will be discarded if there are any fatal errors
@@ -607,7 +617,13 @@ function delete_tests($db) {
         returnError("MySQL error: " . $e->getMessage());
     }
 
-    return array();
+    return array(
+        'test' => array(
+            'frameworkid' => $testData['frameworkid'],
+            'testid'      => $testId,
+            'deleted'     => true
+        )
+    );
 }
 
 function set_user_frameworks($db) {
