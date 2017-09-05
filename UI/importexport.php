@@ -42,11 +42,13 @@ if (isset($action_type)){
         }
         export_framework($framework);
     } elseif ($action_type == 'import') {
-        if (!isset($framework) or !is_uploaded_file($file['tmp_name'])) {
-            diePrint("Select framework or upload tar file", "Form Error");
-        }elseif (!in_array($framework,$frameworks_arr)){
+	if (!isset($framework)) {
+            diePrint("Framework not selected", "Form Error");
+        } elseif (!is_uploaded_file($file['tmp_name'])) {
+            diePrint("Error in file upload : " . "Error code { " . $file['error'] ." }", "Form Error");
+        } elseif (!in_array($framework,$frameworks_arr)){
             diePrint("Invalid framework detail provided or you are not the framework owner", "Error");
-        }elseif ($file['type'] !== "application/zip") {
+        } elseif ($file['type'] !== "application/zip") {
             diePrint("Only upload zip file", "Form Error");
         }
         import_framework($framework, $file);

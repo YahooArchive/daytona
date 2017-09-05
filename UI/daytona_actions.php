@@ -349,15 +349,17 @@ function save_test($db,$state='new') {
         $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
         $stmt->execute();
 
+	// Delete all previous values of test arguments associated with this test as we are going to enter all new values with insert sql statement
+	$query = "DELETE FROM TestArgs WHERE testid = :testid";
+        $stmt = $db->prepare($query);
+        $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
+        $stmt->execute();
+
         // Insert arguments
-        foreach ($argRows as $arg) {
+	foreach ($argRows as $arg) {
             $argId = $arg['framework_arg_id'];
             $argValue = getParam("f_arg_$argId", 'POST');
-            if ($isNewTest or $imported_test) {
-                $query = "INSERT INTO TestArgs ( argument_value, framework_arg_id, testid ) VALUES ( :argument_value, :framework_arg_id, :testid )";
-            } else {
-                $query = "UPDATE TestArgs set argument_value = :argument_value WHERE framework_arg_id = :framework_arg_id AND testid = :testid";
-            }
+            $query = "INSERT INTO TestArgs ( argument_value, framework_arg_id, testid ) VALUES ( :argument_value, :framework_arg_id, :testid )";
             $stmt = $db->prepare($query);
             $stmt->bindValue(':argument_value', $argValue, PDO::PARAM_STR);
             $stmt->bindValue(':framework_arg_id', $argId, PDO::PARAM_INT);
