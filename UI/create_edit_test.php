@@ -15,26 +15,26 @@ if (! preg_match('/^(create|clone|edit)$/', $action)) {
 $testData = null;
 if ($action == 'create') {
     if (! $frameworkId) {
-        diePrint("No framework passed in");
+        diePrint("No framework passed in", "Error");
     }
     $testId = null;
 } else {
     // Edit or Clone
     $testId = getParam('testid');
     if (! $testId) {
-        diePrint("No test ID passed in");
+        diePrint("No test ID passed in", "Error");
     }
 
     $testData = getTestById($db, $testId, true);
     if (!$testData) {
-        diePrint("Could not find test ID: $testId");
+        diePrint("Could not find test ID: $testId", "Error");
     }
     $frameworkId = $testData['frameworkid'];
     $frameworkName = $testData['frameworkname'];
     $frameworkData = getFrameworkById($db, $frameworkId, true);
 
     if (! $frameworkData) {
-        diePrint("Could not find framework: $frameworkName ($frameworkId)");
+        diePrint("Could not find framework: $frameworkName ($frameworkId)", "Error");
     }
 
     if ($action == 'clone') {

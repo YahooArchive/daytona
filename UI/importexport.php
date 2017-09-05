@@ -42,11 +42,13 @@ if (isset($action_type)){
         }
         export_framework($framework);
     } elseif ($action_type == 'import') {
-        if (!isset($framework) or !is_uploaded_file($file['tmp_name'])) {
-            diePrint("Select framework or upload tar file", "Form Error");
-        }elseif (!in_array($framework,$frameworks_arr)){
+	if (!isset($framework)) {
+            diePrint("Framework not selected", "Form Error");
+        } elseif (!is_uploaded_file($file['tmp_name'])) {
+            diePrint("Error in file upload : " . "Error code { " . $file['error'] ." }", "Form Error");
+        } elseif (!in_array($framework,$frameworks_arr)){
             diePrint("Invalid framework detail provided or you are not the framework owner", "Error");
-        }elseif ($file['type'] !== "application/zip") {
+        } elseif ($file['type'] !== "application/zip") {
             diePrint("Only upload zip file", "Form Error");
         }
         import_framework($framework, $file);
@@ -320,43 +322,6 @@ function import_framework($framework_name, $file){
         $db->rollBack();
         diePrint($err, "Error");
     }
-}
-
-// Copy command just handles files hence using this recurse_copy snippet from PHP manual for recursive copy
-// Reference : http://php.net/manual/en/function.copy.php
-function recurse_copy($src, $dst) {
-    $dir = opendir($src);
-    @mkdir($dst);
-    while(false !== ( $file = readdir($dir)) ) {
-        if (( $file != '.' ) && ( $file != '..' )) {
-            if ( is_dir($src . '/' . $file) ) {
-                recurse_copy($src . '/' . $file,$dst . '/' . $file);
-            }
-            else {
-                copy($src . '/' . $file,$dst . '/' . $file);
-            }
-        }
-    }
-    closedir($dir);
-}
-
-// rmdir delete directory only if it is empty hence using this snippet from PHP manual for recursive del
-// Reference : http://www.php.net/rmdir
-function recursive_rmdir($src) {
-    $dir = opendir($src);
-    while(false !== ( $file = readdir($dir)) ) {
-        if (( $file != '.' ) && ( $file != '..' )) {
-            $full = $src . '/' . $file;
-            if ( is_dir($full) ) {
-                recursive_rmdir($full);
-            }
-            else {
-                unlink($full);
-            }
-        }
-    }
-    closedir($dir);
-    rmdir($src);
 }
 
 include_once('lib/header.php');

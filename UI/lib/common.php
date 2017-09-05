@@ -254,7 +254,7 @@ function addTestResults($path, $hosts, $testid, $compids, $exec_script) {
         echo "createTestResultsRoot()\n";
     }
     foreach ($hosts as $key=>$host) {
-        $files = glob("$path/$host/*[.plt|.csv|.txt]");
+        $files = glob("$path/$host/*.{plt,csv,txt}", GLOB_BRACE);
         foreach ($files as $file) {
             $ex_file = explode("/", $file);
             echo "  fillTestResults('$testid', '$compids', '" . end($ex_file) . "', '$file', '$key');\n";
@@ -271,7 +271,7 @@ function addSystemMetrics($path, $hosts, $testid, $compids, $label) {
         }else{
             echo "  fillSystemMetricsHost('$host','$key');\n";
         }
-        $files = glob("$path/$host/sar/*[.plt|.csv|.txt]");
+        $files = glob("$path/$host/*.{plt,csv,txt}", GLOB_BRACE);
         foreach ($files as $file) {
             $ex_file = explode("/", $file);
             echo "  fillSystemMetrics('$testid', '$compids', '" . end($ex_file) . "', '$file', '$key', '$label');\n";
@@ -288,13 +288,13 @@ function addLogs($path, $hosts, $testid, $compids) {
     foreach ($hosts as $hosttype=>$hosts_info) {
         foreach ($hosts_info as $key=>$host) {
             $filepath = '%'. $hosttype .',' . $key . '%/';
-            $files = glob("$path/$host/*[.log]");
+            $files = glob("$path/$host/*.{log}", GLOB_BRACE);
             foreach ($files as $file) {
                 $ex_file = explode("/", $file);
                 echo "  fillLogs('$testid', '$compids', '" . end($ex_file) . "', '$file', '$filepath');\n";
             }
             $filepath = '%'. $hosttype .',' . $key . '%/application/';
-            $files = glob("$path/$host/application/*[.log]");
+            $files = glob("$path/$host/application/*.{log}", GLOB_BRACE);
             foreach ($files as $file) {
                 $ex_file = explode("/", $file);
                 echo "  fillLogs('$testid', '$compids', '" . end($ex_file) . "', '$file', '$filepath');\n";
@@ -486,6 +486,43 @@ function sanitize_input($data) {
         $data = htmlspecialchars($data);
     }
     return $data;
+}
+
+// Copy command just handles files hence using this recurse_copy snippet from PHP manual for recursive copy
+// Reference : http://php.net/manual/en/function.copy.php
+function recurse_copy($src, $dst) {
+    $dir = opendir($src);
+    @mkdir($dst);
+    while(false !== ( $file = readdir($dir)) ) {
+        if (( $file != '.' ) && ( $file != '..' )) {
+            if ( is_dir($src . '/' . $file) ) {
+                recurse_copy($src . '/' . $file,$dst . '/' . $file);
+            }
+            else {
+                copy($src . '/' . $file,$dst . '/' . $file);
+            }
+        }
+    }
+    closedir($dir);
+}
+
+// rmdir delete directory only if it is empty hence using this snippet from PHP manual for recursive del
+// Reference : http://www.php.net/rmdir
+function recursive_rmdir($src) {
+    $dir = opendir($src);
+    while(false !== ( $file = readdir($dir)) ) {
+        if (( $file != '.' ) && ( $file != '..' )) {
+            $full = $src . '/' . $file;
+            if ( is_dir($full) ) {
+                recursive_rmdir($full);
+            }
+            else {
+                unlink($full);
+            }
+        }
+    }
+    closedir($dir);
+    rmdir($src);
 }
 
 ?>

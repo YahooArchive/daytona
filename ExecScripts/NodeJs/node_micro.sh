@@ -15,7 +15,7 @@ numcpu=`echo $7 | sed "s/\"//g"`
 cpuloop=`echo $8 | sed "s/\"//g"`
 
 # Start Node processes
-/tmp/ExecScripts/node_micro.js $numcpu $cpuloop &
+./NodeJs/node_micro.js $numcpu $cpuloop &
 sleep 10
 
 # Run Node.js micro benchmark with wrk as the load generator

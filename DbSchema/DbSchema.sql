@@ -218,6 +218,22 @@ INSERT INTO `HostAssociationType` VALUES (1,100,'execution',0,1,0,'ip-172-31-11-
 UNLOCK TABLES;
 
 --
+-- Table structure for table `ImportedTestArgs`
+--
+
+DROP TABLE IF EXISTS `ImportedTestArgs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `ImportedTestArgs` (
+  `testid` int(11) NOT NULL,
+  `arg_name` varchar(128) NOT NULL,
+  `arg_value` varchar(128) NOT NULL,
+  KEY `testid_idx` (`testid`),
+  CONSTRAINT `ImportedTestArgs_fk_testid` FOREIGN KEY (`testid`) REFERENCES `TestInputData` (`testid`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `LoginAuthentication`
 --
 
@@ -240,7 +256,7 @@ CREATE TABLE `LoginAuthentication` (
 
 LOCK TABLES `LoginAuthentication` WRITE;
 /*!40000 ALTER TABLE `LoginAuthentication` DISABLE KEYS */;
-INSERT INTO `LoginAuthentication` VALUES ('admin','$2y$10$aoARhNSvoVxuCe.0nsJ6SOrLiXlFat2X38W/WPwY.25MhyqqGPyuO','','admin@daytona.com','Active');
+INSERT INTO `LoginAuthentication` VALUES ('admin','','^A','admin@daytona.com','Active');
 /*!40000 ALTER TABLE `LoginAuthentication` ENABLE KEYS */;
 UNLOCK TABLES;
 

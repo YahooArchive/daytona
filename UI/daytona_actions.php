@@ -222,8 +222,9 @@ function delete_framework($db) {
     if (! $frameworkData) {
         returnError("Could not find framework ID: $frameworkId");
     }
-    if (!$userIsAdmin) {
-        returnError("You are not an administrator, you may not delete frameworks");
+
+    if (!$userIsAdmin && $frameworkData['frameworkowner'] !== $userId) {
+        returnError("You are not an administrator or framework owner, you cannot delete this framework");
     }
 
     // DB is properly set up so if you delete the main framework configuration
@@ -240,6 +241,9 @@ function delete_framework($db) {
         $stmt = $db->prepare($query);
         $stmt->bindValue(':frameworkid', $frameworkId, PDO::PARAM_INT);
         $stmt->execute();
+
+	$framework_test_logs_path = "test_data/" . $frameworkData['frameworkname'];
+        recursive_rmdir($framework_test_logs_path);
 
         $db->commit();
     } catch(PDOException $e) {
@@ -348,15 +352,17 @@ function save_test($db,$state='new') {
         $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
         $stmt->execute();
 
+	// Delete all previous values of test arguments associated with this test as we are going to enter all new values with insert sql statement
+	$query = "DELETE FROM TestArgs WHERE testid = :testid";
+        $stmt = $db->prepare($query);
+        $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
+        $stmt->execute();
+
         // Insert arguments
-        foreach ($argRows as $arg) {
+	foreach ($argRows as $arg) {
             $argId = $arg['framework_arg_id'];
             $argValue = getParam("f_arg_$argId", 'POST');
-            if ($isNewTest or $imported_test) {
-                $query = "INSERT INTO TestArgs ( argument_value, framework_arg_id, testid ) VALUES ( :argument_value, :framework_arg_id, :testid )";
-            } else {
-                $query = "UPDATE TestArgs set argument_value = :argument_value WHERE framework_arg_id = :framework_arg_id AND testid = :testid";
-            }
+            $query = "INSERT INTO TestArgs ( argument_value, framework_arg_id, testid ) VALUES ( :argument_value, :framework_arg_id, :testid )";
             $stmt = $db->prepare($query);
             $stmt->bindValue(':argument_value', $argValue, PDO::PARAM_STR);
             $stmt->bindValue(':framework_arg_id', $argId, PDO::PARAM_INT);
@@ -546,6 +552,9 @@ function delete_test($db) {
         $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
         $stmt->execute();
 
+	$test_logs_path = "test_data/" . $frameworkData['frameworkname'] . "/" . $testId;
+        recursive_rmdir($test_logs_path);
+
         $db->commit();
     } catch(PDOException $e) {
         // All updates will be discarded if there are any fatal errors
@@ -586,17 +595,21 @@ function delete_tests($db) {
         if (!$userIsAdmin && $userId != $testData['username']) {
             returnError("You are not the test owner for test: $testId");
         }
+
+	$test_logs_path = "test_data/" . $frameworkData['frameworkname'] . "/" . $testId;
+        recursive_rmdir($test_logs_path);
     }
 
     try {
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $db->beginTransaction();
-        $query = "DELETE FROM TestInputData WHERE FIND_IN_SET(testid, :array)";
 
+	$query = "DELETE FROM TestInputData WHERE testid = :testid";
         $stmt = $db->prepare($query);
-        $stmt->bindParam(':array', implode(',', $testIds));
-        $stmt->execute();
-
+        foreach ($testIds as $testId) {
+            $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
+            $stmt->execute();
+        }
         $db->commit();
     } catch(PDOException $e) {
         // All updates will be discarded if there are any fatal errors
@@ -604,7 +617,13 @@ function delete_tests($db) {
         returnError("MySQL error: " . $e->getMessage());
     }
 
-    return array();
+    return array(
+        'test' => array(
+            'frameworkid' => $testData['frameworkid'],
+            'testid'      => $testId,
+            'deleted'     => true
+        )
+    );
 }
 
 function set_user_frameworks($db) {

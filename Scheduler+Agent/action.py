@@ -96,7 +96,7 @@ class commandThread(threading.Thread):
         lctx.debug(self.cmd)
         ca = self.cmd.split(" ")
         lctx.debug(ca)
-        p = subprocess.Popen(ca, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.cwd, preexec_fn=os.setsid)
+	p = subprocess.Popen(ca, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=self.cwd, preexec_fn=os.setsid)
 	exec_script_lock.acquire()
         exec_script_pid[self.testid] = p
         exec_script_lock.release()
