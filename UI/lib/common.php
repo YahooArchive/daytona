@@ -254,7 +254,7 @@ function addTestResults($path, $hosts, $testid, $compids, $exec_script) {
         echo "createTestResultsRoot()\n";
     }
     foreach ($hosts as $key=>$host) {
-        $files = glob("$path/$host/*[.plt|.csv|.txt]");
+        $files = glob("$path/$host/*.{plt,csv,txt}", GLOB_BRACE);
         foreach ($files as $file) {
             $ex_file = explode("/", $file);
             echo "  fillTestResults('$testid', '$compids', '" . end($ex_file) . "', '$file', '$key');\n";
@@ -271,7 +271,7 @@ function addSystemMetrics($path, $hosts, $testid, $compids, $label) {
         }else{
             echo "  fillSystemMetricsHost('$host','$key');\n";
         }
-        $files = glob("$path/$host/sar/*[.plt|.csv|.txt]");
+        $files = glob("$path/$host/*.{plt,csv,txt}", GLOB_BRACE);
         foreach ($files as $file) {
             $ex_file = explode("/", $file);
             echo "  fillSystemMetrics('$testid', '$compids', '" . end($ex_file) . "', '$file', '$key', '$label');\n";
@@ -288,13 +288,13 @@ function addLogs($path, $hosts, $testid, $compids) {
     foreach ($hosts as $hosttype=>$hosts_info) {
         foreach ($hosts_info as $key=>$host) {
             $filepath = '%'. $hosttype .',' . $key . '%/';
-            $files = glob("$path/$host/*[.log]");
+            $files = glob("$path/$host/*.{log}", GLOB_BRACE);
             foreach ($files as $file) {
                 $ex_file = explode("/", $file);
                 echo "  fillLogs('$testid', '$compids', '" . end($ex_file) . "', '$file', '$filepath');\n";
             }
             $filepath = '%'. $hosttype .',' . $key . '%/application/';
-            $files = glob("$path/$host/application/*[.log]");
+            $files = glob("$path/$host/application/*.{log}", GLOB_BRACE);
             foreach ($files as $file) {
                 $ex_file = explode("/", $file);
                 echo "  fillLogs('$testid', '$compids', '" . end($ex_file) . "', '$file', '$filepath');\n";
