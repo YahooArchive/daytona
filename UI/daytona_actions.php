@@ -222,8 +222,9 @@ function delete_framework($db) {
     if (! $frameworkData) {
         returnError("Could not find framework ID: $frameworkId");
     }
-    if (!$userIsAdmin) {
-        returnError("You are not an administrator, you may not delete frameworks");
+
+    if (!$userIsAdmin && $frameworkData['frameworkowner'] !== $userId) {
+        returnError("You are not an administrator or framework owner, you cannot delete this framework");
     }
 
     // DB is properly set up so if you delete the main framework configuration

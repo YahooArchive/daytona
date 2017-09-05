@@ -184,9 +184,8 @@ include_once('lib/popup.php');
                         $ownerAuthDisable = $frameworkData['frameworkowner'] == $userId ||
                         $action != "edit" ||
                         $userIsAdmin ? "" : "disabled";
-                        $adminAuthDisable = $userIsAdmin ? "" : "disabled";
                         if ($action == 'edit') {
-                            echo "    <button type=\"button\" class=\"btn btn-danger btn-action\" data-toggle=\"modal\" data-target=\"#confirm-delete\" id=\"delete-button\" $adminAuthDisable>";
+                            echo "    <button type=\"button\" class=\"btn btn-danger btn-action\" data-toggle=\"modal\" data-target=\"#confirm-delete\" id=\"delete-button\" $ownerAuthDisable>";
                             echo "      Delete\n";
                             echo "    </a>\n";
                         }
