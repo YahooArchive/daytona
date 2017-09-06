@@ -258,32 +258,43 @@ include_once('lib/header.php');
             foreach ($allTestData as $curTestData) {
                 if (array_key_exists("imported_test_arg", $curTestData)) {
                     $print_imported_args = true;
+                    break;
                 }
             }
+            // Merging imported test arguments from different tests, this is to consolidate display of test arguments
+            // having same set of arguments
+            $imported_arg_map = array();
             if ($print_imported_args) {
+                foreach ($allTestData as $curTestData) {
+                    if (array_key_exists("imported_test_arg", $curTestData)) {
+                        foreach ($curTestData['imported_test_arg'] as $row) {
+                            if (array_key_exists($row['arg_name'], $imported_arg_map)) {
+                                $imported_arg_map[$row['arg_name']][$curTestData['testid']] = $row['arg_value'];
+                            }else {
+                                $imported_arg_map[$row['arg_name']] = array();
+                                $imported_arg_map[$row['arg_name']][$curTestData['testid']] = $row['arg_value'];
+                            }
+                        }
+                    }
+                }
                 echo "    <div class='panel panel-info panel-sub-main'>\n";
                 echo "        <div class='panel-heading'>Imported Test Arguments</div>\n";
                 echo "        <div class='panel-body' id='zero-padding'>\n";
                 echo "            <table class='table table-hover' id='result-table'>\n";
                 echo "                <tbody>\n";
-                for ($i = 0; $i < count($allTestData); $i++) {
-                    $curTestData = $allTestData[$i];
-                    if (array_key_exists("imported_test_arg", $curTestData)) {
-                        foreach ($curTestData['imported_test_arg'] as $row) {
-                            echo "          <tr>\n";
-                            echo "            <td class=\"active\">$row[arg_name]</td>\n";
-                            for ($j = 0; $j < count($allTestData); $j++) {
-                                if ($i == $j) {
-                                    echo "            <td class='test-data-td'>$row[arg_value]</td>\n";
-                                } else {
-                                    echo "            <td class='test-data-td'></td>\n";
-                                }
-                            }
+                // One row for each argument and if that argument value exist for a particular test then it will be
+                // displayed in respective column
+                foreach ($imported_arg_map as $imported_arg=>$imported_arg_array) {
+                    echo "          <tr>\n";
+                    echo "            <td class=\"active\">$imported_arg</td>\n";
+                    for ($j = 0; $j < count($allTestData); $j++) {
+                        $curr_testid = $allTestData[$j];
+                        if (array_key_exists($curr_testid['testid'], $imported_arg_array)) {
+                            $arg_value = $imported_arg_array[$curr_testid['testid']];
+                            echo "            <td class='test-data-td'>$arg_value</td>\n";
+                        }else {
+                            echo "            <td class='test-data-td'></td>\n";
                         }
-
-
-                    } else {
-                        continue;
                     }
                 }
                 echo "                </tbody>\n";
