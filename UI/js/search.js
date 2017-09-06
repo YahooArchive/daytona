@@ -10,6 +10,20 @@ function submitBasicCompare() {
     if(checkboxes.length <= 0) {
         return;
     }
+
+    var width = $( window ).width();
+    if (width < 768){
+        if (checkboxes.length > 2){
+            alert("On this device only 2 test comparison is allowed");
+            return;
+        }
+    }else{
+        if (checkboxes.length > 4){
+            alert("Maximum 4 test can be compared - Please remove some test from comparison.");
+            return;
+        }
+    }
+
     var compareStr = "";
     for(var i = 1; i < checkboxes.length; ++i) {
         if(i == 1) {
@@ -30,6 +44,20 @@ function submitAdvanceCompare() {
     if(checkboxes.length <= 0) {
         return;
     }
+
+    var width = $( window ).width();
+    if (width < 768){
+        if (checkboxes.length > 2){
+            alert("On this device only 2 test comparison is allowed");
+            return;
+        }
+    }else{
+        if (checkboxes.length > 4){
+            alert("Maximum 4 test can be compared - Please remove some test from comparison.");
+            return;
+        }
+    }
+
     var compareStr = "";
     for(var i = 1; i < checkboxes.length; ++i) {
         if(i == 1) {
