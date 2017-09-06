@@ -1,3 +1,8 @@
+/**
+ * This function implements all JQuery components used in create_edit_test.php, It submit PHP form for saving test data.
+ * It also implement some dynamic UI component creation and destruction based on user's selection
+ */
+
 $(document).ready(function() {
 
     $('#test-form #button-save-run').on('click', function(evt) {

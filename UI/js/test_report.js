@@ -1,9 +1,15 @@
+/**
+ * This file implement various function related to graph rendering
+ */
+
+// For collapsing all panel on output and test report page
 function collapseAllGraph() {
     $(".graph-panel").each(function(d){
         $(this).removeClass('in');
     });
 }
 
+// For expanding all panel on output and test report page
 function expandAllGraph() {
     $(".graph-panel").each(function(d){
         $(this).addClass('in');
@@ -15,6 +21,7 @@ function formatDec(val) {
     return Math.round(val * 10000) / 10000;
 }
 
+// This function actually build graph component inside graph panel identified by graphid
 function buildGraph(json_data, col_name, metric_json, x_value ,xs_json ,title, graphid){
     var graph_data = JSON.parse(json_data);
     var col_array = JSON.parse(col_name);
@@ -22,12 +29,15 @@ function buildGraph(json_data, col_name, metric_json, x_value ,xs_json ,title, g
     var xs = JSON.parse(xs_json);
     title = title.replace(/"/g, "");
 
+    // Creates c3 graph
     var chart = drawNormalGrpah(graphid,x_value,xs,graph_data);
 
+    // defining toggle function for toggling any graph row
     function toggle(id) {
         chart.toggle(id);
     }
 
+    // Create bottom section of the graph which provide different stats like Min, Max and Avg
     d3.select("#c3footer" + graphid).insert('tbody', '.chart')
         .attr('class', 'graph-legend')
         .selectAll('tr')
@@ -63,7 +73,7 @@ function buildGraph(json_data, col_name, metric_json, x_value ,xs_json ,title, g
         });
 
     $('#c3item' + graphid).data("c3-chart",chart);
-
+    // Create Zoom link for zooming this graph in separate big panel
     var zoomLink = $("<a></a>").addClass("search-plus")
         .attr("href", "#")
         .click(function() {
@@ -76,6 +86,7 @@ function buildGraph(json_data, col_name, metric_json, x_value ,xs_json ,title, g
     var zoomImg = $("<i></i>").addClass("fa fa-search-plus").attr('title','Graph Zoom Mode');
     $(zoomLink).append(zoomImg);
 
+    // This link toggles all the graph data
     var toggleLink = $("<a></a>").addClass("toggle-button")
         .attr("href", "#")
         .click(function() {
@@ -85,6 +96,7 @@ function buildGraph(json_data, col_name, metric_json, x_value ,xs_json ,title, g
     var toggleImg = $("<i></i>").addClass("fa fa-toggle-on").attr('id','toggle-active' + graphid).attr('title','Toggle Graph');
     $(toggleLink).append(toggleImg);
 
+    // Convert main graph into sub chart for inspecting graph closely
     var subGraphLink = $("<a></a>").addClass("subgraph-button")
         .attr("href", "#")
         .click(function() {
@@ -102,6 +114,7 @@ function buildGraph(json_data, col_name, metric_json, x_value ,xs_json ,title, g
 
 }
 
+// This function creates normal graph and return chart object
 function drawNormalGrpah(graphid,x_value,xs,graph_data){
 
     var width = $( window ).width();
@@ -165,6 +178,7 @@ function drawNormalGrpah(graphid,x_value,xs,graph_data){
 
 }
 
+// This function create graph with sub-chart for closer inspection
 function drawNormalSubGrpah(graphid,x_value,xs,graph_data){
 
     var width = $( window ).width();
@@ -231,6 +245,7 @@ function drawNormalSubGrpah(graphid,x_value,xs,graph_data){
 
 }
 
+// Toggle graph data and graph display
 function toggleAll(chart, graphid){
     var toggle_element = '#toggle-active' + graphid;
     var toggle = $(toggle_element).attr("class");
@@ -255,6 +270,7 @@ function toggleAll(chart, graphid){
     }
 }
 
+// This is a toggle function of switching graph display from normal graph to sub graph or vice versa
 function CreateSubGraph(graphid, x_value, xs, graph_data){
 
     var graph_element = '#subgraph-active' + graphid;
@@ -284,7 +300,7 @@ function CreateSubGraph(graphid, x_value, xs, graph_data){
     return chart;
 }
 
-
+// Design UI panel for displaying Graph error message
 function buildGraphErrorView(text, graphid, title, error_type, div_id){
     if(error_type == '1'){
         var pGraph = $("<div></div>").addClass("c3-graph-panel")
@@ -323,7 +339,7 @@ function buildGraphErrorView(text, graphid, title, error_type, div_id){
     }
 }
 
-
+// This function create graph zoom view in separate modal panel
 function buildGraphZoomJson(xs, x_value, columns, metrics_arr, id_arr) {
     var width = $( window ).width();
     var tick_count;
@@ -443,6 +459,7 @@ function buildGraphZoomJson(xs, x_value, columns, metrics_arr, id_arr) {
     $('#zoom-body').data("c3-chart",chart);
 }
 
+// Function for toggling graph row
 function toggleRow(referer) {
     if($(referer).hasClass("cut-opacity")) {
         $(referer).removeClass("cut-opacity");

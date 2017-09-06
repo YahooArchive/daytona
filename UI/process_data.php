@@ -1,16 +1,26 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: dmittal
- * Date: 1/31/17
- * Time: 2:14 PM
+ * This file is used for processing log files in order to provide processed data to client's browser for file rendering.
+ * With server side data processing load on client's browser for rendering log file is very less. We provide
+ * processed data in JSON format to browser which then use by c3js library for rendering.
  */
 
 
 $div_id = 1;
 $header_validity = array();
 
-function verifyPltContentForGraph($file){
+/**
+ * This function verifies the PLT content for checking if each row start with timestamp and all subsequent values are
+ * numeric. Also set global variable header_validity which keeps track of all the columns in a PLT file
+ *
+ * @param $file - Input PLT file path which we are validating
+ *
+ * @return int $ret_code - which is return code where 0 denotes file is valid, 1 denotes that column 1 is not timestamp and
+ * 2 denotes that file doesn't exists.
+ */
+
+function verifyPltContentForGraph($file)
+{
     global $header_validity;
     $ret_code = 0;
     $time_regex = '/^(\d{4})-(\d{2})-(\d{2})T(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])Z$/';
@@ -19,61 +29,93 @@ function verifyPltContentForGraph($file){
     $header_validity = array();
     $column_name = array();
     $valid_path = validate_file_path($file);
-    if ($valid_path === false){
+    if ($valid_path === false) {
         $ret_code = 3;
         return $ret_code;
     }
     $handle = fopen($file, "r");
-    if ($handle){
+    if ($handle) {
         while (($line = fgets($handle)) !== false) {
             $line_arr = explode(',', $line);
-            if($process_header){
-                for($i=0; $i<sizeof($line_arr); $i++){
-                    $col = str_replace("\r\n",'', $line_arr[$i]);
-                    $col = str_replace("\n",'', $col);
-		    $col = str_replace('"','', $col);
+            if ($process_header) {
+                for ($i = 0; $i < sizeof($line_arr); $i++) {
+                    $col = str_replace("\r\n", '', $line_arr[$i]);
+                    $col = str_replace("\n", '', $col);
+                    $col = str_replace('"', '', $col);
                     $header_validity[$col] = 1;
                     $column_name[] = $col;
                 }
                 $process_header = 0;
                 continue;
             }
-            $line_arr[0] = str_replace("\r\n",'', $line_arr[0]);
-            $line_arr[0] = str_replace("\n",'', $line_arr[0]);
-	    $line_arr[0] = str_replace('"','', $line_arr[0]);
-            if(preg_match($time_regex,$line_arr[0])){
-                for($i=1; $i<sizeof($line_arr); $i++){
-                    $col = str_replace("\r\n",'', $line_arr[$i]);
-                    $col = str_replace("\n",'', $col);
-		    $col = str_replace('"','', $col);
-		    $col = str_replace('%','', $col);
-                    if(!is_numeric($col)){
+            $line_arr[0] = str_replace("\r\n", '', $line_arr[0]);
+            $line_arr[0] = str_replace("\n", '', $line_arr[0]);
+            $line_arr[0] = str_replace('"', '', $line_arr[0]);
+            if (preg_match($time_regex, $line_arr[0])) {
+                for ($i = 1; $i < sizeof($line_arr); $i++) {
+                    $col = str_replace("\r\n", '', $line_arr[$i]);
+                    $col = str_replace("\n", '', $col);
+                    $col = str_replace('"', '', $col);
+                    $col = str_replace('%', '', $col);
+                    if (!is_numeric($col)) {
                         $header_validity[$column_name[$i]] = 0;
                     }
                 }
-            }else{
+            } else {
                 $ret_code = 1;
                 break;
             }
         }
-    }else{
+    } else {
         $ret_code = 2;
         return $ret_code;
     }
     return $ret_code;
 }
 
-function buildTestReportGraphView($div_id, $file_paths, $s_compids_str, $title){
+/**
+ * This function set the graph rendering type. As we have different graph rendering requirements for TOP output
+ * files and all other PLT files, this function just set the graph mode based on file name and then
+ * calls buildTestReportGraph function for processing the data. TOP output files are
+ * cpu_usage.plt, memory_usage.plt and res_memory_usage.plt
+ *
+ * @param $div_id - this is the div panel id on test report page in which we render this graph
+ * @param $file_paths - this is an array which contains actual file path of output file for all tests.
+ * @param $s_compids_str - comma seperated string which contains all test IDs
+ * @param $title - Graph title
+ */
+
+function buildTestReportGraphView($div_id, $file_paths, $s_compids_str, $title)
+{
 
     if ((strpos($file_paths, 'cpu_usage') !== false) or (strpos($file_paths, 'memory_usage') !== false)) {
         $graph_mode = 0;
-    }else{
+    } else {
         $graph_mode = 1;
     }
     buildTestReportGraph($div_id, $file_paths, $s_compids_str, $title, $graph_mode);
 }
 
-function buildTestReportGraph($div_id, $file_paths, $s_compids_str, $title, $graph_mode){
+/**
+ * This is actual function for data processing of PLT files for test report page. For any normal PLT file it is simple
+ * straight forward graph rendering.
+ *
+ * For TOP output plt files if filename is mentioned with colon separated string in test report setting section of
+ * framework definition then we add all the values of multiple processes with same name and renders
+ * it on the graph.
+ *
+ * For example, if user mention file name as "cpu_usage.plt:httpd" then on test report page this function will add all
+ * httpd process having different PIDs at particular time and display it on graph
+ *
+ * @param $div_id - this is the div panel id on test report page in which we render this graph
+ * @param $file_paths - this is an array which contains actual file path of output file for all tests.
+ * @param $s_compids_str - comma seperated string which contains all test IDs
+ * @param $title - Graph title
+ * @param $graph_mode - 0 for TOP plt files, 1 for other plt files
+ */
+
+function buildTestReportGraph($div_id, $file_paths, $s_compids_str, $title, $graph_mode)
+{
     global $header_validity;
     $file_arr = explode(',', $file_paths);
     $testid_arr = explode(',', $s_compids_str);
@@ -84,73 +126,79 @@ function buildTestReportGraph($div_id, $file_paths, $s_compids_str, $title, $gra
     $column_map = array();
     $xaxis_data = array();
     $header_validity = array();
-    $filename = explode(':',$file)[0];
-    if(array_key_exists(1,explode(':',$file))){
-        if($graph_mode){
-            $column = '"' . explode(':',$file)[1] . '"';
-        }else{
-            $column = explode(':',$file)[1];
+    $filename = explode(':', $file)[0];
+    if (array_key_exists(1, explode(':', $file))) {
+        if ($graph_mode) {
+            $column = '"' . explode(':', $file)[1] . '"';
+        } else {
+            $column = explode(':', $file)[1];
         }
     }
 
-    if($graph_mode){
+    if ($graph_mode) {
         $column_index = 0;
-    }else{
+    } else {
         $column_index = array();
     }
+    // Verifying PLT content, if ret_code is invalid then we are displaying error else we proceed with data processing.
     $error = verifyPltContentForGraph($filename);
-    if ($error == 1){
+    if ($error == 1) {
         $error_msg = "Cannot parse time format - Invalid time format";
         $error_type = 1;
         echo "  <script> buildGraphErrorView('$error_msg','$div_id','$title','$error_type'); </script>\n";
         return;
-    }else if ($error == 2) {
+    } else if ($error == 2) {
         $error_msg = "Not able to read file";
         $error_type = 1;
         echo "  <script> buildGraphErrorView('$error_msg','$div_id','$title','$error_type'); </script>\n";
         return;
-    }else if ($error == 3) {
+    } else if ($error == 3) {
         $error_msg = "Cannot access file or invalid URL";
         $error_type = 1;
         echo "  <script> buildGraphErrorView('$error_msg','$div_id','$title','$error_type'); </script>\n";
         return;
-    }else{
+    } else {
+        // Processing data for main test for which we are rendering PLT file
         $handle = fopen($filename, "r");
         $count = 0;
         while (($line = fgets($handle)) !== false) {
             $line_arr = explode(',', $line);
-            if($process_header){
-                if (!empty($column)){
-		    $column = str_replace('"','', $column);
-                    if($graph_mode){
-                        for($i = 1;$i < sizeof($line_arr);$i++){
-                            $data = str_replace("\n",'', $line_arr[$i]);
-                            $data = str_replace("\r\n",'', $data);
-			    $data = str_replace('"','', $data);
-			    $data = str_replace("\r",'', $data);
-                            if(strpos($data,$column) !== false){
-                            $column_index = $i;
-                            break;
+            if ($process_header) {
+                // Processing PLT header
+                if (!empty($column)) {
+                    // If user has provided coulmn name in test report page settings
+                    $column = str_replace('"', '', $column);
+                    if ($graph_mode) {
+                        for ($i = 1; $i < sizeof($line_arr); $i++) {
+                            $data = str_replace("\n", '', $line_arr[$i]);
+                            $data = str_replace("\r\n", '', $data);
+                            $data = str_replace('"', '', $data);
+                            $data = str_replace("\r", '', $data);
+                            if (strpos($data, $column) !== false) {
+                                $column_index = $i;
+                                break;
                             }
                         }
-                    }else{
-                        for($i = 1;$i < sizeof($line_arr);$i++){
-                            $data = str_replace("\n",'', $line_arr[$i]);
-                            $data = str_replace("\r\n",'', $data);
-			    $data = str_replace('"','', $data);
-			    $data = str_replace("\r",'', $data);
-                            if(strpos($data,$column) !== false){
+                    } else {
+                        // For TOP output plt we save all column with contain proccess name in a map to add the values
+                        for ($i = 1; $i < sizeof($line_arr); $i++) {
+                            $data = str_replace("\n", '', $line_arr[$i]);
+                            $data = str_replace("\r\n", '', $data);
+                            $data = str_replace('"', '', $data);
+                            $data = str_replace("\r", '', $data);
+                            if (strpos($data, $column) !== false) {
                                 $column_index[] = $i;
                                 $column_map[] = $data;
                             }
                         }
                     }
-                }else{
-                    if($graph_mode){
-                        $data = str_replace("\n",'', $line_arr[1]);
+                } else {
+                    // No column name provided, then by default we pick first column
+                    if ($graph_mode) {
+                        $data = str_replace("\n", '', $line_arr[1]);
                         $column_index = 1;
                         $column = $data;
-                    }else{
+                    } else {
                         $error_msg = "Process name not mentioned in framework definition";
                         $error_type = 1;
                         echo "  <script> buildGraphErrorView('$error_msg','$div_id','$title','$error_type'); </script>\n";
@@ -158,34 +206,36 @@ function buildTestReportGraph($div_id, $file_paths, $s_compids_str, $title, $gra
                     }
 
                 }
-                if($graph_mode){
-                    if($column_index == 0){
+                // Handling error if user provide invalid process name or column name
+                if ($graph_mode) {
+                    if ($column_index == 0) {
                         $error_msg = "Column Not found - Check Framework Definition";
                         $error_type = 1;
                         echo "  <script> buildGraphErrorView('$error_msg','$div_id','$title','$error_type'); </script>\n";
                         return;
                     }
-                }else{
-                    if(sizeof($column_index) == 0){
+                } else {
+                    if (sizeof($column_index) == 0) {
                         $error_msg = "Process Not found - Check Framework Definition";
                         $error_type = 1;
                         echo "  <script> buildGraphErrorView('$error_msg','$div_id','$title','$error_type'); </script>\n";
                         return;
                     }
                 }
+                // Verifying if data is consistent in plt file
                 $err_code = 0;
-                if($graph_mode){
-                    if($header_validity[$column] == 0){
+                if ($graph_mode) {
+                    if ($header_validity[$column] == 0) {
                         break;
                     }
-                }else{
-                    foreach($column_map as $column_val){
-                        if($header_validity[$column_val] == 0){
+                } else {
+                    foreach ($column_map as $column_val) {
+                        if ($header_validity[$column_val] == 0) {
                             $err_code = 1;
                             break;
                         }
                     }
-                    if ($err_code){
+                    if ($err_code) {
                         break;
                     }
                 }
@@ -194,27 +244,34 @@ function buildTestReportGraph($div_id, $file_paths, $s_compids_str, $title, $gra
                 $process_header = 0;
                 continue;
             }
-
-            if ($time_offset && !$process_header){
+            // Saving time offset value keeping first time value as base value (01:00:00:00)
+            if ($time_offset && !$process_header) {
                 $offset_datetime = new DateTime($line_arr[0]);
                 $time_offset = 0;
             }
 
+            // Process further data of PLT file
+            // Subtracting the time mentioned for each row with base value
+            // Saving it in array which denotes xaxis value for a particular testid
+
             $current_datetime = new DateTime($line_arr[0]);
             $current_datetime->add(new DateInterval('P1D'));
-            $interval = date_diff($current_datetime,$offset_datetime);
+            $interval = date_diff($current_datetime, $offset_datetime);
             $interval_string = $interval->format("%D:%H:%I:%S");
             $xaxis_data[$testid_arr[$count]][] = $interval_string;
 
-            if($graph_mode){
+            // After processing time, further processing data in a particular row
+            if ($graph_mode) {
+                // In this graph mode, we will save data as array in a main array '$column_data' with testid as array key.
                 $data = str_replace("\n", '', $line_arr[$column_index]);
-                $data = str_replace("\r\n",'', $data);
+                $data = str_replace("\r\n", '', $data);
                 $column_data[$testid_arr[$count]][] = $data;
-            }else{
+            } else {
+                // In this graph mode, we are only considering column which matches with given process name and adding values.
                 $total = 0;
-                foreach($column_index as $column_val){
+                foreach ($column_index as $column_val) {
                     $data = str_replace("\n", '', $line_arr[$column_val]);
-                    $data = str_replace("\r\n",'', $data);
+                    $data = str_replace("\r\n", '', $data);
                     $total += $data;
                 }
                 $column_data[$testid_arr[$count]][] = $total;
@@ -224,74 +281,75 @@ function buildTestReportGraph($div_id, $file_paths, $s_compids_str, $title, $gra
         unset($handle);
     }
 
-    if(sizeof($file_arr) > 0){
-        foreach ($file_arr as $file){
+    if (sizeof($file_arr) > 0) {
+        foreach ($file_arr as $file) {
+            // Processing plt data for other test mentioned in comparison field, Same as above
             $process_header = 1;
             $time_offset = 1;
             $count++;
             $header_validity = array();
-            if ($graph_mode){
+            if ($graph_mode) {
                 $column_index = 0;
-            }else{
+            } else {
                 $column_index = array();
             }
 
             $column_map = array();
-            $filename = explode(':',$file)[0];
+            $filename = explode(':', $file)[0];
             $error = verifyPltContentForGraph($filename);
-            if ($error == 1){
+            if ($error == 1) {
                 continue;
-            }else if ($error == 2) {
+            } else if ($error == 2) {
                 continue;
-            }else if ($error == 3) {
+            } else if ($error == 3) {
                 continue;
-            }else{
+            } else {
                 $handle = fopen($filename, "r");
                 while (($line = fgets($handle)) !== false) {
                     $line_arr = explode(',', $line);
-                    if($process_header){
-                        if($graph_mode){
-                            for($i = 1;$i < sizeof($line_arr);$i++){
-                                $data = str_replace("\n",'', $line_arr[$i]);
-                                $data = str_replace("\r\n",'', $data);
-                                if(strpos($data,$column) !== false){
+                    if ($process_header) {
+                        if ($graph_mode) {
+                            for ($i = 1; $i < sizeof($line_arr); $i++) {
+                                $data = str_replace("\n", '', $line_arr[$i]);
+                                $data = str_replace("\r\n", '', $data);
+                                if (strpos($data, $column) !== false) {
                                     $column_index = $i;
                                     break;
                                 }
                             }
-                        }else{
-                            for($i = 1;$i < sizeof($line_arr);$i++){
-                                $data = str_replace("\n",'', $line_arr[$i]);
-                                $data = str_replace("\r\n",'', $data);
-                                if(strpos($data,$column) !== false){
+                        } else {
+                            for ($i = 1; $i < sizeof($line_arr); $i++) {
+                                $data = str_replace("\n", '', $line_arr[$i]);
+                                $data = str_replace("\r\n", '', $data);
+                                if (strpos($data, $column) !== false) {
                                     $column_index[] = $i;
                                     $column_map[] = $data;
                                 }
                             }
                         }
-                        if($graph_mode){
-                            if($column_index == 0){
+                        if ($graph_mode) {
+                            if ($column_index == 0) {
                                 break;
                             }
-                        }else{
-                            if(sizeof($column_index) == 0){
+                        } else {
+                            if (sizeof($column_index) == 0) {
                                 break;
                             }
                         }
 
                         $err_code = 0;
-                        if($graph_mode){
-                            if($header_validity[$column] == 0){
+                        if ($graph_mode) {
+                            if ($header_validity[$column] == 0) {
                                 break;
                             }
-                        }else{
-                            foreach($column_map as $column_val){
-                                if($header_validity[$column_val] == 0){
+                        } else {
+                            foreach ($column_map as $column_val) {
+                                if ($header_validity[$column_val] == 0) {
                                     $err_code = 1;
                                     break;
                                 }
                             }
-                            if ($err_code){
+                            if ($err_code) {
                                 break;
                             }
                         }
@@ -301,25 +359,25 @@ function buildTestReportGraph($div_id, $file_paths, $s_compids_str, $title, $gra
                         continue;
                     }
 
-                    if ($time_offset && !$process_header){
+                    if ($time_offset && !$process_header) {
                         $offset_datetime = new DateTime($line_arr[0]);
                         $time_offset = 0;
                     }
                     $current_datetime = new DateTime($line_arr[0]);
                     $current_datetime->add(new DateInterval('P1D'));
-                    $interval = date_diff($current_datetime,$offset_datetime);
+                    $interval = date_diff($current_datetime, $offset_datetime);
                     $interval_string = $interval->format("%D:%H:%I:%S");
                     $xaxis_data[$testid_arr[$count]][] = $interval_string;
 
-                    if($graph_mode){
+                    if ($graph_mode) {
                         $data = str_replace("\n", '', $line_arr[$column_index]);
-                        $data = str_replace("\r\n",'', $data);
+                        $data = str_replace("\r\n", '', $data);
                         $column_data[$testid_arr[$count]][] = $data;
-                    }else{
+                    } else {
                         $total = 0;
-                        foreach($column_index as $column_val){
+                        foreach ($column_index as $column_val) {
                             $data = str_replace("\n", '', $line_arr[$column_val]);
-                            $data = str_replace("\r\n",'', $data);
+                            $data = str_replace("\r\n", '', $data);
                             $total += $data;
                         }
                         $column_data[$testid_arr[$count]][] = $total;
@@ -334,27 +392,29 @@ function buildTestReportGraph($div_id, $file_paths, $s_compids_str, $title, $gra
     $graph_data = array();
     $metrics_array = array();
     $xs_array = array();
-    foreach($testid_arr as $testid){
-        if(array_key_exists($testid,$column_data)){
+
+    // Evaluating other stats like mix, max, avg for all tests.
+    foreach ($testid_arr as $testid) {
+        if (array_key_exists($testid, $column_data)) {
             $array_column = $xaxis_data[$testid];
             array_unshift($array_column, "Time_" . $testid);
             $graph_data[] = $array_column;
             $array_column = $column_data[$testid];
-            if(!empty($array_column)){
+            if (!empty($array_column)) {
                 $metrics_array[$testid]['max'] = max($array_column);
                 $metrics_array[$testid]['min'] = min($array_column);
                 $metrics_array[$testid]['avg'] = array_sum($array_column) / count($array_column);
             }
-            array_unshift($array_column,$testid);
+            array_unshift($array_column, $testid);
             $graph_data[] = $array_column;
             $xs_array[$testid] = "Time_" . $testid;
-        }else{
+        } else {
             $metrics_array[$testid]['max'] = 'NaN';
             $metrics_array[$testid]['min'] = 'NaN';
             $metrics_array[$testid]['avg'] = 'NaN';
         }
     }
-
+    // Changing array into json to transfer data onto client's browser for graph rendering
     $graph_data_json = json_encode($graph_data);
     $column_json = json_encode($testid_arr);
     $metric_data = json_encode($metrics_array);
@@ -376,18 +436,36 @@ function buildTestReportGraph($div_id, $file_paths, $s_compids_str, $title, $gra
     echo "    <script>buildGraph('$graph_data_json', '$column_json', '$metric_data', '$x_value' ,'$xs_json', '$title','$div_id');</script>\n";
 }
 
-function buildOutputGraphView($file_paths, $s_compids_str, $act_file){
+/**
+ * This function call different functions for data processing of different files. As we have three different types of
+ * graph rendering, based on file name we call these functions.
+ *
+ * @param $file_paths - Comma separated string with file path details of a log file for each test (base test and comparison test)
+ * @param $s_compids_str - Comma separated string of all testid's (base test and comparison test)
+ * @param $act_file - Actual filename which we are rendering on this output page
+ */
+function buildOutputGraphView($file_paths, $s_compids_str, $act_file)
+{
     if ((strpos($file_paths, 'cpu_usage') !== false) or (strpos($file_paths, 'memory_usage') !== false)) {
         buildGraphFilters($file_paths, $s_compids_str, $act_file);
-    }elseif ((strpos($file_paths, 'docker_cpu') !== false) or (strpos($file_paths, 'docker_memory') !== false)){
-        buildSingleGraphView($file_paths,$s_compids_str,$act_file);
-    }else{
+    } elseif ((strpos($file_paths, 'docker_cpu') !== false) or (strpos($file_paths, 'docker_memory') !== false)) {
+        buildSingleGraphView($file_paths, $s_compids_str, $act_file);
+    } else {
         buildColumnGraphView($file_paths, $s_compids_str, $act_file);
     }
 }
 
+/**
+ * This function renders all columns in a single graph. So for docker plt files we want to render stats from all the
+ * containers in a single graph. So one graph for each test file.
+ *
+ * @param $file_paths - Comma separated string with file path details of a log file for each test (base test and comparison test)
+ * @param $s_compids_str - Comma separated string of all testid's (base test and comparison test)
+ * @param $act_file - Actual filename which we are rendering on this output page
+ */
 
-function buildSingleGraphView($file_paths, $s_compids_str, $act_file){
+function buildSingleGraphView($file_paths, $s_compids_str, $act_file)
+{
 
     global $div_id;
     global $header_validity;
@@ -396,23 +474,25 @@ function buildSingleGraphView($file_paths, $s_compids_str, $act_file){
     $testid_arr = explode(',', $s_compids_str);
 
     $counter = 0;
-    foreach ($file_arr as $file){
+    // Starting data processing of log file for all the tests (base test and comparison test if any)
+    foreach ($file_arr as $file) {
         $title = $act_file . " : " . $testid_arr[$counter];
         $counter++;
+        // Verifying PLT content, if ret_code is invalid then we are displaying error else we proceed with data processing.
         $error = verifyPltContentForGraph($file);
-        if ($error == 1){
+        if ($error == 1) {
             $error_msg = "Cannot parse time format - Invalid time format";
             $error_type = 2;
             echo "  <script> buildGraphErrorView('$error_msg','$div_id','$title','$error_type'); </script>\n";
             $div_id++;
             continue;
-        }else if ($error == 2){
+        } else if ($error == 2) {
             $error_msg = "Not able to read file";
             $error_type = 2;
             echo "  <script> buildGraphErrorView('$error_msg','$div_id','$title','$error_type'); </script>\n";
             $div_id++;
             continue;
-        }else if ($error == 3){
+        } else if ($error == 3) {
             $error_msg = "Cannot access file or invalid URL";
             $error_type = 2;
             echo "  <script> buildGraphErrorView('$error_msg','$div_id','$title','$error_type'); </script>\n";
@@ -427,10 +507,11 @@ function buildSingleGraphView($file_paths, $s_compids_str, $act_file){
 
         while (($line = fgets($handle)) !== false) {
             $line_arr = explode(',', $line);
-            if($process_header){
+            if ($process_header) {
+                // Processing PLT header
                 foreach ($line_arr as $col) {
-                    $col = str_replace("\n",'', $col);
-		    $col = str_replace("\r",'', $col);
+                    $col = str_replace("\n", '', $col);
+                    $col = str_replace("\r", '', $col);
                     $temp_array = array();
                     $temp_array[] = $col;
                     $graph_data[] = $temp_array;
@@ -439,19 +520,25 @@ function buildSingleGraphView($file_paths, $s_compids_str, $act_file){
                 $process_header = 0;
                 continue;
             }
-            if ($time_offset && !$process_header){
+            // Saving time offset value keeping first time value as base value
+            if ($time_offset && !$process_header) {
                 $offset_datetime = new DateTime($line_arr[0]);
                 $time_offset = 0;
             }
+            // Process further data of PLT file
+            // Subtracting the time mentioned for each row with base value
+            // Saving it in array at 0th index which will be x axis values for this graph
             $current_datetime = new DateTime($line_arr[0]);
             $current_datetime->add(new DateInterval('P1D'));
-            $interval = date_diff($current_datetime,$offset_datetime);
+            $interval = date_diff($current_datetime, $offset_datetime);
             $interval_string = $interval->format("%D:%H:%I:%S");
             $graph_data[0][] = $interval_string;
-            for ($i = 1; $i < sizeof($line_arr); $i++){
-                $data = str_replace("\n",'', $line_arr[$i]);
-		$data = str_replace("\r",'', $data);
-		$data = str_replace("%",'', $data);
+            for ($i = 1; $i < sizeof($line_arr); $i++) {
+                // Now all subsequent values for each column will be saved in main array '$graph_data' corresponding
+                // array index
+                $data = str_replace("\n", '', $line_arr[$i]);
+                $data = str_replace("\r", '', $data);
+                $data = str_replace("%", '', $data);
                 $graph_data[$i][] = $data;
             }
         }
@@ -459,13 +546,14 @@ function buildSingleGraphView($file_paths, $s_compids_str, $act_file){
 
         $metrics_array = array();
         $count = 0;
-        foreach ($graph_data as $dataset){
-            if (strcasecmp($dataset[0], "Time") == 0){
+        // Evaluating other stats like mix, max, avg for all tests.
+        foreach ($graph_data as $dataset) {
+            if (strcasecmp($dataset[0], "Time") == 0) {
                 $count++;
                 continue;
             }
-            if (!$header_validity[$dataset[0]]){
-                array_splice($graph_data,$count,1);
+            if (!$header_validity[$dataset[0]]) {
+                array_splice($graph_data, $count, 1);
                 $main_key = $dataset[0];
                 $metrics_array[$main_key] = array();
                 $metrics_array[$main_key]['max'] = 'NaN';
@@ -476,7 +564,7 @@ function buildSingleGraphView($file_paths, $s_compids_str, $act_file){
             $main_key = $dataset[0];
             $metrics_array[$main_key] = array();
             array_shift($dataset);
-            if(!empty($dataset)){
+            if (!empty($dataset)) {
                 $metrics_array[$main_key]['max'] = max($dataset);
                 $metrics_array[$main_key]['min'] = min($dataset);
                 $metrics_array[$main_key]['avg'] = array_sum($dataset) / count($dataset);
@@ -484,6 +572,7 @@ function buildSingleGraphView($file_paths, $s_compids_str, $act_file){
             $count++;
         }
 
+        // Changing array into json to transfer data onto client's browser for graph rendering
         array_shift($column_name);
         $column_json = json_encode($column_name);
         $graph_data_json = json_encode($graph_data);
@@ -495,8 +584,22 @@ function buildSingleGraphView($file_paths, $s_compids_str, $act_file){
     }
 }
 
+/**
+ * This function helps in data processing of TOP output files i.e. cpu_usage.plt, memory_usage.plt and
+ * res_memory_usage.plt
+ *
+ * With this function, we read plt file and fetch all process names in order to provide ability to user to select
+ * processes in which he/she is interested and then we render graph for those processes only. This reduce
+ * the load on client's browser when user perform some interaction action on graph. Maximum we allow
+ * rendering of 10 processes (configurable in output.js)
+ *
+ * @param $file_paths - Comma separated string with file path details of a log file for each test (base test and comparison test)
+ * @param $s_compids_str - Comma separated string of all testid's (base test and comparison test)
+ * @param $act_file - Actual filename which we are rendering on this output page
+ */
 
-function buildGraphFilters($file_paths, $s_compids_str, $act_file){
+function buildGraphFilters($file_paths, $s_compids_str, $act_file)
+{
     global $div_id;
     global $header_validity;
     $div_id = 1;
@@ -504,22 +607,23 @@ function buildGraphFilters($file_paths, $s_compids_str, $act_file){
     $testid_arr = explode(',', $s_compids_str);
 
     $counter = 0;
-    foreach ($file_arr as $file){
+    foreach ($file_arr as $file) {
         $title = $act_file . " : " . $testid_arr[$counter];
+        // Verifying PLT content, if ret_code is invalid then we are displaying error else we proceed with column reading
         $error = verifyPltContentForGraph($file);
-        if ($error == 1){
+        if ($error == 1) {
             $error_msg = "Cannot parse time format - Invalid time format";
             $error_type = 2;
             echo "  <script> buildGraphErrorView('$error_msg','$div_id','$title','$error_type'); </script>\n";
             $div_id++;
             continue;
-        }else if ($error == 2){
+        } else if ($error == 2) {
             $error_msg = "Not able to read file";
             $error_type = 2;
             echo "  <script> buildGraphErrorView('$error_msg','$div_id','$title','$error_type'); </script>\n";
             $div_id++;
             continue;
-        }else if ($error == 3){
+        } else if ($error == 3) {
             $error_msg = "Cannot access file or invalid URL";
             $error_type = 2;
             echo "  <script> buildGraphErrorView('$error_msg','$div_id','$title','$error_type'); </script>\n";
@@ -534,14 +638,15 @@ function buildGraphFilters($file_paths, $s_compids_str, $act_file){
             $col = str_replace("\r\n", '', $line_arr[$i]);
             $column_name[] = $col;
         }
-
+        // we sort the column alphabetically and display all processes with same starting letter in single row.
+        // This gives user a flexibility to select multiple processes with same name in single check
         $sorted_colmn = array();
         sort($column_name);
-        foreach ($column_name as $col){
+        foreach ($column_name as $col) {
             $key = strtoupper($col[0]);
-            if (array_key_exists($key, $sorted_colmn)){
+            if (array_key_exists($key, $sorted_colmn)) {
                 $sorted_colmn[$key][] = $col;
-            }else{
+            } else {
                 $sorted_colmn[$key] = array();
                 $sorted_colmn[$key][] = $col;
             }
@@ -550,29 +655,35 @@ function buildGraphFilters($file_paths, $s_compids_str, $act_file){
         ?>
         <div class="panel panel-info partition-1" style="margin-bottom:20px;">
             <div class="panel-heading">
-                <button type='button' class='btn-sm' id='filter-toggle' data-toggle='collapse' data-target=<?php echo "#collapse" . $div_id; ?>><span class='glyphicon glyphicon glyphicon-plus'></span></button>
-                <p style='margin:0px 0px 0px 45px;padding-top:4px;'> Process Filters : <?php echo $testid_arr[$counter] ?></p>
+                <button type='button' class='btn-sm' id='filter-toggle' data-toggle='collapse'
+                        data-target=<?php echo "#collapse" . $div_id; ?>><span
+                            class='glyphicon glyphicon glyphicon-plus'></span></button>
+                <p style='margin:0px 0px 0px 45px;padding-top:4px;'> Process Filters
+                    : <?php echo $testid_arr[$counter] ?></p>
             </div>
-            <div id=<?php echo "collapse" . $div_id; ?> class='panel-collapse collapse in graph-panel'>
+            <div id=<?php echo "collapse" . $div_id; ?> class='panel-collapse collapse in graph-panel
+            '>
             <div class="panel-body">
                 <p style="margin-top:5px;">Select processes for graph display (Max 10)</p>
-                <p style="color:#0088cc;"><small>Alphabetically sorted <i class="fa fa-long-arrow-down" aria-hidden="true"></i></small></p>
+                <p style="color:#0088cc;">
+                    <small>Alphabetically sorted <i class="fa fa-long-arrow-down" aria-hidden="true"></i></small>
+                </p>
                 <div id="filter-table-div">
                     <form class="form-horizontal zero-margin proc_filter_form" role="form">
                         <table class="table table-condensed filter-table">
                             <tbody>
                             <?php
-                            foreach ($sorted_colmn as $key => $value){
+                            foreach ($sorted_colmn as $key => $value) {
                                 echo "<tr>";
                                 echo "<td class='success'><input type='checkbox' name='group-$key$div_id' class='group-checkbox'/> $key</td>";
                                 $x = 0;
-				$proc_list = 'proc_list' . $div_id . '[]';
-                                foreach ($sorted_colmn[$key] as $item){
+                                $proc_list = 'proc_list' . $div_id . '[]';
+                                foreach ($sorted_colmn[$key] as $item) {
                                     echo "<td><input type='checkbox' name='$proc_list' id='group[$key$div_id]' value='$item'/> $item</td>";
                                     $x++;
                                 }
-                                $y = $tablewidth-$x;
-                                if ($y > 0){
+                                $y = $tablewidth - $x;
+                                if ($y > 0) {
                                     echo "<td colspan=$y></td>";
                                 }
                                 echo "</tr>";
@@ -580,24 +691,34 @@ function buildGraphFilters($file_paths, $s_compids_str, $act_file){
                             ?>
                             </tbody>
                         </table>
-			<br>
-			<input type="hidden" name="file" value="<?php echo $file ?>" />
-			<input type="hidden" name="div_id" value="<?php echo $div_id ?>" />
-			<input type="hidden" name="title" value="<?php echo $title ?>" />
+                        <br>
+                        <input type="hidden" name="file" value="<?php echo $file ?>"/>
+                        <input type="hidden" name="div_id" value="<?php echo $div_id ?>"/>
+                        <input type="hidden" name="title" value="<?php echo $title ?>"/>
                         <button type="submit" class="btn btn-xs btn-primary btn-search-submit">Submit</button>
                     </form>
                 </div>
             </div>
         </div>
-	</div>
-    <?php
-    echo "<div class='proc-graph-panel' id='graph-$div_id'></div>";
-    $div_id++;
-    $counter++;
+        </div>
+        <?php
+        echo "<div class='proc-graph-panel' id='graph-$div_id'></div>";
+        $div_id++;
+        $counter++;
     }
 }
 
-function buildGraphDataForFilteredColumns($file, $column_list){
+/**
+ * This function reads the column_list selected by the user and does data processing for these columns only and returns
+ * the processed data for graph rendering in a form of JSON string
+ *
+ * @param $file - Log file which we are rendering
+ * @param $column_list - Column list of all column name selected by user for graph rendering
+ * @return string - processed JSON data
+ */
+
+function buildGraphDataForFilteredColumns($file, $column_list)
+{
     global $header_validity;
     $process_header = 1;
     $time_offset = 1;
@@ -605,63 +726,75 @@ function buildGraphDataForFilteredColumns($file, $column_list){
     $column_name = array();
     $column_map = array();
     $handle = fopen($file, "r");
+    // Verifying PLT content, if ret_code is invalid then we are displaying error else we proceed with data processing
     $error = verifyPltContentForGraph($file);
-    if ($error == 1){
+    if ($error == 1) {
         $error_msg = "Cannot parse time format - Invalid time format";
         return $error_msg;
-    }else if ($error == 2){
+    } else if ($error == 2) {
         $error_msg = "Not able to read file";
         return $error_msg;
-    }else if ($error == 3){
+    } else if ($error == 3) {
         $error_msg = "Cannot access file or invalid URL";
         return $error_msg;
     }
     while (($line = fgets($handle)) !== false) {
         $line_arr = explode(',', $line);
-        if($process_header){
-	    $col = $line_arr[0];
+        if ($process_header) {
+            // Processing PLT header
+            $col = $line_arr[0];
             $temp_array = array();
             $temp_array[] = $col;
             $graph_data[] = $temp_array;
             $column_name[] = $col;
-	    for($x = 0; $x < count($line_arr); $x++) {
-                $col = str_replace("\r\n",'', $line_arr[$x]);
-                if (in_array($col, $column_list)){
+            for ($x = 0; $x < count($line_arr); $x++) {
+                $col = str_replace("\r\n", '', $line_arr[$x]);
+                if (in_array($col, $column_list)) {
+                    // Saving column index for all columns selected by user using process filters
                     $temp_array = array();
                     $temp_array[] = $col;
                     $graph_data[] = $temp_array;
-                    $column_name[] = $col;  
-		    $column_map[] = $x;  
+                    $column_name[] = $col;
+                    $column_map[] = $x;
                 }
             }
             $process_header = 0;
             continue;
         }
-        if ($time_offset && !$process_header){
+
+        // Saving time offset value keeping first time value as base value (01:00:00:00)
+        if ($time_offset && !$process_header) {
             $offset_datetime = new DateTime($line_arr[0]);
             $time_offset = 0;
         }
+
+        // Process further data of PLT file
+        // Subtracting the time mentioned for each row with base value
+        // Saving it in array at 0th index which will be x axis values for this graph
+
         $current_datetime = new DateTime($line_arr[0]);
         $current_datetime->add(new DateInterval('P1D'));
-        $interval = date_diff($current_datetime,$offset_datetime);
+        $interval = date_diff($current_datetime, $offset_datetime);
         $interval_string = $interval->format("%D:%H:%I:%S");
         $graph_data[0][] = $interval_string;
-	$i = 1;
-        foreach ($column_map as $y){
-            $data = str_replace("\r\n",'', $line_arr[$y]);
+        $i = 1;
+        foreach ($column_map as $y) {
+            // Now all subsequent values for each column from column map will be saved in main array '$graph_data'
+            $data = str_replace("\r\n", '', $line_arr[$y]);
             $graph_data[$i++][] = $data;
         }
     }
     fclose($handle);
     $metrics_array = array();
     $count = 0;
-    foreach ($graph_data as $dataset){
-        if (strcasecmp($dataset[0], "Time") == 0){
+    // Evaluating other stats like mix, max, avg for all tests.
+    foreach ($graph_data as $dataset) {
+        if (strcasecmp($dataset[0], "Time") == 0) {
             $count++;
             continue;
         }
-        if (!$header_validity[$dataset[0]]){
-            array_splice($graph_data,$count,1);
+        if (!$header_validity[$dataset[0]]) {
+            array_splice($graph_data, $count, 1);
             $main_key = $dataset[0];
             $metrics_array[$main_key] = array();
             $metrics_array[$main_key]['max'] = 'NaN';
@@ -672,32 +805,43 @@ function buildGraphDataForFilteredColumns($file, $column_list){
         $main_key = $dataset[0];
         $metrics_array[$main_key] = array();
         array_shift($dataset);
-        if(!empty($dataset)){
+        if (!empty($dataset)) {
             $metrics_array[$main_key]['max'] = max($dataset);
             $metrics_array[$main_key]['min'] = min($dataset);
             $metrics_array[$main_key]['avg'] = array_sum($dataset) / count($dataset);
         }
         $count++;
     }
+    // Changing array into json to transfer data onto client's browser for graph rendering
     array_shift($column_name);
     $column_json = json_encode($column_name);
     $graph_data_json = json_encode($graph_data);
     $metric_data = json_encode($metrics_array);
     $x_value = 'Time';
     $xs_json = "{}";
-    
+
     $response = array();
     $response['column_json'] = $column_json;
     $response['graph_data_json'] = $graph_data_json;
     $response['metric_data'] = $metric_data;
     $response['x_value'] = $x_value;
     $response['xs_json'] = $xs_json;
-    
+
     $response_json = json_encode($response);
     return $response_json;
 }
 
-function buildColumnGraphView($file_paths, $s_compids_str, $act_file){
+/**
+ * This function process plt file data for column wise graph rendering. so each column will be rendered as a same graph.
+ * During comparison of a test, value from same column of a log file will be rendered on same graph
+ *
+ * @param $file_paths - Comma separated string with file path details of a log file for each test (base test and comparison test)
+ * @param $s_compids_str - Comma separated string of all testid's (base test and comparison test)
+ * @param $act_file - Actual filename which we are rendering on this output page
+ */
+
+function buildColumnGraphView($file_paths, $s_compids_str, $act_file)
+{
     global $div_id;
     global $header_validity;
     $div_id = 1;
@@ -710,33 +854,38 @@ function buildColumnGraphView($file_paths, $s_compids_str, $act_file){
     $xaxis_data = array();
     $column_map = array();
     $header_validity = array();
+    // Verifying PLT content, if ret_code is invalid then we are displaying error else we proceed with data processing.
     $error = verifyPltContentForGraph($file);
-    if ($error == 1){
+    if ($error == 1) {
         $error_msg = "Cannot parse time format - Invalid time format";
         $error_type = 2;
         echo "  <script> buildGraphErrorView('$error_msg','$div_id','$act_file','$error_type'); </script>\n";
         return;
-    }else if ($error == 2){
+    } else if ($error == 2) {
         $error_type = 2;
         $error_msg = "Not able to read file";
         echo "  <script> buildGraphErrorView('$error_msg','$div_id','$act_file','$error_type'); </script>\n";
         return;
-    }else if ($error == 3){
+    } else if ($error == 3) {
         $error_type = 2;
         $error_msg = "Cannot access file or invalid URL";
         echo "  <script> buildGraphErrorView('$error_msg','$div_id','$act_file','$error_type'); </script>\n";
         return;
-    }else{
+    } else {
+        // Processing data for base test for which we are rendering plt file
         $handle = fopen($file, "r");
         $count = 0;
         while (($line = fgets($handle)) !== false) {
             $line_arr = explode(',', $line);
-            if($process_header){
+            if ($process_header) {
+                // Processing plt header
                 $xaxis_data[$testid_arr[$count]] = array();
-                for($i = 1;$i < sizeof($line_arr);$i++){
-                    $data = str_replace("\n",'', $line_arr[$i]);
-		    $data = str_replace("\r",'', $data);
-		    $data = str_replace('"','', $data);
+                for ($i = 1; $i < sizeof($line_arr); $i++) {
+                    // $column_data array has column name as key and then each array key is corresponds to another
+                    // array indexed based on testid which actually holds value of that column for this test.
+                    $data = str_replace("\n", '', $line_arr[$i]);
+                    $data = str_replace("\r", '', $data);
+                    $data = str_replace('"', '', $data);
                     $temp_array = array();
                     $temp_array[$testid_arr[$count]] = array();
                     $column_data[$data] = $temp_array;
@@ -745,56 +894,57 @@ function buildColumnGraphView($file_paths, $s_compids_str, $act_file){
                 $process_header = 0;
                 continue;
             }
-            if ($time_offset && !$process_header){
+            if ($time_offset && !$process_header) {
                 $offset_datetime = new DateTime($line_arr[0]);
                 $time_offset = 0;
             }
             $current_datetime = new DateTime($line_arr[0]);
             $current_datetime->add(new DateInterval('P1D'));
-            $interval = date_diff($current_datetime,$offset_datetime);
+            $interval = date_diff($current_datetime, $offset_datetime);
             $interval_string = $interval->format("%D:%H:%I:%S");
             $xaxis_data[$testid_arr[$count]][] = $interval_string;
             for ($i = 1; $i < sizeof($line_arr); $i++) {
                 $data = str_replace("\n", '', $line_arr[$i]);
-		$data = str_replace("\r",'', $data);
-		$data = str_replace('%','', $data);
+                $data = str_replace("\r", '', $data);
+                $data = str_replace('%', '', $data);
                 $column_data[$column_map[$i - 1]][$testid_arr[$count]][] = $data;
             }
         }
         fclose($handle);
         unset($handle);
-        foreach ($column_map as $col){
-            if(!$header_validity[$col]){
+        foreach ($column_map as $col) {
+            if (!$header_validity[$col]) {
                 unset($column_data[$col][$testid_arr[$count]]);
             }
         }
     }
 
-    if(sizeof($file_arr) > 0){
-        foreach ($file_arr as $file){
+    if (sizeof($file_arr) > 0) {
+        foreach ($file_arr as $file) {
+            // Processing plt data for other test mentioned in comparison field, Same as above
             $process_header = 1;
             $time_offset = 1;
             $count++;
             $column_map = array();
             $header_validity = array();
             $error = verifyPltContentForGraph($file);
-            if ($error == 1){
+            if ($error == 1) {
                 continue;
-            }else if ($error == 2) {
+            } else if ($error == 2) {
                 continue;
-            }else if ($error == 3) {
+            } else if ($error == 3) {
                 continue;
-            }else{
+            } else {
                 $handle = fopen($file, "r");
                 while (($line = fgets($handle)) !== false) {
                     $line_arr = explode(',', $line);
-                    if($process_header){
+                    if ($process_header) {
                         $xaxis_data[$testid_arr[$count]] = array();
-                        for($i = 1;$i < sizeof($line_arr);$i++){
-                            $data = str_replace("\n",'', $line_arr[$i]);
-			    $data = str_replace('"','', $data);
-			    $data = str_replace("\r",'', $data);
-                            if (array_key_exists($data,$column_data)){
+                        for ($i = 1; $i < sizeof($line_arr); $i++) {
+                            $data = str_replace("\n", '', $line_arr[$i]);
+                            $data = str_replace('"', '', $data);
+                            $data = str_replace("\r", '', $data);
+                            if (array_key_exists($data, $column_data)) {
                                 $column_data[$data][$testid_arr[$count]] = array();
                             }
                             $column_map[] = $data;
@@ -802,29 +952,29 @@ function buildColumnGraphView($file_paths, $s_compids_str, $act_file){
                         $process_header = 0;
                         continue;
                     }
-                    if ($time_offset && !$process_header){
+                    if ($time_offset && !$process_header) {
                         $offset_datetime = new DateTime($line_arr[0]);
                         $time_offset = 0;
                     }
                     $current_datetime = new DateTime($line_arr[0]);
                     $current_datetime->add(new DateInterval('P1D'));
-                    $interval = date_diff($current_datetime,$offset_datetime);
+                    $interval = date_diff($current_datetime, $offset_datetime);
                     $interval_string = $interval->format("%D:%H:%I:%S");
                     $xaxis_data[$testid_arr[$count]][] = $interval_string;
                     for ($i = 1; $i < sizeof($line_arr); $i++) {
                         $data = str_replace("\n", '', $line_arr[$i]);
-			$data = str_replace("\r",'', $data);
-			$data = str_replace('%','', $data);
-                        if (array_key_exists($column_map[$i - 1],$column_data)){
+                        $data = str_replace("\r", '', $data);
+                        $data = str_replace('%', '', $data);
+                        if (array_key_exists($column_map[$i - 1], $column_data)) {
                             $column_data[$column_map[$i - 1]][$testid_arr[$count]][] = $data;
                         }
                     }
                 }
                 fclose($handle);
                 unset($handle);
-                foreach ($column_map as $col){
-                    if(!$header_validity[$col]){
-                        if (array_key_exists($col,$column_data)){
+                foreach ($column_map as $col) {
+                    if (!$header_validity[$col]) {
+                        if (array_key_exists($col, $column_data)) {
                             unset($column_data[$col][$testid_arr[$count]]);
                         }
                     }
@@ -832,32 +982,33 @@ function buildColumnGraphView($file_paths, $s_compids_str, $act_file){
             }
         }
     }
-
-    foreach($column_data as $key => $value){
+    // Evaluating other stats like mix, max, avg for all tests.
+    foreach ($column_data as $key => $value) {
         $graph_data = array();
         $metrics_array = array();
-        $title = $act_file . " : " . trim($key,'"');
+        $title = $act_file . " : " . trim($key, '"');
         $xs_array = array();
-        foreach($testid_arr as $testid){
-            if(array_key_exists($testid,$column_data[$key])){
+        foreach ($testid_arr as $testid) {
+            if (array_key_exists($testid, $column_data[$key])) {
                 $array_column = $xaxis_data[$testid];
                 array_unshift($array_column, "Time_" . $testid);
                 $graph_data[] = $array_column;
                 $array_column = $column_data[$key][$testid];
-                if(!empty($array_column)){
+                if (!empty($array_column)) {
                     $metrics_array[$testid]['max'] = max($array_column);
                     $metrics_array[$testid]['min'] = min($array_column);
                     $metrics_array[$testid]['avg'] = array_sum($array_column) / count($array_column);
                 }
-                array_unshift($array_column,$testid);
+                array_unshift($array_column, $testid);
                 $graph_data[] = $array_column;
                 $xs_array[$testid] = "Time_" . $testid;
-            }else{
+            } else {
                 $metrics_array[$testid]['max'] = 'NaN';
                 $metrics_array[$testid]['min'] = 'NaN';
                 $metrics_array[$testid]['avg'] = 'NaN';
             }
         }
+        // Changing array into json to transfer data onto client's browser for graph rendering
         $graph_data_json = json_encode($graph_data);
         $column_json = json_encode($testid_arr);
         $metric_data = json_encode($metrics_array);
@@ -868,43 +1019,60 @@ function buildColumnGraphView($file_paths, $s_compids_str, $act_file){
     }
 }
 
-function buildTestCompareData($filepaths,$test_ids){
-    $file_arr = explode(',',$filepaths);
-    $test_id_arr = explode(',',$test_ids);
+/**
+ * This function read logs files and save the content of each file for a particular test as string in an array with
+ * testid as index.
+ *
+ * @param $filepaths - Comma separated string with file path details of a log file for each test (base test and comparison test)
+ * @param $test_ids - Comma separated string of all the testids (base test and comparison test)
+ * @return array - An array with file content as array value and testid as array index or it return string with error msg
+ */
+
+function buildTestCompareData($filepaths, $test_ids)
+{
+    $file_arr = explode(',', $filepaths);
+    $test_id_arr = explode(',', $test_ids);
     $ret_data = array();
-    $file_data = "";
     $finfo = finfo_open(FILEINFO_MIME);
-    for($i = 0; $i < sizeof($test_id_arr);$i++){
+    for ($i = 0; $i < sizeof($test_id_arr); $i++) {
         $file_data = "";
+
+        // File checks, if file doesn't exists then throw error
         $file_exists = file_exists($file_arr[$i]);
         if (!$file_exists) {
             $file_data = "File Not Found";
-            if ($i == 0){
+            if ($i == 0) {
                 return $file_data;
-            }else {
-                $ret_data[$test_id_arr[$i]] = $file_data;
-                continue;
-	    }
-        }
-        $valid_path = validate_file_path($file_arr[$i]);
-        if ($valid_path === false){
-            $file_data = "Cannot access file or invalid URL";
-            if ($i == 0){
-                return $file_data;
-            }else {
-                $ret_data[$test_id_arr[$i]] = $file_data;
-                continue;
-	    }
-        }
-        if (substr(finfo_file($finfo, $file_arr[$i]), 0, 4) !== 'text') {
-            $file_data = "Not a text file - unable to read";
-            if ($i == 0){
-                return $file_data;
-            }else {
+            } else {
                 $ret_data[$test_id_arr[$i]] = $file_data;
                 continue;
             }
         }
+        // Validate the file path of a log file, real path should be inside daytona data directory, this is to protect
+        // linux files outside daytona file system
+        $valid_path = validate_file_path($file_arr[$i]);
+        if ($valid_path === false) {
+            $file_data = "Cannot access file or invalid URL";
+            if ($i == 0) {
+                return $file_data;
+            } else {
+                $ret_data[$test_id_arr[$i]] = $file_data;
+                continue;
+            }
+        }
+
+        // if file is not readable i.e. executable or binary then display error message
+        if (substr(finfo_file($finfo, $file_arr[$i]), 0, 4) !== 'text') {
+            $file_data = "Not a text file - unable to read";
+            if ($i == 0) {
+                return $file_data;
+            } else {
+                $ret_data[$test_id_arr[$i]] = $file_data;
+                continue;
+            }
+        }
+
+        // Reading file content
         $fileptr = fopen($file_arr[$i], "r");
         if ($fileptr) {
             while (($line = fgets($fileptr)) !== false) {
@@ -913,18 +1081,20 @@ function buildTestCompareData($filepaths,$test_ids){
                 $line = str_replace("\n", "\\n", $line);
                 $line = str_replace('"', '', $line);
                 $line = str_replace("'", "", $line);
-		if (strpos($line,"ERROR") !== false){
-		    $line = "<font color=red>" . $line . "</font>";
-		}
-                $file_data .= $line ;
+                // Any line which contain "ERROR" as substring will be displayed in Red color, mainly for log files to
+                // highlight any error message
+                if (strpos($line, "ERROR") !== false) {
+                    $line = "<font color=red>" . $line . "</font>";
+                }
+                $file_data .= $line;
             }
             fclose($fileptr);
         }
 
-        if(strlen($file_data) == 0){
+        if (strlen($file_data) == 0) {
             $file_data = "Empty File";
         }
-
+        // saving file content in array $ret_data with testid as array index
         $ret_data[$test_id_arr[$i]] = $file_data;
     }
     return $ret_data;

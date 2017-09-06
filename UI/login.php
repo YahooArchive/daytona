@@ -1,9 +1,23 @@
 <?php
+/**
+ * This file contains code related to user account login, new user account registration, user session, and logout
+ */
+
 function logout() {
     unset($_COOKIE["login"]);
     setcookie("login", null, -1);
 }
 
+/**
+ * Insert new user details into `LoginAuthentication`
+ *
+ * @param $db - database handle
+ * @param $user - username
+ * @param $password - password
+ * @param $email - user email
+ * @param $state - user account state
+ * @return bool - return true if successful else return false
+ */
 function registerUser($db, $user, $password, $email, $state) {
     if(getUserAccount($db, $user, $email)) {
         return false;
@@ -19,6 +33,13 @@ function registerUser($db, $user, $password, $email, $state) {
     return true;
 }
 
+/**
+ * Give access of all framework to a particular user ID.
+ *
+ * @param $db - database handle
+ * @param $user - username
+ * @return bool - return true if successful else return false
+ */
 function giveFrameworkAccess($db, $user) {
     $query = "select frameworkid from ApplicationFrameworkMetadata";
     $stmt = $db->prepare($query);
@@ -33,6 +54,13 @@ function giveFrameworkAccess($db, $user) {
     return true;
 }
 
+/**
+ * This function sends email on user's email ID with verification link which contain unique code
+ *
+ * @param $email - Email ID of logged in user
+ * @param $code - Unique code for validating user
+ * @param $user - username
+ */
 function sendEmailValidation($email, $code, $user) {
     $message = "<html><head>Welcome to Daytona</head><body><p>Validate your email here: <a href='http://52.42.114.108/login.php?email_user=$user&email_code=$code'>Validate Me</a></p><p>Thanks!</p>";
     $headers  = 'MIME-Version: 1.0' . "\r\n";
@@ -40,6 +68,16 @@ function sendEmailValidation($email, $code, $user) {
     $headers .= 'From: Daytona <DAYTONA_DO_NOT_REPLY>' . "\r\n";
     mail($email, "Daytona Registration", $message, $headers);
 }
+
+/**
+ * This function verifies user email ID whenever user click on verification link it has received on his/her email. This
+ * function verifies the unique code which is attached with verification link.
+ *
+ * @param $db - database handle
+ * @param $user - username
+ * @param $code - unique code attached with verification link
+ * @return bool - return true if successful else return false
+ */
 
 function validateEmail($db, $user, $code) {
   $query = "SELECT user_state FROM LoginAuthentication WHERE username = :username";
@@ -85,6 +123,8 @@ $incorrect_login = isset($_GET["incorrect"]) ? getParam("incorrect") : false;
 $not_active = isset($_GET["inactive"]) ? getParam("inactive") : false;
 $conf = parse_ini_file('daytona_config.ini');
 $cookie_key = $conf['cookie_key'];
+
+// Handling user login and setting browser cookie with user details
 if(isset($_REQUEST['username']) and isset($_REQUEST['password'])) {
     if(validatePassword($db, $_REQUEST['username'], $_REQUEST['password'])) {
         setcookie('login', $_REQUEST['username'].','.password_hash($_REQUEST['username'].$cookie_key, PASSWORD_DEFAULT));
@@ -100,6 +140,7 @@ if(isset($_REQUEST['username']) and isset($_REQUEST['password'])) {
     }
 }
 
+// if login cookie is already set then navigate to main.php directly
 unset($username);
 if (isset($_COOKIE['login'])) {
     list($c_username,$cookie_hash) = explode(',',$_COOKIE['login']);
@@ -116,7 +157,7 @@ if (isset($_COOKIE['login'])) {
     }
 }
 
-
+// New user registration handler
 if(isset($_REQUEST["register_user"])) {
     $email_code = rand();
     if (validatePasswordPolicy($_REQUEST["register_password"])){

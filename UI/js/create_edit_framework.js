@@ -1,9 +1,14 @@
+/**
+ * This file implements all JQuery functions used on create_edit_framework.php page
+ */
+
+// Adjust height of purpose Text Area
 function fitPurposeTextArea() {
     var tdHeight = $('td').innerHeight() * 4 - 17;
     $('.purpose-textarea').height(tdHeight);
 }
 
-
+// Add test report row function for appending new row in test report setting table
 function addTestReportItem(target, reportConfig) {
     var container = $('#test-report-table');
     var reportCount = container.find('tbody > tr').length;
@@ -67,7 +72,6 @@ function addTestReportItem(target, reportConfig) {
     }
 }
 
-
 function frameworkArgsTableChangeWidget(target, argConfig) {
     var widgetType = $(target).val();
     var row = $(target).parents('tr');
@@ -85,20 +89,6 @@ function frameworkArgsTableChangeWidget(target, argConfig) {
 
     var newDefaultValues;
     switch(widgetType) {
-        // DEPRECATED
-        /*
-         case 'checkbox':
-         newDefaultValues = $('<label></label>');
-         var inputCheckbox = $('<input></input>')
-         .attr('type', 'checkbox')
-         .attr('name', 'f_arguments[argument_default][]')
-         .val(1);
-         if (argConfig && argConfig.argument_default === 1) {
-         inputCheckbox.prop('checked', true);
-         }
-         newDefaultValues.append(inputCheckbox);
-         break;
-         */
         case 'select':
             newDefaultValues = $('<select></select>')
                 .addClass('form-control select-sm')
@@ -131,7 +121,7 @@ function frameworkArgsTableChangeWidget(target, argConfig) {
     argDefaultContainer.append(newDefaultValues);
 }
 
-
+// Update dropdown list for user to select default value in test arguments based to input values provided by user
 function frameworkArgsTableSelectOptions(target, argConfig) {
     var select = $(target).parents('tr').find('[name="f_arguments[argument_default][]"]');
     select.empty();
@@ -148,7 +138,8 @@ function frameworkArgsTableSelectOptions(target, argConfig) {
     });
 }
 
-
+// This functions adds framework argument row when user click "add row" in test argument settings on framework
+// definition page
 function addFrameworkArgument(target, argConfig, clone) {
     if (clone == 'undefined'){
         clone = false;
@@ -209,7 +200,7 @@ function addFrameworkArgument(target, argConfig, clone) {
         .attr('name', 'f_arguments[widget_type][]')
         .change(function() { frameworkArgsTableChangeWidget(this); });
     ['text', 'select', 'hidden'].forEach(function (wType) {
-        var option = $('<option></option')
+        var option = $('<option></option>')
             .val(wType)
             .text(wType.charAt(0).toUpperCase() + wType.slice(1));
         if (argConfig && argConfig.widget_type === wType) {
@@ -288,6 +279,7 @@ function deleteTableRow(target) {
     });
 }
 
+// Form submission and other button action on create_edit_framework page
 $(document).ready(function() {
     // Event handlers for the add/del buttons
     $('.test-report-panel').on('click', '.add-test-report-item', function(evt) {

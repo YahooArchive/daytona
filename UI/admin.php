@@ -1,7 +1,10 @@
 <?php
-// ini_set('display_errors',1);
-// ini_set('display_startup_errors',1);
-// error_reporting(-1);
+
+/**
+ * This is framework settings page where user can select/deselect framework for UI display.
+ *
+ * Refer file admin.js for all Jquery function used in this file.
+ */
 
 require('lib/auth.php');
 
@@ -91,7 +94,7 @@ foreach ($frameworksParsed as $frameworkName => $frameworkData) {
 <script src="js/bootstrap-sortable.js"></script>
 <script type="text/javascript">
 $(document).ready(function() {
-  buildTopNavBar('Global', '', '<?php echo $userId; ?>');
+  buildTopNavBar('Global', '');
   setDescription('Framework Settings');
   buildLeftPanel();
   buildLeftPanelFramework();

@@ -1,4 +1,9 @@
 <?php
+/**
+ * This file downloads the logs file on clients machine. It checks for filename and validate the file path of requested
+ * file and downloads it as a zip file. Zip file can contain single file or multiple files if user is comparing
+ * multiple files.
+ */
 
 require('lib/auth.php');
 
@@ -69,6 +74,8 @@ if ($userId){
         returnError("MySQL error: " . $e->getMessage());
     }
 
+
+    // Fetching actual file path of main test and all comparison tests (if any)
     $file_paths = array();
     foreach ($testid_arr as $l_id) {
         $report_path = "test_data/" . $test_info_data["frameworkname"] . "/$l_id/results/" .

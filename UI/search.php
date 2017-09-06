@@ -1,7 +1,8 @@
 <?php
-// ini_set('display_errors',1);
-// ini_set('display_startup_errors',1);
-// error_reporting(-1);
+/**
+ * This is Daytona search page on which user can search any test using various filters provided to the user. From the
+ * results users can select multiple test for basic/detailed compare and deleting those tests.
+ */
 
 require('lib/auth.php');
 list($frameworkId, $frameworkName, $frameworkData) = initFramework($db);
@@ -27,34 +28,41 @@ try{
     foreach($framework_row as $row){
         array_push($frameworks_arr, $row["frameworkname"]);
     }
-
+    // framework filter, searching test from particular framework
     if ($s_framework != "Global") {
         array_push($search_where_clause_arr, "frameworkname=:frameworkname");
     }
+    // purpose filter, searching test based on purpose of the test
     if (!empty($_GET["purpose"])) {
         $s_purpose = getParam("purpose");
         array_push($search_where_clause_arr, "TestInputData.purpose LIKE :purpose");
     }
+    // title filter, searching test based on title of the test
     if (!empty($_GET["title"])) {
         $s_title = getParam("title");
         array_push($search_where_clause_arr, "TestInputData.title LIKE :title");
     }
+    // owner filter, searching test based on owner of the test
     if (!empty($_GET["owner"])) {
         $s_owner = getParam("owner");
         array_push($search_where_clause_arr, "username LIKE :owner");
     }
+    // status filter, searching test based on status of test
     if (!empty($_GET["status"])) {
         $s_status = getParam("status");
         array_push($search_where_clause_arr, "end_status=:status");
     }
+    // No of tests to display
     if (!empty($_GET["numresults"])) {
         $s_numresults = getParam("numresults");
     }
+    // filter test based on starting time
     if (!empty($_GET["start"])) {
         $s_start = getParam("start");
         $converted_start = convertToDateTime($s_start, true);
         array_push($search_where_clause_arr, "start_time>=:start_time");
     }
+    // filter test based on starting time
     if (!empty($_GET["end"])) {
         $s_end = getParam("end");
         $converted_end = convertToDateTime($s_end, false);
@@ -66,6 +74,7 @@ try{
         $search_where_clause = "WHERE " . implode(" AND ", $search_where_clause_arr);
     }
 
+    // binding variables to sql query
     $query = "SELECT testid,frameworkid,frameworkname,TestInputData.title,username,start_time, end_time,TestInputData.creation_time,end_status,TestInputData.purpose FROM TestInputData JOIN ApplicationFrameworkMetadata USING(frameworkid) $search_where_clause ORDER BY testid DESC LIMIT :numresults";
     $stmt = $db->prepare($query);
 
@@ -321,7 +330,7 @@ include_once('lib/popup.php');
             $("#filter-toggle").html('<span class="glyphicon glyphicon glyphicon-minus"></span>');
         });
 
-        buildTopNavBar('<?php echo $frameworkName ?: 'Global'; ?>', '', '<?php echo $userId; ?>');
+        buildTopNavBar('<?php echo $frameworkName ?: 'Global'; ?>', '');
         setDescription('Search');
         buildUserAccountMenu('<?php echo $userId; ?>');
         buildLeftPanel();

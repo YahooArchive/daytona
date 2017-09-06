@@ -1,4 +1,13 @@
 <?php
+/**
+ * This is user account settings page, regular user can change password using this link, while admin user can manage
+ * all user accounts and it can also change user status as active, pending, Inactive.
+ *
+ * Refer file account.js for all Jquery function used in this file.
+ */
+
+
+/* SQL query for fetching all user accounts */
 function getUserAccountsAsAdmin($db) {
     $query = "SELECT username, is_admin, email, user_state FROM LoginAuthentication";
     $stmt = $db->prepare($query);
@@ -14,6 +23,8 @@ unset($passwordChangeSucces);
 unset($error_msg);
 unset($succes_msg);
 
+
+/* User account password change from old to new password */
 if(isset($_REQUEST["oldPassword"])) {
     if(validatePassword($db, $userId, $_REQUEST["oldPassword"])) {
         if (validatePasswordPolicy($_REQUEST["newPassword"])){
@@ -35,6 +46,7 @@ if(isset($_REQUEST["oldPassword"])) {
     }
 }
 
+/* Changing user account details */
 $accountInfo = getUserAccount($db, $userId);
 if($accountInfo->is_admin) {
   if(isset($_REQUEST["ua_user"])) {

@@ -1,4 +1,11 @@
 <?php
+/**
+ *
+ * This file provides import/export framework feature to Daytona. User can export all the test DB data and test logs
+ * files as a zip file. User can upload this zip file on any other Daytona instance in order to import exported test
+ * DB data and log files into some existing framework on new Daytona instance
+ *
+ */
 
 require('lib/auth.php');
 $pageTitle = "Import Export Framework";
@@ -7,6 +14,8 @@ $frameworks_arr = Array();
 
 $accountInfo = getUserAccount($db, $userId);
 unset($success);
+
+// Getting list of frameworks for which logged in user is owner or fetching all framework if user is admin
 try {
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $db->beginTransaction();
@@ -56,6 +65,12 @@ if (isset($action_type)){
         diePrint("Invalid form submission", "Form Error");
     }
 }
+
+/**
+ * This is export framework function. It dumps all DB data associated with framework selected by the user
+ *
+ * @param $framework_name - Name of the framework user want to export
+ */
 
 function export_framework($framework_name) {
     try{
@@ -167,6 +182,16 @@ function export_framework($framework_name) {
         diePrint("MySQL error: " . $e->getMessage(), "Error !!");
     }
 }
+
+//
+
+/**
+ * This is import framework function. User upload zip file downloaded from other Daytona instance and select an
+ * existing framework for importing test in that framework
+ *
+ * @param $framework_name - Name of the existing framework in which user want to import test data and logs
+ * @param $file - Zip file downloaded from other Daytona instance which contains logs and db data
+ */
 
 function import_framework($framework_name, $file){
     global $userId, $db;
@@ -420,7 +445,7 @@ include_once('lib/header.php');
 <script src="js/account.js"></script>
 <script type="text/javascript">
 $(document).ready(function() {
-  buildTopNavBar('Global', '', '<?php echo $userId; ?>');
+  buildTopNavBar('Global', '');
   setDescription("Account Settings");
   buildLeftPanel();
   buildLeftPanelFramework();

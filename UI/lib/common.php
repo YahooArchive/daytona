@@ -1,5 +1,9 @@
 <?php
+/**
+ * This file contains some common helper functions which all other php pages uses for performing some common taks
+ */
 
+// This function queries database and fetch user account information
 function getUserAccount($db, $user, $email=null) {
     $email_query = $email ? "OR email = :email" : "";
     $query = "SELECT is_admin, email, user_state FROM LoginAuthentication WHERE username = :username $email_query LIMIT 1";
@@ -37,6 +41,7 @@ function getParam($paramName, $paramType='GET') {
     return isset($_GET[$paramName]) ? sanitize_input($_GET[$paramName]) : null;
 }
 
+// Initialize database instance
 function initDB() {
     $conf = parse_ini_file('daytona_config.ini');
     $servername = $conf['servername'];
@@ -52,6 +57,7 @@ function initDB() {
     return $db;
 }
 
+// Fetch all framework information from the database
 function getFrameworks($db, $userId) {
     if ($userId) {
         $query = "SELECT DISTINCT * FROM CommonFrameworkAuthentication JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE username = :userId ORDER BY frameworkname ASC";
@@ -65,6 +71,7 @@ function getFrameworks($db, $userId) {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+// Fetch framework data using framework id
 function getFrameworkById($db, $fid, $full=false) {
     $query = "SELECT * FROM ApplicationFrameworkMetadata WHERE frameworkid = :frameworkid";
     $stmt = $db->prepare($query);
@@ -80,6 +87,7 @@ function getFrameworkById($db, $fid, $full=false) {
     return getFrameworkAuxData($db, $frameworkData);
 }
 
+// Fetch framework data using framework name
 function getFrameworkByName($db, $fname, $full=false) {
     $query = "SELECT * FROM ApplicationFrameworkMetadata WHERE frameworkname = :frameworkname";
     $stmt = $db->prepare($query);
@@ -95,9 +103,8 @@ function getFrameworkByName($db, $fname, $full=false) {
     return getFrameworkAuxData($db, $frameworkData);
 }
 
+// Get framework argument, hosts and test report information from framework definition
 function getFrameworkAuxData($db, $frameworkData) {
-    // TODO: Is there a way to create a query where everything is returned,
-    // including arguments & test report items as arrays?
 
     // Get arguments
     $query = "SELECT * FROM ApplicationFrameworkArgs WHERE frameworkid = :frameworkid";
@@ -127,7 +134,9 @@ function getFrameworkAuxData($db, $frameworkData) {
     return $frameworkData;
 }
 
+// Ftech test information from the database using testid
 function getTestById($db, $testId, $full=false) {
+    // Fetch test data from TestInputData table
     $query = "SELECT testid, frameworkname, TestInputData.title, TestInputData.purpose, priority, execution_script_location, timeout, cc_list, testid, frameworkid, TestInputData.modified, TestInputData.creation_time, start_time, end_time, end_status, username FROM TestInputData JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE testid = :testid";
     $stmt = $db->prepare($query);
     $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
@@ -139,6 +148,7 @@ function getTestById($db, $testId, $full=false) {
         return $testData;
     }
 
+    // Fetch host information from HostAssociation
     $query = "SELECT name, hostname FROM HostAssociation JOIN HostAssociationType USING(hostassociationtypeid) WHERE testid = :testid";
     $stmt = $db->prepare($query);
     $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
@@ -169,6 +179,7 @@ function getTestById($db, $testId, $full=false) {
         $testData['imported_test_arg'] = $old_testArgs;
     }
 
+    // Fetch test arguments
     $query = "SELECT argument_value, framework_arg_id, widget_type FROM TestArgs JOIN ApplicationFrameworkArgs USING(framework_arg_id) WHERE testid = :testid ORDER BY testargid";
     $stmt = $db->prepare($query);
     $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
@@ -215,6 +226,7 @@ function getTestById($db, $testId, $full=false) {
     return $testData;
 }
 
+// Function for checking whether test is in running state
 function checkTestRunning($db, $testId){
     $query = "SELECT * FROM CommonFrameworkSchedulerQueue where testid=:testid";
     $stmt = $db->prepare($query);
@@ -229,16 +241,7 @@ function checkTestRunning($db, $testId){
     }
 }
 
-function getTestResults($db, $testId) {
-    $query = "SELECT columnnumber, rownumber, result_name, result_value FROM TestResults JOIN TestResultsColumn USING(resultsid) JOIN TestResultsPair USING(columnid) WHERE testid = :testid";
-    $stmt = $db->prepare($query);
-    $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
-    $stmt->execute();
-    $testData = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    return $testData;
-}
-
+// This function creates a dropdown list on daytona pages for selecting framework
 function addFrameworkDropdownJS($db, $userId) {
     $frameworks = getFrameworks($db, $userId);
     foreach ($frameworks as $framework) {
@@ -248,13 +251,15 @@ function addFrameworkDropdownJS($db, $userId) {
     }
 }
 
+// This function add Test Results files like results.csv, or any other file generated by execution script on this left
+// panel, it also create link to execution script
 function addTestResults($path, $hosts, $testid, $compids, $exec_script) {
     if (count($hosts) > 0 ){
         echo "createLabel('Test Results')\n";
         echo "createTestResultsRoot()\n";
     }
     foreach ($hosts as $key=>$host) {
-        $files = glob("$path/$host/*.{plt,csv,txt}", GLOB_BRACE);
+	$files = glob("$path/$host/*.{plt,csv,txt}", GLOB_BRACE);
         foreach ($files as $file) {
             $ex_file = explode("/", $file);
             echo "  fillTestResults('$testid', '$compids', '" . end($ex_file) . "', '$file', '$key');\n";
@@ -263,6 +268,7 @@ function addTestResults($path, $hosts, $testid, $compids, $exec_script) {
     echo "buildExecScriptLink('$testid', '$compids', '$exec_script');\n" ;
 }
 
+// This function add all SAR data files for each execution and statistic hosts on left panel
 function addSystemMetrics($path, $hosts, $testid, $compids, $label) {
     foreach ($hosts as $key=>$host) {
         if(strpos($label,"exec") !== false){
@@ -271,7 +277,7 @@ function addSystemMetrics($path, $hosts, $testid, $compids, $label) {
         }else{
             echo "  fillSystemMetricsHost('$host','$key');\n";
         }
-        $files = glob("$path/$host/*.{plt,csv,txt}", GLOB_BRACE);
+	$files = glob("$path/$host/sar/*.{plt,csv,txt}", GLOB_BRACE);
         foreach ($files as $file) {
             $ex_file = explode("/", $file);
             echo "  fillSystemMetrics('$testid', '$compids', '" . end($ex_file) . "', '$file', '$key', '$label');\n";
@@ -279,7 +285,7 @@ function addSystemMetrics($path, $hosts, $testid, $compids, $label) {
     }
 }
 
-
+// This functions adds all log files from all the hosts on left panel
 function addLogs($path, $hosts, $testid, $compids) {
     if (count($hosts) > 0 ){
         echo "createLabel('Logs')\n";
@@ -303,10 +309,9 @@ function addLogs($path, $hosts, $testid, $compids) {
     }
 }
 
-
+// This function initializes framework data with framework name or framework id
 function initFramework($db, $full=false) {
     $frameworkName = getParam('framework');
-    // TODO: This is kinda hackish. Figure out a better way to handle this
     if ($frameworkName == 'Global') {
         return array(null, null, null);
     }
@@ -315,12 +320,12 @@ function initFramework($db, $full=false) {
     if ($frameworkName) {
         $fData = getFrameworkByName($db, $frameworkName, $full);
         if (! $fData) {
-            diePrint("Could not find framework by name: $frameworkName");
+            diePrint("Could not find framework by name: $frameworkName", "Error");
         }
     } else if ($frameworkId) {
         $fData = getFrameworkById($db, $frameworkId, $full);
         if (! $fData) {
-            diePrint("Could not find framework by ID: $frameworkId");
+            diePrint("Could not find framework by ID: $frameworkId", "Error");
         }
     }
     if ($fData) {
@@ -329,6 +334,8 @@ function initFramework($db, $full=false) {
     return array(null, null, null);
 }
 
+// This file generate CSV comparison of 2 column CSV, it matches key-value pair for test comparison, if key is not
+// present in other file then just display it for one file while for other file it will dispaly "null"
 function generateCompareCsv($csvfiles, $testid)
 {
     $csv_files = explode(",", $csvfiles);
@@ -388,16 +395,12 @@ function generateCompareCsv($csvfiles, $testid)
             }
         }
     }
-
-    /*$fp = fopen('temp_compare.csv', 'w');//output file set here
-    foreach ($final_csv as $field => $value) {
-    array_unshift($value,$field);
-        fputcsv($fp, $value);
-    }*/
     fclose($fp);
     return $final_csv;
 }
 
+// This function evaluate column count of a CSV file to decide whether it is multi-column CSV or key-value pair CSV,
+// then appropriate file rendering function can be invoked
 function getCsvColumnCount($csvfiles){
     $csv_files = explode(",", $csvfiles);
     $count = 0;
@@ -418,6 +421,7 @@ function getCsvColumnCount($csvfiles){
 
 }
 
+// Sort 2 array alphabetically based on array key values
 function sort2DArray($arr){
     $arr_sort = array_slice($arr,1);
     usort($arr_sort, function($a,$b) {
@@ -427,6 +431,7 @@ function sort2DArray($arr){
     return $arr_sort;
 }
 
+// This function validate login password
 function validatePassword($db, $user, $password) {
     $query = "SELECT password FROM LoginAuthentication WHERE username = :username LIMIT 1";
     $stmt = $db->prepare($query);
@@ -439,6 +444,7 @@ function validatePassword($db, $user, $password) {
     return false;
 }
 
+// Return error as JSON string
 function returnError($message=null) {
     $returnObj = array(
         'status'  => 'ERROR',
@@ -449,6 +455,7 @@ function returnError($message=null) {
     exit;
 }
 
+// Return ok as JSON string
 function returnOk($returnData=array()) {
     $returnObj = array(
         'status'  => 'OK',
@@ -460,6 +467,8 @@ function returnOk($returnData=array()) {
     exit;
 }
 
+// this function validate whether realpath of requested file for rendering is within daytona file system, this is to
+// prevent file rendering of other files that are outside daytona filesystem
 function validate_file_path($filepath){
     $conf = parse_ini_file('daytona_config.ini');
     $base = $conf['daytona_data_dir'];
@@ -471,6 +480,12 @@ function validate_file_path($filepath){
     }
 }
 
+// This function validate password policy based on below rules:
+// Password should contain : 8-12 characters
+// at least one lowercase character
+// one uppercase character
+// one digit
+// at least one special character : @#-_$%^&+=§!?
 function validatePasswordPolicy($password){
     if (!preg_match('/^(?=.*\d)(?=.*[@#\-_$%^&+=§!\?])(?=.*[a-z])(?=.*[A-Z])[0-9A-Za-z@#\-_$%^&+=§!\?]{8,12}$/',$password)){
         return false;
@@ -479,6 +494,7 @@ function validatePasswordPolicy($password){
     }
 }
 
+// Sanitize input from form submissions
 function sanitize_input($data) {
     if (!is_array($data)){
         $data = trim($data);
@@ -488,8 +504,14 @@ function sanitize_input($data) {
     return $data;
 }
 
-// Copy command just handles files hence using this recurse_copy snippet from PHP manual for recursive copy
-// Reference : http://php.net/manual/en/function.copy.php
+/**
+ * Copy command just handles files hence using this recurse_copy snippet from PHP manual for recursive copy
+ * Reference : http://php.net/manual/en/function.copy.php#91010
+ *
+ * @param $src - Source directory
+ * @param $dst - Destination directory
+ */
+
 function recurse_copy($src, $dst) {
     $dir = opendir($src);
     @mkdir($dst);
@@ -506,23 +528,28 @@ function recurse_copy($src, $dst) {
     closedir($dir);
 }
 
-// rmdir delete directory only if it is empty hence using this snippet from PHP manual for recursive del
-// Reference : http://www.php.net/rmdir
+/**
+ * rmdir delete directory only if it is empty hence using this snippet from PHP manual for recursive del
+ * Reference : http://php.net/manual/en/function.rmdir.php#117354
+ *
+ * @param $src - Directory to be deleted with all files and sub-directories
+ */
 function recursive_rmdir($src) {
-    $dir = opendir($src);
-    while(false !== ( $file = readdir($dir)) ) {
-        if (( $file != '.' ) && ( $file != '..' )) {
-            $full = $src . '/' . $file;
-            if ( is_dir($full) ) {
-                recursive_rmdir($full);
-            }
-            else {
-                unlink($full);
+    if (file_exists($src)){
+        $dir = opendir($src);
+        while(false !== ( $file = readdir($dir)) ) {
+            if (( $file != '.' ) && ( $file != '..' )) {
+                $full = $src . '/' . $file;
+                if ( is_dir($full) ) {
+                    recursive_rmdir($full);
+                }
+                else {
+                    unlink($full);
+                }
             }
         }
+        closedir($dir);
+        rmdir($src);
     }
-    closedir($dir);
-    rmdir($src);
 }
-
 ?>
