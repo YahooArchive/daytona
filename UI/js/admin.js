@@ -1,3 +1,6 @@
+/**
+ * This file implements form submission and other JQuery functions for admin.php page
+ */
 $(document).ready(function() {
 
   $('#submit-button').on('click', function(evt) {

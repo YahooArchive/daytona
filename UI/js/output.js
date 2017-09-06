@@ -1,5 +1,10 @@
+/**
+ * This page build UI rendering of logs file which user want to display on output.php page
+ */
 var MAX_PROCESS_COUNT = 10;
 
+// This jquery function is for selecting/de-selecting multiple checkboxes on process filter selection panel. This panel
+// is used for process selection for rendering of cpu_usage, mem_usage and res_mem_usage plt files.
 $(function() {
     $(".group-checkbox:checkbox").change(function(){
         var group = this.name;
@@ -18,7 +23,7 @@ $(function() {
 
 });
 
-
+// Submission of process selection on proper filter panel for rendering graph of selected process
 $(document).ready(function() {
 $(".proc_filter_form").submit(function(e){
     e.preventDefault();
@@ -52,6 +57,7 @@ $(".proc_filter_form").submit(function(e){
 });
 });
 
+// Build UI for side by side text compare view
 function buildTextCompareView(json_data,test_list,div_id){
     if (div_id === "output-table-display"){
         div_class="output-text-panel";
@@ -79,7 +85,7 @@ function buildTextCompareView(json_data,test_list,div_id){
     }
 }
 
-
+// Build UI for graph view on output page for rendering plt file
 function buildOutputPageGraphView(json_data, col_name, metric_json, x_value , xs_json , title, graphid, div_id) {
     var panel = $("<div></div>").addClass("panel panel-info partition-1");
     var pHeading = $("<div></div>").addClass("panel-heading collapse-heading");
@@ -111,6 +117,7 @@ function buildOutputPageGraphView(json_data, col_name, metric_json, x_value , xs
     buildGraph(json_data, col_name, metric_json, x_value ,xs_json ,title, graphid);
 }
 
+// Display error message in case of some error
 function unsupportedView(message,div_id) {
     var label = $("<h2></h2").addClass("err-msg-label")
         .text(message);
@@ -118,6 +125,8 @@ function unsupportedView(message,div_id) {
     $(div_id).append(label);
 }
 
+// It count # of tests user is trying to compare, for desktop we allow maximum 4 test while on mobile we allow
+// maximum 2 test comparison
 function checkTestCount(){
     var testid = $('#testid').val();
     var compids = $('#compids').val().split(",");
@@ -143,6 +152,7 @@ function checkTestCount(){
 
 }
 
+// Display tabular view for any CSV file and display it side by side
 function buildFileToTableView(json_data,test_list,div_id) {
     if (div_id === "output-table-display"){
         div_class="output-text-panel";
@@ -196,6 +206,7 @@ function buildFileToTableView(json_data,test_list,div_id) {
     }
 }
 
+// Display tabular view of any JSON data and display it side by side
 function buildJsonToTableView(json_data,div_id) {
     var compare_data = JSON.parse(json_data);
     if (compare_data.length < 2){
@@ -231,11 +242,13 @@ function buildJsonToTableView(json_data,div_id) {
     $("div#" + div_id).append(table);
 
 }
+
+// Switch file display based on what user have selected
 function switchFileViewerFormat(referer) {
     var fileType = $(referer).find("option:selected").text().toLowerCase();
     location.search = location.search.replace(/&format=[^&$]*/i, '&format=' + fileType);
 }
-
+// Ajax call for submitting request for downloading particular log file
 function downloadFIle(filename,s_compids_str){
     url = "/downloadfile.php?filename=" + filename + "&testids=" + s_compids_str;
     var http = new XMLHttpRequest();

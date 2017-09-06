@@ -1,8 +1,8 @@
 <?php
 /**
- * User: dmittal
- * Date: 3/2/17
- * Time: 3:40 PM
+ * This is simple web service to authenticate user name and password. It is created for python cli authentication.
+ * In future, we can remove this file once we implement password verification mechanism which includes PHP hash
+ * generation through python.
  */
 
 $user = '';

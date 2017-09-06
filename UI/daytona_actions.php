@@ -1,10 +1,19 @@
 <?php
-/*
- * AJAX actions
+/**
+ * This file contains MySQL queries for handling all AJAX calls made by jquery for performing user actions like
+ * create/edit/clone/delete framework and tests. This file interacts with DB for making necessary changes in a
+ * test/framework data as per action chosen by user
  */
 
 require 'lib/auth.php';
 
+/**
+ * This function save all the framework details supplied by user from UI page create_edit_framework. It either inserts
+ * new framework or update already existing framework
+ *
+ * @param $db - database handler
+ * @return array - return array containing framework id and framework name
+ */
 function save_framework($db) {
     global $userId, $userIsAdmin;
 
@@ -38,11 +47,6 @@ function save_framework($db) {
         returnError("Execution script should contain <folder_name>/<script_name>");
     }
 
-    // TODO: Check for other errors? The form has 'required' inputs as well as
-    // pattern checks. Should we still check them here?
-
-    // TODO Validate Test Report args? Like same number for each?
-
     // Four steps
     // 1) Insert or update base framework config
     // 2) Insert each test argument individually
@@ -55,9 +59,6 @@ function save_framework($db) {
     } else {
         $query = "UPDATE ApplicationFrameworkMetadata SET argument_passing_format = :argument_passing_format, default_timeout = :default_timeout, execution_script_location = :execution_script_location, frameworkname = :frameworkname, frameworkowner = :frameworkowner, last_modified = NOW(), productname = :productname, purpose = :purpose, title = :title WHERE frameworkid = :frameworkid";
     }
-
-    // TODO: Look into eliminating try-catch
-    // Rationale: http://stackoverflow.com/questions/272203/pdo-try-catch-usage-in-functions/273090#273090
 
     try {
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -205,6 +206,18 @@ function save_framework($db) {
     );
 }
 
+/*  This function deletes framework from Daytona. Because of DB cascade setup, this framework deletion will delete all
+    the data associated with that particular framework in other tables as well.
+*/
+
+/**
+ * This function deletes framework from Daytona. Because of DB cascade setup, this framework deletion will delete all
+ * the data associated with that particular framework in other tables as well
+ *
+ * @param $db - database handler
+ * @return array - returns array containing framework id and framework name
+ */
+
 function delete_framework($db) {
     global $userId, $userIsAdmin;
 
@@ -260,6 +273,18 @@ function delete_framework($db) {
     );
 }
 
+/*  This function save all the test details supplied by user from UI page create_edit_test. It either inserts
+    new test or update already existing test and save them with 'new' state */
+
+/**
+ * This function save all the test details supplied by user from UI page create_edit_test. It either inserts new test
+ * or update already existing test and save them with 'new' state
+ *
+ * @param $db - database handle
+ * @param string $state - State of a test
+ * @return array - array containing basic test details
+ */
+
 function save_test($db,$state='new') {
     global $userId, $userIsAdmin;
 
@@ -291,9 +316,6 @@ function save_test($db,$state='new') {
         }
     }
 
-    // TODO: Check for other errors? The form already checks for title and
-    // exechost. Should we still check them here?
-
     // Retrieve argument IDs for framework (for test argument insertion)
     $query = "SELECT framework_arg_id, frameworkid, argument_name, argument_values, argument_default, argument_order FROM ApplicationFrameworkArgs WHERE frameworkid = :frameworkid ORDER BY argument_order";
     $stmt = $db->prepare($query);
@@ -312,9 +334,6 @@ function save_test($db,$state='new') {
     } else {
 	$query = "UPDATE TestInputData SET cc_list = :cc_list, start_time = NULL, end_time = NULL, modified = NOW(), priority = :priority, purpose = :purpose, timeout = :timeout, title = :title, end_status = '$state'  WHERE testid = :testid";
     }
-
-    // TODO: Look into eliminating try-catch
-    // Rationale: http://stackoverflow.com/questions/272203/pdo-try-catch-usage-in-functions/273090#273090
 
     try {
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -351,7 +370,7 @@ function save_test($db,$state='new') {
         $stmt = $db->prepare($query);
         $stmt->bindValue(':testid', $testId, PDO::PARAM_INT);
         $stmt->execute();
-
+	
 	// Delete all previous values of test arguments associated with this test as we are going to enter all new values with insert sql statement
 	$query = "DELETE FROM TestArgs WHERE testid = :testid";
         $stmt = $db->prepare($query);
@@ -359,7 +378,7 @@ function save_test($db,$state='new') {
         $stmt->execute();
 
         // Insert arguments
-	foreach ($argRows as $arg) {
+        foreach ($argRows as $arg) {
             $argId = $arg['framework_arg_id'];
             $argValue = getParam("f_arg_$argId", 'POST');
             $query = "INSERT INTO TestArgs ( argument_value, framework_arg_id, testid ) VALUES ( :argument_value, :framework_arg_id, :testid )";
@@ -494,6 +513,15 @@ function save_test($db,$state='new') {
     );
 }
 
+/**
+ * This function save all the test details supplied by user from UI page create_edit_test. It also trigger test
+ * execution after saving test. It either inserts new test or update already existing test and save them
+ * with 'scheduled' state to start test execution
+ *
+ * @param $db - database handle
+ * @return array - array containing basic test details
+ */
+
 function save_run_test($db) {
     $testReturnData = save_test($db,'scheduled');
 
@@ -501,6 +529,7 @@ function save_run_test($db) {
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $db->beginTransaction();
 
+        // Adding test in CommonFrameworkSchedulerQueue table which is a list of currently executing test.
         $query = "INSERT INTO CommonFrameworkSchedulerQueue (testid, state, pid) VALUES ( :testid, 'scheduled', 0 )";
         $stmt = $db->prepare($query);
         $stmt->bindValue(':testid', $testReturnData['test']['testid']);
@@ -516,6 +545,13 @@ function save_run_test($db) {
     $testReturnData['test']['running'] = true;
     return $testReturnData;
 }
+
+/**
+ * This function deletes test from Daytona
+ *
+ * @param $db - database handle
+ * @return array - array containing basic test details
+ */
 
 function delete_test($db) {
     global $userId, $userIsAdmin;
@@ -571,10 +607,14 @@ function delete_test($db) {
     );
 }
 
+/**
+ * This function deletes multiple tests from Daytona
+ *
+ * @param $db - database handle
+ */
 function delete_tests($db) {
     global $userId, $userIsAdmin;
 
-    // TODO: Normalize with rest of functions
     $testIds = getParam('testids', 'POST');
 
     if (! $testIds) {
@@ -595,7 +635,6 @@ function delete_tests($db) {
         if (!$userIsAdmin && $userId != $testData['username']) {
             returnError("You are not the test owner for test: $testId");
         }
-
 	$test_logs_path = "test_data/" . $frameworkData['frameworkname'] . "/" . $testId;
         recursive_rmdir($test_logs_path);
     }
@@ -616,7 +655,6 @@ function delete_tests($db) {
         $db->rollBack();
         returnError("MySQL error: " . $e->getMessage());
     }
-
     return array(
         'test' => array(
             'frameworkid' => $testData['frameworkid'],
@@ -626,6 +664,12 @@ function delete_tests($db) {
     );
 }
 
+/**
+ * A handler function for framework settings page where user can select/deselect framework for UI display
+ *
+ * @param $db - database handle
+ *
+ */
 function set_user_frameworks($db) {
     global $userId;
 
@@ -635,7 +679,6 @@ function set_user_frameworks($db) {
         returnError("No frameworks are defined");
     }
 
-    // TODO: Validate each framework?
     try {
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $db->beginTransaction();
@@ -661,7 +704,7 @@ function set_user_frameworks($db) {
         returnError("MySQL error: " . $e->getMessage());
     }
 
-    return array();
+    return;
 }
 
 // Script begins here

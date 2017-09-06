@@ -1,7 +1,8 @@
 <?php
-// ini_set('display_errors',1);
-// ini_set('display_startup_errors',1);
-// error_reporting(-1);
+/**
+ * This is Daytona homepage which displays tests queues (currently running, currently waiting and last completed).
+ * It provide basic test information like tests ID, framework name, test state etc.
+ */
 
 require('lib/auth.php');
 list($frameworkId, $frameworkName, $frameworkData) = initFramework($db);
@@ -47,7 +48,7 @@ include_once('lib/header.php');
 $(document).ready(function() {
 //  alert("<?php echo $userId; ?>");
   $('[data-toggle="tooltip"]').tooltip();
-  buildTopNavBar('<?php echo $frameworkName ?: 'Global'; ?>', '', '<?php echo $userId; ?>');
+  buildTopNavBar('<?php echo $frameworkName ?: 'Global'; ?>', '');
   setDescription('Queue');
   buildUserAccountMenu('<?php echo $userId; ?>');
   buildLeftPanel();

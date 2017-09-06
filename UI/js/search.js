@@ -1,3 +1,8 @@
+/**
+ * This file implement Jquery components used on search.php page
+ */
+
+// Display basic comparison of tests selected by user
 function submitBasicCompare() {
     var checkboxes = $(".header-search input:checkbox").filter(function() {
         return $(this).prop('checked');
@@ -17,6 +22,7 @@ function submitBasicCompare() {
     window.location = "/test_info.php?testid=" + $(checkboxes[0]).attr("data-testid") + compareStr;
 }
 
+// Display advance comparison of tests selected by user
 function submitAdvanceCompare() {
     var checkboxes = $(".header-search input:checkbox").filter(function() {
         return $(this).prop('checked');
@@ -36,7 +42,8 @@ function submitAdvanceCompare() {
     window.location = "/test_report.php?testid=" + $(checkboxes[0]).attr("data-testid") + compareStr;
 }
 
-
+// Toggle delete, compare, advance compare button if any test is selected
+// Form submission for deleting tests
 $(document).ready(function() {
   $('[name="test-checkbox"]').on('click', function(evt) {
     var count = $('[name="test-checkbox"]:checked').length;

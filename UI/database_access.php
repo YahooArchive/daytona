@@ -1,31 +1,39 @@
 <?php
+/**
+ * This file contains MySQL queries which fetches list of tests for all test queues on Daytona homepage. It also make
+ * DB changes for user actions like RUN and KILL test. This file handles all Ajax calls made by jquery functions to
+ * fetch the list of tests for running, waiting and completed test queues. It returns a list of test in JSON.
+ */
+
 header('Content-type: application/json');
 require('lib/auth.php');
 
-function convertTime($str_time) {
-    if(!$str_time) {
+function convertTime($str_time)
+{
+    if (!$str_time) {
         return "N/A";
     }
     $time = strtotime($str_time . " UTC");
     return date("m/d/Y g:i A", $time);
 }
 
-if(empty($_GET["query"])) {
+if (empty($_GET["query"])) {
     die("Required field 'query' is empty");
 }
 
+// Some input checks for test actions like RUN and KILL
 $testid = "";
-if(getParam("query") == "killTest" || getParam("query") == "runTest") {
-    if(empty($_GET["testid"])) {
+if (getParam("query") == "killTest" || getParam("query") == "runTest") {
+    if (empty($_GET["testid"])) {
         die("Required field 'testid' is empty");
     }
     $testid = getParam("testid");
     // SQL Injection Prevention
-    if(!is_numeric($testid)) {
+    if (!is_numeric($testid)) {
         die("'testid' must be numeric");
     }
     $testData = getTestById($db, $testid, true);
-    if(!$userIsAdmin && $userId != $testData["username"]) {
+    if (!$userIsAdmin && $userId != $testData["username"]) {
         die("You are not the test owner (" . $testData['username'] . ")");
     }
 }
@@ -38,15 +46,15 @@ $frameworkid = 0;
 $frameworkid_bool = False;
 $username_bool = False;
 
-if(isset($_GET["frameworkid"])) {
+if (isset($_GET["frameworkid"])) {
     $framework_clause_and = "AND frameworkid=:frameworkid";
     $framework_clause_where = "WHERE frameworkid=:frameworkid";
     $frameworkid = (int)getParam("frameworkid");
     $frameworkid_bool = True;
 }
 
-if(isset($_GET["duration"])) {
-    switch(getParam("duration")) {
+if (isset($_GET["duration"])) {
+    switch (getParam("duration")) {
         case "1":
             $duration_clause_and = " AND end_time >= now() - INTERVAL 1 DAY";
             break;
@@ -61,10 +69,10 @@ if(isset($_GET["duration"])) {
     }
 }
 
-if(isset($_GET["user"])) {
-    switch(getParam("user")) {
+if (isset($_GET["user"])) {
+    switch (getParam("user")) {
         case "1":
-	    $username_bool = True;
+            $username_bool = True;
             $user_clause_and = " AND username=:userId";
             break;
         default:
@@ -73,7 +81,9 @@ if(isset($_GET["user"])) {
     }
 }
 $sql_query = "";
-switch(getParam("query")) {
+
+// Forming a MySQL query string based on inputs received from UI
+switch (getParam("query")) {
     case "killTest":
         $sql_query = "DELETE FROM CommonFrameworkSchedulerQueue WHERE " .
             "testid=:testid;" .
@@ -109,75 +119,77 @@ switch(getParam("query")) {
             $framework_clause_where;
         break;
 }
+
+// Executing MySQL query formed in previous code snippet and sending result back to ajax calls
 $query_arr = explode(";", html_entity_decode($sql_query, ENT_QUOTES));
-foreach($query_arr as $query) {
-    try{
+foreach ($query_arr as $query) {
+    try {
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $db->beginTransaction();
         $stmt = $db->prepare($query);
-        switch(getParam("query")) {
+        switch (getParam("query")) {
             case "killTest":
-                $stmt->bindValue(':testid',$testid,PDO::PARAM_INT);
+                $stmt->bindValue(':testid', $testid, PDO::PARAM_INT);
                 $stmt->execute();
                 break;
             case "runTest":
-                $stmt->bindValue(':testid',(int)$testid,PDO::PARAM_INT);
+                $stmt->bindValue(':testid', (int)$testid, PDO::PARAM_INT);
                 $stmt->execute();
                 break;
             case "currentlyRunning":
-		if ($frameworkid_bool){
-		    $stmt->bindValue(':frameworkid',(int)$frameworkid,PDO::PARAM_INT);
-		}
-		if ($username_bool){
-		    $stmt->bindValue(':userId',$userId,PDO::PARAM_STR);
-		}
+                if ($frameworkid_bool) {
+                    $stmt->bindValue(':frameworkid', (int)$frameworkid, PDO::PARAM_INT);
+                }
+                if ($username_bool) {
+                    $stmt->bindValue(':userId', $userId, PDO::PARAM_STR);
+                }
                 $stmt->execute();
                 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 break;
             case "waitingQueue":
-                if ($frameworkid_bool){
-                    $stmt->bindValue(':frameworkid',(int)$frameworkid,PDO::PARAM_INT);
+                if ($frameworkid_bool) {
+                    $stmt->bindValue(':frameworkid', (int)$frameworkid, PDO::PARAM_INT);
                 }
-		if ($username_bool){
-                    $stmt->bindValue(':userId',$userId,PDO::PARAM_STR);
+                if ($username_bool) {
+                    $stmt->bindValue(':userId', $userId, PDO::PARAM_STR);
                 }
-		$stmt->execute();
+                $stmt->execute();
                 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 break;
             case "lastCompleted":
-                if ($frameworkid_bool){
-                    $stmt->bindValue(':frameworkid',(int)$frameworkid,PDO::PARAM_INT);
+                if ($frameworkid_bool) {
+                    $stmt->bindValue(':frameworkid', (int)$frameworkid, PDO::PARAM_INT);
                 }
-		if ($username_bool){
-                    $stmt->bindValue(':userId',$userId,PDO::PARAM_STR);
+                if ($username_bool) {
+                    $stmt->bindValue(':userId', $userId, PDO::PARAM_STR);
                 }
-		$stmt->execute();
+                $stmt->execute();
                 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 break;
             case "queueCount":
-                if ($frameworkid_bool){
-                    $stmt->bindValue(':frameworkid',(int)$frameworkid,PDO::PARAM_INT);
+                if ($frameworkid_bool) {
+                    $stmt->bindValue(':frameworkid', (int)$frameworkid, PDO::PARAM_INT);
                 }
-		$stmt->execute();
+                $stmt->execute();
                 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 break;
         }
-	$db->commit();
-    }catch (PDOException $e){
+        $db->commit();
+    } catch (PDOException $e) {
         $db->rollBack();
         returnError("MySQL error: " . $e->getMessage());
     }
-    if(!empty($_GET["respond"])) {
+    if (!empty($_GET["respond"])) {
         $result_all = array();
-        foreach($results as $row) {
+        foreach ($results as $row) {
             $result_all[] = $row;
         }
 
-        foreach($result_all as $result_key => $result_val) {
-            if(isset($result_val["start_time"])) {
+        foreach ($result_all as $result_key => $result_val) {
+            if (isset($result_val["start_time"])) {
                 $result_all[$result_key]["start_time"] = convertTime($result_val["start_time"]);
             }
-            if(isset($result_val["end_time"])) {
+            if (isset($result_val["end_time"])) {
                 $result_all[$result_key]["end_time"] = convertTime($result_val["end_time"]);
             }
         }

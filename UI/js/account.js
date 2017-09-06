@@ -1,3 +1,6 @@
+/**
+ * This function build UI panel for displaying user account details
+ */
 function buildAccountCard(user, email, isAdmin, state) {
     var container = $("#account-info-panel .panel-body");
     var accountCard = $("<div/>").addClass("account-card");
@@ -45,15 +48,12 @@ function buildAccountCard(user, email, isAdmin, state) {
     $(container).append(accountCard);
 }
 
+/**
+ * This function build admin panel on account settings page for admin user
+ */
 function buildAdminPanel(json) {
     var accountsMap = JSON.parse(json);
     var container = $("#account-admin-panel .panel-body");
-/*    var adminApprovalRow = $("<div/>")
-    var adminApprovalLabel = $("<label/>").text("New Account Approval: ");
-    var adminApprovalToggle = $("<i/>").addClass("fa fa-toggle-on");
-    $(adminApprovalRow).append(adminApprovalLabel)
-        .append(adminApprovalToggle);
-    $(container).append(adminApprovalRow);*/
     var adminTable = $("<table/>").attr("id", "account-admin-table")
         .addClass("table table-hover table-striped table-condensed");
     $(adminTable).append($("<thead/>").append($("<tr/>")));

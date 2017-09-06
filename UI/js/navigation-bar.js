@@ -1,140 +1,147 @@
-function loadNavigationBar(){
-	//cache DOM elements
-	var mainContent = $('.cd-main-content'),
-		header = $('.cd-main-header'),
-		sidebar = $('.cd-side-nav'),
-		sidebarTrigger = $('.cd-nav-trigger'),
-		topNavigation = $('.cd-top-nav'),
-		accountInfo = $('.account');
+/**
+ * JS for toggling sub-menus on navigation link hover/click
+ * Reference : https://codyhouse.co/gem/responsive-sidebar-navigation/
+ * Check project credits for further clarification
+ */
 
-	//on resize, move search and top nav position according to window width
-	var resizing = false;
-	moveNavigation();
-	$(window).on('resize', function(){
-		if( !resizing ) {
-			(!window.requestAnimationFrame) ? setTimeout(moveNavigation, 300) : window.requestAnimationFrame(moveNavigation);
-			resizing = true;
-		}
-	});
+function loadNavigationBar() {
+    //cache DOM elements
+    var mainContent = $('.cd-main-content'),
+        header = $('.cd-main-header'),
+        sidebar = $('.cd-side-nav'),
+        sidebarTrigger = $('.cd-nav-trigger'),
+        topNavigation = $('.cd-top-nav'),
+        accountInfo = $('.account');
 
-	//on window scrolling - fix sidebar nav
-	var scrolling = false;
-	checkScrollbarPosition();
-	$(window).on('scroll', function(){
-		if( !scrolling ) {
-			(!window.requestAnimationFrame) ? setTimeout(checkScrollbarPosition, 300) : window.requestAnimationFrame(checkScrollbarPosition);
-			scrolling = true;
-		}
-	});
+    //on resize, move search and top nav position according to window width
+    var resizing = false;
+    moveNavigation();
+    $(window).on('resize', function () {
+        if (!resizing) {
+            (!window.requestAnimationFrame) ? setTimeout(moveNavigation, 300) : window.requestAnimationFrame(moveNavigation);
+            resizing = true;
+        }
+    });
 
-	//mobile only - open sidebar when user clicks the hamburger menu
-	sidebarTrigger.on('click', function(event){
-		event.preventDefault();
-		$([sidebar, sidebarTrigger]).toggleClass('nav-is-visible');
-	});
+    //on window scrolling - fix sidebar nav
+    var scrolling = false;
+    checkScrollbarPosition();
+    $(window).on('scroll', function () {
+        if (!scrolling) {
+            (!window.requestAnimationFrame) ? setTimeout(checkScrollbarPosition, 300) : window.requestAnimationFrame(checkScrollbarPosition);
+            scrolling = true;
+        }
+    });
 
-	//click on item and show submenu
-	$('.has-children > a').on('click', function(event){
-		var mq = checkMQ(),
-			selectedItem = $(this);
-		if( mq == 'mobile' || mq == 'tablet' ) {
-			event.preventDefault();
-			if( selectedItem.parent('li').hasClass('selected')) {
-				selectedItem.parent('li').removeClass('selected');
-			} else {
-				sidebar.find('.has-children.selected').removeClass('selected');
-				accountInfo.removeClass('selected');
-				selectedItem.parent('li').addClass('selected');
-			}
-		}
-	});
+    //mobile only - open sidebar when user clicks the hamburger menu
+    sidebarTrigger.on('click', function (event) {
+        event.preventDefault();
+        $([sidebar, sidebarTrigger]).toggleClass('nav-is-visible');
+    });
 
-	//click on account and show submenu - desktop version only
-	accountInfo.children('a').on('click', function(event){
-		var mq = checkMQ(),
-			selectedItem = $(this);
-		if( mq == 'desktop') {
-			event.preventDefault();
-			accountInfo.toggleClass('selected');
-			sidebar.find('.has-children.selected').removeClass('selected');
-		}
-	});
+    //click on item and show submenu
+    $('.has-children > a').on('click', function (event) {
+        var mq = checkMQ(),
+            selectedItem = $(this);
+        if (mq == 'mobile' || mq == 'tablet') {
+            event.preventDefault();
+            if (selectedItem.parent('li').hasClass('selected')) {
+                selectedItem.parent('li').removeClass('selected');
+            } else {
+                sidebar.find('.has-children.selected').removeClass('selected');
+                accountInfo.removeClass('selected');
+                selectedItem.parent('li').addClass('selected');
+            }
+        }
+    });
 
-	$(document).on('click', function(event){
-		if( !$(event.target).is('.has-children a') ) {
-			sidebar.find('.has-children.selected').removeClass('selected');
-			accountInfo.removeClass('selected');
-		}
-	});
+    //click on account and show submenu - desktop version only
+    accountInfo.children('a').on('click', function (event) {
+        var mq = checkMQ(),
+            selectedItem = $(this);
+        if (mq == 'desktop') {
+            event.preventDefault();
+            accountInfo.toggleClass('selected');
+            sidebar.find('.has-children.selected').removeClass('selected');
+        }
+    });
 
-	//on desktop - differentiate between a user trying to hover over a dropdown item vs trying to navigate into a submenu's contents
-	sidebar.children('ul').menuAim({
-        activate: function(row) {
-        	$(row).addClass('hover');
+    $(document).on('click', function (event) {
+        if (!$(event.target).is('.has-children a')) {
+            sidebar.find('.has-children.selected').removeClass('selected');
+            accountInfo.removeClass('selected');
+        }
+    });
+
+    //on desktop - differentiate between a user trying to hover over a dropdown item vs trying to navigate into a submenu's contents
+    sidebar.children('ul').menuAim({
+        activate: function (row) {
+            $(row).addClass('hover');
         },
-        deactivate: function(row) {
-        	$(row).removeClass('hover');
+        deactivate: function (row) {
+            $(row).removeClass('hover');
         },
-        exitMenu: function() {
-        	sidebar.find('.hover').removeClass('hover');
-        	return true;
+        exitMenu: function () {
+            sidebar.find('.hover').removeClass('hover');
+            return true;
         },
         submenuSelector: ".has-children",
     });
 
-	function checkMQ() {
-		//check if mobile or desktop device
-		return window.getComputedStyle(document.querySelector('.cd-main-content'), '::before').getPropertyValue('content').replace(/'/g, "").replace(/"/g, "");
-	}
+    function checkMQ() {
+        //check if mobile or desktop device
+        return window.getComputedStyle(document.querySelector('.cd-main-content'), '::before').getPropertyValue('content').replace(/'/g, "").replace(/"/g, "");
+    }
 
-	function moveNavigation(){
-  		var mq = checkMQ();
-        
-        if ( mq == 'mobile' && topNavigation.parents('.cd-side-nav').length == 0 ) {
-        	detachElements();
-			topNavigation.appendTo(sidebar);
-		} else if ( ( mq == 'tablet' || mq == 'desktop') &&  topNavigation.parents('.cd-side-nav').length > 0 ) {
-			detachElements();
-			topNavigation.appendTo(header.find('.cd-nav'));
-		}
-		checkSelected(mq);
-		resizing = false;
-	}
+    function moveNavigation() {
+        var mq = checkMQ();
 
-	function detachElements() {
-		topNavigation.detach();
-	}
+        if (mq == 'mobile' && topNavigation.parents('.cd-side-nav').length == 0) {
+            detachElements();
+            topNavigation.appendTo(sidebar);
+        } else if (( mq == 'tablet' || mq == 'desktop') && topNavigation.parents('.cd-side-nav').length > 0) {
+            detachElements();
+            topNavigation.appendTo(header.find('.cd-nav'));
+        }
+        checkSelected(mq);
+        resizing = false;
+    }
 
-	function checkSelected(mq) {
-		//on desktop, remove selected class from items selected on mobile/tablet version
-		if( mq == 'desktop' ) $('.has-children.selected').removeClass('selected');
-	}
+    function detachElements() {
+        topNavigation.detach();
+    }
 
-	function checkScrollbarPosition() {
-		var mq = checkMQ();
-		
-		if( mq != 'mobile' ) {
-			var sidebarHeight = sidebar.outerHeight(),
-				windowHeight = $(window).height(),
-				mainContentHeight = mainContent.outerHeight(),
-				scrollTop = $(window).scrollTop();
+    function checkSelected(mq) {
+        //on desktop, remove selected class from items selected on mobile/tablet version
+        if (mq == 'desktop') $('.has-children.selected').removeClass('selected');
+    }
 
-			( ( scrollTop + windowHeight > sidebarHeight ) && ( mainContentHeight - sidebarHeight != 0 ) ) ? sidebar.addClass('is-fixed').css('bottom', 0) : sidebar.removeClass('is-fixed').attr('style', '');
-		}
-		scrolling = false;
-	}
+    function checkScrollbarPosition() {
+        var mq = checkMQ();
+
+        if (mq != 'mobile') {
+            var sidebarHeight = sidebar.outerHeight(),
+                windowHeight = $(window).height(),
+                mainContentHeight = mainContent.outerHeight(),
+                scrollTop = $(window).scrollTop();
+
+            ( ( scrollTop + windowHeight > sidebarHeight ) && ( mainContentHeight - sidebarHeight != 0 ) ) ? sidebar.addClass('is-fixed').css('bottom', 0) : sidebar.removeClass('is-fixed').attr('style', '');
+        }
+        scrolling = false;
+    }
 }
 
+// Collapse side panel using arrow on bottom left corner
 function collapseSidePanel(referer) {
-  if($(referer).hasClass("fa-arrow-left")) {
-    $(referer).removeClass("fa-arrow-left").addClass("fa-arrow-right");
-    $(".cd-side-nav").addClass("display-none");
-    $("#top-nav-bar").addClass("zero-margin");
-    $("#page-content").addClass("zero-margin");
-  } else {
-    $(referer).removeClass("fa-arrow-right").addClass("fa-arrow-left");
-    $(".cd-side-nav").removeClass("display-none");
-    $("#top-nav-bar").removeClass("zero-margin");
-    $("#page-content").removeClass("zero-margin");
-  }
+    if ($(referer).hasClass("fa-arrow-left")) {
+        $(referer).removeClass("fa-arrow-left").addClass("fa-arrow-right");
+        $(".cd-side-nav").addClass("display-none");
+        $("#top-nav-bar").addClass("zero-margin");
+        $("#page-content").addClass("zero-margin");
+    } else {
+        $(referer).removeClass("fa-arrow-right").addClass("fa-arrow-left");
+        $(".cd-side-nav").removeClass("display-none");
+        $("#top-nav-bar").removeClass("zero-margin");
+        $("#page-content").removeClass("zero-margin");
+    }
 }

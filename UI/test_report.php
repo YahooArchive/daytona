@@ -1,7 +1,9 @@
 <?php
-// ini_set('display_errors',1);
-// ini_set('display_startup_errors',1);
-// error_reporting(-1);
+/**
+ * This is test report page which provide extensive view for checking test results. By default it contains basic test
+ * information as well it contains log file display as defined in framework definition. Basically this report provide
+ * user a flexibility to user to view multiple log files in a single view with all basic test information.
+ */
 
 require('lib/auth.php');
 include 'process_data.php';
@@ -9,32 +11,34 @@ include 'process_data.php';
 $allTestData = array();
 $testId = getParam('testid');
 if (!$testId) {
-    diePrint("No test ID passed in");
+    diePrint("No test ID passed in", "Error");
 }
 if (!is_numeric($testId)) {
-    diePrint("testid is not valid.");
+    diePrint("testid is not valid.", "Error");
 }
+// Fetching test details of base test
 $origTestData = getTestById($db, $testId, true);
 if (!$origTestData) {
-    diePrint("Could not find test id: $testId");
+    diePrint("Could not find test id: $testId", "Error");
 }
 $frameworkId = $origTestData['frameworkid'];
 $frameworkName = $origTestData['frameworkname'];
 $frameworkData = getFrameworkById($db, $frameworkId, true);
 $allTestData[] = $origTestData;
 
+// Fetching list of comparison test if any
 $compIds = getParam('compids');
 if ($compIds && ! preg_match('/^\d+(,\d+)*$/', $compIds)) {
-    diePrint("compids is not valid.");
+    diePrint("compids is not valid.", "Error");
 }
 if ($compIds) {
     foreach (explode(',', $compIds) as $compId) {
         $testData = getTestById($db, $compId, true);
         if (!$testData) {
-            diePrint("Could not find compare test ID: $compId");
+            diePrint("Could not find compare test ID: $compId", "Error");
         }
         if ($testData['frameworkid'] != $frameworkId) {
-            diePrint("Cannot compare test IDs from different frameworks.");
+            diePrint("Cannot compare test IDs from different frameworks.", "Error");
         }
         $allTestData[] = $testData;
     }
@@ -58,6 +62,8 @@ if(isset($_GET["testid"])) {
         $s_compids_str = $s_testid;
     }
 }
+
+// Format path of log file based on execution/statistic host information and log file name.
 function formatFilePath($path, $mapping) {
     $pattern = '/%(STAT|EXEC|RESERVED){1}HOST,([0-9]+)%(.*)/';
     if(preg_match($pattern, $path, $output_array)) {
@@ -78,6 +84,7 @@ function formatFilePath($path, $mapping) {
     }
 }
 
+// Prints table row html code for displaying array values indexed by $field in a HTML table
 function printRowFields($allTestData, $field) {
     foreach ($allTestData as $curTestData) {
         if (isset($curTestData[$field])) {
@@ -92,6 +99,7 @@ function printRowFields($allTestData, $field) {
     }
 }
 
+// CSS color class scheme based on test status
 function stateColorClass($status) {
     switch($status) {
         case 'finished clean':
@@ -112,59 +120,14 @@ include_once('lib/header.php');
 <script src="js/output.js"></script>
 </head>
 <?php
-$s_compids_arr = explode(",",$s_compids_str);
-$bind_vale_str = "";
-for ($x = 1; $x <=sizeof($s_compids_arr); $x++){
-    $bind_vale_str = $bind_vale_str . ":test" . $x;
-    if($x !== sizeof($s_compids_arr)){
-        $bind_vale_str = $bind_vale_str . ",";
-    }
-}
-
 try{
+    // Fetching test report configuration from framework definition
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $db->beginTransaction();
-    $query = "SELECT frameworkname,TestInputData.title,TestInputData.purpose,priority,timeout,cc_list,
-                  TestInputData.creation_time,modified,start_time,end_time FROM TestInputData
-                  JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE testid=:testid";
-    $stmt = $db->prepare($query);
-    $stmt->bindValue(':testid',$s_testid,PDO::PARAM_INT);
-    $stmt->execute();
-    $test_info_data = $stmt->fetch(PDO::FETCH_ASSOC);
-    $query = "SELECT testid,hostassociationid,hostname,name FROM HostAssociation JOIN HostAssociationType
-                   USING(hostassociationtypeid) WHERE testid IN (" . $bind_vale_str . ") ORDER BY hostassociationid";
-    $stmt = $db->prepare($query);
-    for ($x = 1; $x <=sizeof($s_compids_arr); $x++){
-        $stmt->bindValue(':test'.$x ,$s_compids_arr[$x-1], PDO::PARAM_INT);
-    }
-    $stmt->execute();
-    $test_hosts_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    foreach ($test_hosts_result as $row){
-        if(!isset($test_info_data[$row["testid"]][$row["name"]])) {
-            $test_info_data[$row["testid"]][$row["name"]] = array();
-        }
-        array_push($test_info_data[$row["testid"]][$row["name"]], $row["hostname"]);
-    }
-    $query = "SELECT argument_name,argument_default,argument_description,argument_value
-                  FROM TestArgs JOIN ApplicationFrameworkArgs USING(framework_arg_id)
-                  WHERE testid=:testid ORDER BY testargid";
-    $stmt = $db->prepare($query);
-    $stmt->bindValue(':testid',$s_testid,PDO::PARAM_INT);
-    $stmt->execute();
-    $test_args_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $test_args_arr = array();
-    foreach ($test_args_arr as $row) {
-        $l_test_arg_row = array();
-        $l_test_arg_row[0] = $row["argument_name"];
-        $l_test_arg_row[1] = $row["argument_default"];
-        $l_test_arg_row[2] = $row["argument_description"];
-        $l_test_arg_row[3] = $row["argument_value"];
-        array_push($test_args_arr, $l_test_arg_row);
-    }
     $query = "SELECT filename,TestResultFile.title FROM TestResultFile
                JOIN ApplicationFrameworkMetadata USING(frameworkid) WHERE frameworkname=:frameworkname ORDER BY filename_order";
     $stmt = $db->prepare($query);
-    $stmt->bindValue(':frameworkname',$test_info_data["frameworkname"],PDO::PARAM_STR);
+    $stmt->bindValue(':frameworkname',$frameworkName,PDO::PARAM_STR);
     $stmt->execute();
     $report_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $report_arr = array();
@@ -174,12 +137,22 @@ try{
         array_push($report_arr[$y], array(str_replace("rrd","csv",$row["filename"]), $row["title"]));
         ++$y;
     }
+
+    // Creating host array for saving hosts information for all tests
+    $host_array = array();
+    foreach ($allTestData as $test) {
+        $temp = array();
+        $temp["execution"] = $test["execution"];
+        if (array_key_exists("statistics",$temp)){
+            $temp["statistics"] = $test["statistics"];
+        }
+        $host_array[$test["testid"]] = $temp;
+    }
 }catch (PDOException $e){
     $db->rollBack();
     returnError("MySQL error: " . $e->getMessage());
 }
 ?>
-
 
 <div class="content-wrapper" id="page-content">
     <div id="main-panel-alt-top">
@@ -212,6 +185,7 @@ try{
             <?php
             $collapse_id = 0;
             foreach($report_arr as $rownum => $row_reports) {
+                // Creating separate panel for each test report configuration defined in framework definition
                 $graph_class = "partition-" . sizeof($row_reports);
                 echo "<div>\n";
                 foreach($row_reports as $report_identifier) {
@@ -226,6 +200,7 @@ try{
                     echo "    </h4>\n";
                     echo "  </div>\n";
                     echo "  <div id='collapse$collapse_id' class='panel-collapse collapse graph-panel in no-transition'>\n";
+                    // Based on file extension, using different file rendering options
                     if (strpos($extension, 'plt') !== false){
                         $marked = 0;
                         $full_paths = "";
@@ -234,7 +209,7 @@ try{
                                 $full_paths .= ",";
                             }
                             $marked = 1;
-                            $report_path = "test_data/" . $test_info_data["frameworkname"] . "/$l_id/results/" . formatFilePath($filename, $test_info_data[$l_id]);
+                            $report_path = "test_data/" . $frameworkName . "/$l_id/results/" . formatFilePath($filename, $host_array[$l_id]);
                             $full_paths .= $report_path;
                         }
                         buildTestReportGraphView($collapse_id, $full_paths, $s_compids_str, $title);
@@ -248,8 +223,8 @@ try{
                                 $full_paths .= ",";
                             }
                             $marked = 1;
-                            $report_path = "test_data/" . $test_info_data["frameworkname"] . "/$l_id/results/" .
-                                formatFilePath($report_identifier[0], $test_info_data[$l_id]);
+                            $report_path = "test_data/" . $frameworkName . "/$l_id/results/" .
+                                formatFilePath($report_identifier[0], $host_array[$l_id]);
                             $report_path_file = strpos($report_path, ":") ? substr($report_path, 0, strpos($report_path, ":")) : $report_path;
                             if(!file_exists($report_path_file)) {
                                 $err_threshold--;
@@ -259,12 +234,15 @@ try{
                         $div_id = "output-panel" . $collapse_id;
                         $csv_col_count = getCsvColumnCount($full_paths);
                         if ($csv_col_count == 2){
+                            // If CSV has 2 column, we consider it as key-value pair file hence for comparison we
+                            // match keys from both the files
                             $csv_compare = generateCompareCsv($full_paths,$s_compids_str);
                             $csv_compare_json = json_encode($csv_compare);
                             echo "    <div class='fixed-height' id=$div_id></div>\n";
                             echo "    <script>buildJsonToTableView('$csv_compare_json', '$div_id');</script>\n";
                             echo "  </div>\n";
                         }else{
+                            // Multi-column CSV is side by side tabular file rendering for comparison
                             echo "    <div class='fixed-height' id=$div_id></div>\n";
                             $file_data_array = buildTestCompareData($full_paths,$s_compids_str);
                             if (strcmp(gettype($file_data_array),"string") !== 0){
@@ -313,6 +291,7 @@ try{
                 <div class="panel panel-info panel-sub-main">
                     <?php
                     $collapse_id++;
+                    // Panel for displaying basic test information, same as test_info page
                     echo "  <div class='panel-heading collapse-heading'>\n";
                     echo "    <h4 class='panel-title text-center'>\n";
                     echo "      <a data-toggle='collapse' class='collapse-link' href='#collapse$collapse_id'>Test Information</a>\n";
@@ -331,7 +310,7 @@ try{
                                 <td class="active">Title</td>
                                 <?php printRowFields($allTestData, 'title'); ?>
                             </tr>
-			    <tr>
+                            <tr>
                                 <td class="active">Owner</td>
                                 <?php printRowFields($allTestData, 'username'); ?>
                             </tr>
@@ -484,7 +463,7 @@ try{
 <script type="text/javascript">
     $(document).ready(function() {
         $('[data-toggle="tooltip"]').tooltip();
-        buildTopNavBar('<?php echo $frameworkName; ?>', '<?php echo $testId; ?>', '<?php echo $userId; ?>');
+        buildTopNavBar('<?php echo $frameworkName; ?>', '<?php echo $testId; ?>');
         setDescription('Test Report');
         buildUserAccountMenu('<?php echo $userId; ?>');
         buildLeftPanel();
@@ -492,21 +471,21 @@ try{
         buildLeftPanelViews('<?php echo $testId; ?>', '<?php echo $compIds; ?>');
         buildLeftPanelFramework('<?php echo $frameworkName ?>', <?php echo $frameworkId; ?>);
         buildLeftPanelGlobal();
-	<?php
-          addFrameworkDropdownJS($db, $userId);
-          addTestResults("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds, $origTestData["execution_script_location"]);
-          if(array_key_exists("execution",$origTestData)) {
+        <?php
+        addFrameworkDropdownJS($db, $userId);
+        addTestResults("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds, $origTestData["execution_script_location"]);
+        if(array_key_exists("execution",$origTestData)) {
             echo "createLabel('System Metrics')\n";
             addSystemMetrics("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds, "exec");
-          }
-          if(array_key_exists("statistics",$origTestData)){
+        }
+        if(array_key_exists("statistics",$origTestData)){
             addSystemMetrics("test_data/$frameworkName/$testId/results", $origTestData["statistics"], $testId, $compIds, "stat");
-          }
-	  $hosts['EXECHOST'] = $origTestData["execution"];
-	  if (array_key_exists("statistics",$origTestData)) {
+        }
+        $hosts['EXECHOST'] = $origTestData["execution"];
+        if (array_key_exists("statistics",$origTestData)) {
             $hosts['STATHOST'] = $origTestData["statistics"];
-          }
-          addLogs("test_data/$frameworkName/$testId/results", $hosts, $testId, $compIds);
+        }
+        addLogs("test_data/$frameworkName/$testId/results", $hosts, $testId, $compIds);
         ?>
         loadNavigationBar();
         $('#zoomModal').on('shown.bs.modal', function() {

@@ -1,5 +1,9 @@
+/**
+Secondary CSS - Use this CSS for overriding CSS property inherited from Boostrap CSS and Style.css
+**/
+
 .btn {
-    min-width: none;
+    min-width: 0;
 }
 
 .collapse-link {

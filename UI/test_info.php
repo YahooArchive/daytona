@@ -1,7 +1,8 @@
 <?php
-// ini_set('display_errors',1);
-// ini_set('display_startup_errors',1);
-// error_reporting(-1);
+/**
+ * This page display basic test information of the test. User can compare multiple test on this page. UI will display
+ * information from all the tests in a single view.
+ */
 
 require('lib/auth.php');
 
@@ -13,6 +14,7 @@ if (!$testId) {
 if (!is_numeric($testId)) {
     diePrint("testid is not valid.", "Error");
 }
+// Fetching test details of base test
 $origTestData = getTestById($db, $testId, true);
 if (!$origTestData) {
     diePrint("Could not find test ID: $testId", "Error");
@@ -23,8 +25,9 @@ $frameworkName = $origTestData['frameworkname'];
 $allTestData[] = $origTestData;
 $testRunning = checkTestRunning($db, $testId);
 
+// Fetching list of comparison test if any
 $compIds = getParam('compids');
-if ($compIds && ! preg_match('/^\d+(,\d+)*$/', $compIds)) {
+if ($compIds && !preg_match('/^\d+(,\d+)*$/', $compIds)) {
     diePrint("compids is not valid.", "Error");
 }
 if ($compIds) {
@@ -40,8 +43,10 @@ if ($compIds) {
     }
 }
 
-function stateColorClass($status) {
-    switch($status) {
+// CSS color class scheme based on test status
+function stateColorClass($status)
+{
+    switch ($status) {
         case 'finished clean':
             return 'emphasize-green';
         case 'aborted':
@@ -51,11 +56,13 @@ function stateColorClass($status) {
     }
 }
 
-function printRowFields($allTestData, $field) {
+// Prints table row html code for displaying array values indexed by $field in a HTML table
+function printRowFields($allTestData, $field)
+{
     foreach ($allTestData as $curTestData) {
         if (isset($curTestData[$field])) {
             $value = $curTestData[$field];
-            if(is_array($value)) {
+            if (is_array($value)) {
                 $value = implode(",", $value);
             }
             echo "            <td class=\"test-data-td\">" . nl2br($value) . "</td>\n";
@@ -70,17 +77,19 @@ include_once('lib/header.php');
 ?>
 <div class="content-wrapper" id="page-content">
     <div id="main-panel-alt-top">
+        <!-- Top panel for displaying comparison text field and other action buttons like edit, clone, run test-->
         <div class="col-md-6" id="action-buttons-div-left">
             <form class="zero-margin form-inline" role="form" onSubmit="return checkTestCount()">
                 <!--<div class="form-group">-->
                 <div class="input-group" style="z-index:0">
-                    <input type="text" class="form-control h-30" name="compids" id="compids" value="<?php echo $compIds; ?>" placeholder="Example: 100,102,105">
+                    <input type="text" class="form-control h-30" name="compids" id="compids"
+                           value="<?php echo $compIds; ?>" placeholder="Example: 100,102,105">
                     <input type="hidden" name="testid" id="testid" value="<?php echo $testId; ?>">
                     <span class="input-group-btn">~
-                <button type="submit" class="btn btn-primary btn-action">
-                  Compare
-                </button>
-        >-</span>
+                        <button type="submit" class="btn btn-primary btn-action">
+                          Compare
+                        </button>
+                    </span>
                 </div>
             </form>
         </div>
@@ -91,11 +100,11 @@ include_once('lib/header.php');
             $userIsAdmin ? "" : "disabled";
             $testRunning = $testRunning ? "disabled" : "";
             $disable = "";
-            if ($testRunning === "disabled"){
+            if ($testRunning === "disabled") {
                 $disable = "disabled";
-            }elseif ($ownerAuthDisable === "disabled"){
+            } elseif ($ownerAuthDisable === "disabled") {
                 $disable = "disabled";
-            }elseif ($origTestData["end_status"] === "imported") {
+            } elseif ($origTestData["end_status"] === "imported") {
                 $disable_run = "disabled";
             }
             echo "    <button onclick=\"window.location='create_edit_test.php?action=edit&testid=$testId'\" class=\"btn btn-default btn-action\" $disable>\n";
@@ -107,17 +116,18 @@ include_once('lib/header.php');
             ?>
             Clone
             </a>
-            <button type="button" class="btn btn-success btn-action" <?php echo "onclick='runTest($testId)' $disable $disable_run"; ?>>
+            <button type="button"
+                    class="btn btn-success btn-action" <?php echo "onclick='runTest($testId)' $disable $disable_run"; ?>>
                 Run
             </button>
         </div>
     </div>
 
     <div class="col-xs-12" id="content-div">
-
         <div id="main-panel-alt">
-
             <div class="panel panel-info panel-sub-main">
+
+                <!-- This panel displays basic test information-->
                 <div class="panel-heading">Test Information</div>
                 <div class="panel-body" id='zero-padding'>
                     <table class='table table-hover' id='result-table'>
@@ -168,6 +178,7 @@ include_once('lib/header.php');
             </div>
 
             <div class="panel panel-info panel-sub-main">
+                <!-- This panel displays test run information-->
                 <div class="panel-heading">Run Status</div>
                 <div class="panel-body" id='zero-padding'>
                     <table class="table table-hover" id="result-table">
@@ -211,6 +222,7 @@ include_once('lib/header.php');
             </div>
 
             <div class="panel panel-info panel-sub-main">
+                <!-- This panel displays test argument information-->
                 <div class="panel-heading">Test Arguments</div>
                 <div class="panel-body" id='zero-padding'>
                     <table class="table table-hover" id="result-table">
@@ -227,9 +239,9 @@ include_once('lib/header.php');
                             }
                             foreach ($allTestData as $curTestData) {
                                 echo "            <td class='test-data-td'>";
-                                if (array_key_exists($frameworkArg['framework_arg_id'],$curTestData['arguments'])){
+                                if (array_key_exists($frameworkArg['framework_arg_id'], $curTestData['arguments'])) {
                                     echo $curTestData['arguments'][$frameworkArg['framework_arg_id']]['value'];
-                                }else{
+                                } else {
                                     echo "";
                                 }
                                 echo "</td>\n";
@@ -256,21 +268,21 @@ include_once('lib/header.php');
                 echo "                <tbody>\n";
                 for ($i = 0; $i < count($allTestData); $i++) {
                     $curTestData = $allTestData[$i];
-                    if (array_key_exists("imported_test_arg",$curTestData)) {
-                        foreach ($curTestData['imported_test_arg'] as $row){
+                    if (array_key_exists("imported_test_arg", $curTestData)) {
+                        foreach ($curTestData['imported_test_arg'] as $row) {
                             echo "          <tr>\n";
                             echo "            <td class=\"active\">$row[arg_name]</td>\n";
                             for ($j = 0; $j < count($allTestData); $j++) {
                                 if ($i == $j) {
                                     echo "            <td class='test-data-td'>$row[arg_value]</td>\n";
-                                }else {
+                                } else {
                                     echo "            <td class='test-data-td'></td>\n";
                                 }
                             }
                         }
 
 
-                    }else {
+                    } else {
                         continue;
                     }
                 }
@@ -282,12 +294,13 @@ include_once('lib/header.php');
             ?>
 
             <div class="panel panel-info panel-sub-main">
+                <!-- This panel displays strace configuration if user has configured it-->
                 <div class="panel-heading">
                     Strace Configuration
                 </div>
                 <div class="panel-body" id='zero-padding'>
                     <?php
-                    if ($allTestData[0]['strace']){
+                    if ($allTestData[0]['strace']) {
                         echo "<table class='table table-hover form-table'>";
                         echo "<tbody>";
                         echo "<tr>";
@@ -304,13 +317,14 @@ include_once('lib/header.php');
                         echo "</tr>";
                         echo "</tbody>";
                         echo "</table>";
-                    }else{
+                    } else {
                         echo "<h5 class='padding-left'>No STRACE configuration available</h5>";
                     }
                     ?>
                 </div>
             </div>
             <div class="panel panel-info panel-sub-main">
+                <!-- This panel displays perf configuration -->
                 <div class="panel-heading">
                     PERF Configuration
                 </div>
@@ -326,7 +340,7 @@ include_once('lib/header.php');
                             <?php printRowFields($allTestData, 'perf_duration'); ?>
                         </tr>
                         <?php
-                        if ($allTestData[0]['perf_process']){
+                        if ($allTestData[0]['perf_process']) {
                             echo "<tr>";
                             echo "<td class=\"active\">Process Name</td>";
                             printRowFields($allTestData, 'perf_process');
@@ -344,9 +358,9 @@ include_once('lib/header.php');
 
 <script type="text/javascript" src="js/output.js"></script>
 <script type="text/javascript">
-    $(document).ready(function(){
+    $(document).ready(function () {
         $('[data-toggle="tooltip"]').tooltip();
-        buildTopNavBar('<?php echo $frameworkName; ?>', '<?php echo $testId; ?>', '<?php echo $userId; ?>');
+        buildTopNavBar('<?php echo $frameworkName; ?>', '<?php echo $testId; ?>');
         setDescription('Test Information');
         buildUserAccountMenu('<?php echo $userId; ?>');
         buildLeftPanel();
@@ -357,15 +371,15 @@ include_once('lib/header.php');
         <?php
         addFrameworkDropdownJS($db, $userId);
         addTestResults("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds, $origTestData["execution_script_location"]);
-        if(array_key_exists("execution",$origTestData)) {
+        if (array_key_exists("execution", $origTestData)) {
             echo "createLabel('System Metrics')\n";
             addSystemMetrics("test_data/$frameworkName/$testId/results", $origTestData["execution"], $testId, $compIds, "exec");
         }
-        if(array_key_exists("statistics",$origTestData)){
+        if (array_key_exists("statistics", $origTestData)) {
             addSystemMetrics("test_data/$frameworkName/$testId/results", $origTestData["statistics"], $testId, $compIds, "stat");
         }
         $hosts['EXECHOST'] = $origTestData["execution"];
-        if (array_key_exists("statistics",$origTestData)) {
+        if (array_key_exists("statistics", $origTestData)) {
             $hosts['STATHOST'] = $origTestData["statistics"];
         }
         addLogs("test_data/$frameworkName/$testId/results", $hosts, $testId, $compIds);
