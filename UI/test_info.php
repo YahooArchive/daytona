@@ -261,7 +261,8 @@ include_once('lib/header.php');
                     break;
                 }
             }
-            // Merging imported test arguments from different tests, this is to consolidate display of test arguments
+
+	    // Merging imported test arguments from different tests, this is to consolidate display of test arguments
             // having same set of arguments
             $imported_arg_map = array();
             if ($print_imported_args) {
@@ -282,7 +283,7 @@ include_once('lib/header.php');
                 echo "        <div class='panel-body' id='zero-padding'>\n";
                 echo "            <table class='table table-hover' id='result-table'>\n";
                 echo "                <tbody>\n";
-                // One row for each argument and if that argument value exist for a particular test then it will be
+		// One row for each argument and if that argument value exist for a particular test then it will be
                 // displayed in respective column
                 foreach ($imported_arg_map as $imported_arg=>$imported_arg_array) {
                     echo "          <tr>\n";
@@ -311,7 +312,14 @@ include_once('lib/header.php');
                 </div>
                 <div class="panel-body" id='zero-padding'>
                     <?php
-                    if ($allTestData[0]['strace']) {
+		    $print_strace_config = false;
+                    foreach ($allTestData as $curTestData) {
+                        if ($curTestData['strace']) {
+                            $print_strace_config = true;
+                            break;
+                        }
+                    }
+                    if ($print_strace_config) {
                         echo "<table class='table table-hover form-table'>";
                         echo "<tbody>";
                         echo "<tr>";
