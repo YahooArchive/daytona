@@ -2,6 +2,9 @@
 
 Daytona is an application-agnostic framework for automated performance testing and analysis. Any performance testing script running on command line can be integrated into a Daytona framework for repeatable execution and methodical analysis.
 
+## Update: Before using this code
+We were alerted to a security flaw in this project that allows an authenticated user to upload a zip file and potentially enable a remote code execution attack. We are no longer mainintaining this project and request the community to help fix this code. If no one steps up to do so, we'll mark this code as archived and offer it in a read only mode with the caveat that it contains a flaw that you should repair. (Check the open issues on this repo.) If you do repair it, let us know. We want to offer the best quality code, but bugs don't fix themselves. So please help.
+
 ## Main features
 * Repeatable execution of performance tests  
 * Agnostic to any application
